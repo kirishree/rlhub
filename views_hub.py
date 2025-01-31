@@ -2968,11 +2968,8 @@ def add_cisco_hub(request: HttpRequest):
         print(response)
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
             devicename = response[0]["spokedevice_name"]
-            devicename = devicename
-            hub_wan_ip_only = data["hub_wan_ip"].split("/")[0]
-            print(hub_wan_ip_only)
-            devicehubinfo = coll_hub_info.find_one({"hub_wan_ip_only":hub_wan_ip_only})
-            print(devicehubinfo)
+            devicename = devicename   
+            devicehubinfo = coll_hub_info.find_one({"hub_wan_ip_only":data["hub_ip"].split("/")[0]})            
             coll_tunnel_ip.delete_many({"uuid":data["uuid"]})
             if not devicehubinfo:
                 devicehubinfo = {}
