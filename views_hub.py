@@ -2970,7 +2970,9 @@ def add_cisco_hub(request: HttpRequest):
             devicename = response[0]["spokedevice_name"]
             devicename = devicename
             hub_wan_ip_only = data["hub_wan_ip"].split("/")[0]
+            print(hub_wan_ip_only)
             devicehubinfo = coll_hub_info.find_one({"hub_wan_ip_only":hub_wan_ip_only})
+            print(devicehubinfo)
             coll_tunnel_ip.delete_many({"uuid":data["uuid"]})
             if not devicehubinfo:
                 devicehubinfo = {}
