@@ -2747,12 +2747,12 @@ def create_subinterface_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-def generate_dialerip_cisco():
-    random_no = random.randint(3,250)
-    newdialerip = dialernetworkip + str(random_no)
+def generate_dialerip_cisco(networkip, netmaskip):
+    network = ipaddress.IPv4Network(f"{networkip}/{netmaskip}", strict=False)
+    newdialerip =  str(random.choice(list(network.hosts())))
     for dialerip in coll_dialer_ip.find({},{"_id":0}):
         if dialerip["dialerip"] == newdialerip:
-            return generate_dialerip()
+            return generate_dialerip(networkip, netmaskip)
     return newdialerip
 
 def generate_dialer_password_cisco():
@@ -2777,23 +2777,23 @@ def generate_dialer_password_cisco():
     return ''.join(password)
 
 
-def get_dialer_ip_fromciscohub(devicename):
+def get_dialer_ip_fromciscohub(devicename, dialerip):
     try:
         
         newdialerpassword = generate_dialer_password_cisco()
-        newdialerip = generate_dialerip_cisco()
-        
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": "78.110.5.90"})
-        if hub_info:   
-            
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": dialerip})       
+        if hub_info:
+            newdialerip = generate_dialerip_cisco(hub_info["hub_dialer_network"], hub_info["hub_dialer_netmask"])            
             if (router_configure.adduser({"username":devicename,
                                   "password":newdialerpassword,
-                                  "tunnel_ip": "78.110.5.90",
+                                  "tunnel_ip": dialerip,
                                 "router_username": hub_info["router_username"],
-                                "router_password": hub_info["router_password"],})):   
+                                "router_password": hub_info["router_password"]})):   
                 return ({"dialerip":newdialerip,
                             "dialerpassword": newdialerpassword,
                             "dialerusername": devicename,
+                            "hub_dialer_network":hub_info["hub_dialer_network"],
+                            "hub_dialer_netmask":hub_info["hub_dialer_netmask"]
                         })        
     except Exception as e:
         print(e)
@@ -2844,14 +2844,15 @@ def add_cisco_device(request: HttpRequest):
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
+            dialer_ip = data.get("dialer_ip", "78.110.5.90")
             if not devicedialerinfo:
-                newdialerinfo = get_dialer_ip_fromciscohub(devicename)
+                newdialerinfo = get_dialer_ip_fromciscohub(devicename, dialer_ip )
                 if newdialerinfo:
                     newdialerinfo["router_username"] = devicename.lower()
                     newdialerinfo["router_password"] = generate_router_password_cisco()
                     newdialerinfo["spokedevice_name"] = devicename
-                    newdialerinfo["dialer_hub_ip"] = cisco_dialer_hub_ip
                     newdialerinfo["uuid"] = data["uuid"]
+                    newdialerinfo["hub_dialer_wildcardmask"] = ".".join(str(255 - int(octet)) for octet in newdialerinfo["hub_dialer_netmask"].split("."))
                     newdialerinfo["router_wan_ip_only"] = data["router_wan_ip"].split("/")[0]
                     subnet = ipaddress.IPv4Network(data["router_wan_ip"], strict=False)  # Allow non-network addresses
                     newdialerinfo["router_wan_ip_netmask"] = str(subnet.netmask) 
@@ -2862,10 +2863,13 @@ def add_cisco_device(request: HttpRequest):
                                                 "dialerip":newdialerinfo["dialerip"],
                                                 "dialerpassword": newdialerinfo["dialerpassword"],
                                                 "dialerusername": devicename,
-                                                "dialer_hub_ip":cisco_dialer_hub_ip,
+                                                "dialer_hub_ip":dialer_ip,
                                                 "router_wan_ip_only": newdialerinfo["router_wan_ip_only"],
                                                 "router_wan_ip_netmask": newdialerinfo["router_wan_ip_netmask"],
-                                                "router_wan_ip_gateway": data["router_wan_gateway"] 
+                                                "router_wan_ip_gateway": data["router_wan_gateway"],
+                                                "hub_dialer_network": newdialerinfo["hub_dialer_network"],
+                                                "hub_dialer_netmask":newdialerinfo["hub_dialer_netmask"],
+                                                "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"] 
                                                 }) 
                     orgid = get_organization_id(data)
                     details = coll_registered_organization.find_one({"organization_id":orgid})
@@ -2892,14 +2896,16 @@ def add_cisco_device(request: HttpRequest):
             else:
                 newdialerinfo = devicedialerinfo                 
             
-
+            
             list1 = ["{dialer_client_ip}", "{dialer_username}", "{dialer_password}", "{dialer_netmask}", "{dialerserverip}", "{router_username}",
                      "{router_password}", "{ubuntu_dialerclient_ip}", "{snmpcommunitystring}", "{interface_wan_ip}",
-                     "{interface_wan_netmask}", "{interface_wan_gateway}"]
+                     "{interface_wan_netmask}", "{interface_wan_gateway}",
+                     "{dialer_network}", "{dialer_wildcardmask}"]
             list2 = [ newdialerinfo['dialerip'], newdialerinfo['dialerusername'], newdialerinfo['dialerpassword'], dialer_netmask,
-                      cisco_dialer_hub_ip, newdialerinfo["router_username"], newdialerinfo["router_password"],
+                      dialer_ip, newdialerinfo["router_username"], newdialerinfo["router_password"],
                       ubuntu_dialerclient_ip, snmpcommunitystring, newdialerinfo["router_wan_ip_only"],
-                      newdialerinfo["router_wan_ip_netmask"], data["router_wan_gateway"] ]
+                      newdialerinfo["router_wan_ip_netmask"], data["router_wan_gateway"], 
+                      newdialerinfo["hub_dialer_network"], newdialerinfo["hub_dialer_wildcardmask"] ]
             with open("com_router_config.py", "r") as f:
                 data1 = f.read()
                 f.close()
