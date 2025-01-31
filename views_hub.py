@@ -1131,11 +1131,15 @@ def get_routing_table_ubuntu(request):
 def get_routing_table(request):
     try:
         data ={}
-        data["tunnel_ip"] = cisco_dialer_hub_ip
-        data["router_username"] = cisco_hub_username
-        data["router_password"] = cisco_hub_password
-        print("hub data", data)
-        response = router_configure.get_routingtable_cisco(data)
+        data["hub_wan_ip"] = "78.110.5.90"
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if hub_info:
+            data["tunnel_ip"] = data["hub_wan_ip"]
+            data["router_username"] = hub_info["router_username"]
+            data["router_password"] = hub_info["router_password"]
+            response = router_configure.get_routingtable_cisco(data)
+        else:
+            response = []
         
     except Exception as e:
         print(e)
@@ -2255,15 +2259,20 @@ def addstaticroute_hub(request: HttpRequest):
             if dialernetworkip in route["destination"]:
                 response = {"message":"Error Invalid destination"}
                 return JsonResponse(response, safe=False) 
-        data["tunnel_ip"] = cisco_dialer_hub_ip     
-        data["router_username"] = cisco_hub_username
-        data["router_password"] = cisco_hub_password
-        data["subnet_info"] = data["routes_info"]
-        status = router_configure.addroute(data)
-        if status:
-            response = {"message": "Successfully route added"}
+        data["hub_wan_ip"] = "78.110.5.90"
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if hub_info:
+            data["tunnel_ip"] = data["hub_wan_ip"]
+            data["router_username"] = hub_info["router_username"]
+            data["router_password"] = hub_info["router_password"]
+            data["subnet_info"] = data["routes_info"]
+            status = router_configure.addroute(data)
+            if status:
+                response = {"message": "Successfully route added"}
+            else:
+                response = {"message":"Error in adding route"}
         else:
-            response = {"message":"Error in adding route"}
+            response = {"message":"Error in getting hub info"}
     except Exception as e:    
         response = {"message": f"Error in adding route, pl try again {e}" }
     logger.debug(f'Received request: {request.method} {request.path}')   
@@ -2274,10 +2283,15 @@ def addstaticroute_hub(request: HttpRequest):
 def get_interface_details_hub(request):
     try:
         data = {}
-        data["tunnel_ip"] = cisco_dialer_hub_ip     
-        data["router_username"] = cisco_hub_username
-        data["router_password"] = cisco_hub_password
-        response = router_configure.get_interface_cisco(data)
+        data["hub_wan_ip"] = "78.110.5.90"
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if hub_info:
+            data["tunnel_ip"] = data["hub_wan_ip"]
+            data["router_username"] = hub_info["router_username"]
+            data["router_password"] = hub_info["router_password"]
+            response = router_configure.get_interface_cisco(data)
+        else:
+            response = []
     except Exception as e:
         print(e)
         response = []
@@ -2322,21 +2336,18 @@ def delstaticroute_hub(request: HttpRequest):
     response = [{"message":"Successfully deleted"}]
     try:         
         data = json.loads(request.body)      
-        print("delstatichub",data) 
-     #   routes =  data["routes_info"]
-#        data["subnet_info"] = []
- #       for route in routes:
-  #          data["subnet_info"].append({"subnet":route["destination"],
-   #                                     "gateway": route["gateway"]}
-    #                                    )
-        data["tunnel_ip"] = cisco_dialer_hub_ip
-        data["router_username"] = cisco_hub_username
-        data["router_password"] = cisco_hub_password
-        status = router_configure.delstaticroute(data)
-        if status:
-            response = {"message": "Successfully route deleted"}
-        else:
-            response = {"message":"Error in deleting route"}
+        print("delstatichub",data)
+        data["hub_wan_ip"] = "78.110.5.90"
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if hub_info:
+            data["tunnel_ip"] = data["hub_wan_ip"]
+            data["router_username"] = hub_info["router_username"]
+            data["router_password"] = hub_info["router_password"]
+            status = router_configure.delstaticroute(data)
+            if status:
+                response = {"message": "Successfully route deleted"}
+            else:
+                response = {"message":"Error in deleting route"}
     except Exception as e:
         print(e)
         response = [{"message":f"Error while adding route: {e}"}]
@@ -2771,15 +2782,19 @@ def get_dialer_ip_fromciscohub(devicename):
         
         newdialerpassword = generate_dialer_password_cisco()
         newdialerip = generate_dialerip_cisco()
-        if (router_configure.adduser({"username":devicename,
+        
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": "78.110.5.90"})
+        if hub_info:   
+            
+            if (router_configure.adduser({"username":devicename,
                                   "password":newdialerpassword,
-                                  "tunnel_ip": cisco_dialer_hub_ip,
-                                "router_username": cisco_hub_username,
-                                "router_password": cisco_hub_password,})):   
-            return ({"dialerip":newdialerip,
-                "dialerpassword": newdialerpassword,
-                "dialerusername": devicename,
-                })        
+                                  "tunnel_ip": "78.110.5.90",
+                                "router_username": hub_info["router_username"],
+                                "router_password": hub_info["router_password"],})):   
+                return ({"dialerip":newdialerip,
+                            "dialerpassword": newdialerpassword,
+                            "dialerusername": devicename,
+                        })        
     except Exception as e:
         print(e)
     return False
@@ -3068,14 +3083,16 @@ def add_cisco_hub(request: HttpRequest):
 def create_interface_hub(request):
     try:
         data = json.loads(request.body)
-        print("vlan data", data)
-        data["tunnel_ip"] = cisco_dialer_hub_ip
-        data["router_username"] = cisco_hub_username
-        data["router_password"] = cisco_hub_password
-        if data["interface_type"].lower() == "vlan":
-            response = router_configure.createvlaninterface(data)
-        if data["interface_type"].lower() == "sub interface":
-            response = router_configure.createsubinterface(data)          
+        data["hub_wan_ip"] = "78.110.5.90"
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if hub_info:
+            data["tunnel_ip"] = data["hub_wan_ip"]
+            data["router_username"] = hub_info["router_username"]
+            data["router_password"] = hub_info["router_password"]
+            if data["interface_type"].lower() == "vlan":
+                response = router_configure.createvlaninterface(data)
+            if data["interface_type"].lower() == "sub interface":
+                response = router_configure.createsubinterface(data)          
            
     except Exception as e:
         response = [{"message": f"Error: {e}"}]
