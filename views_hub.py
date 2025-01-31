@@ -3104,3 +3104,13 @@ def create_interface_hub(request):
     except Exception as e:
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def get_configured_hub(request):
+    try:
+        hubips = []
+        for hubinfo in coll_hub_info.find({}):
+            hubips.append(hubinfo["hub_wan_ip_only"])
+    except Exception as e:
+        print("error in fetch hubips:", e)
+    return JsonResponse(hubips, safe=False)
