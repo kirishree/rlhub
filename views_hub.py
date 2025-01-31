@@ -2934,6 +2934,7 @@ def add_cisco_device(request: HttpRequest):
             response = HttpResponse(buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
             response['X-Message'] = json.dumps(json_response)
+            response["Access-Control-Expose-Headers"] = "X-Message"
             #Currently registered device to show via frontend
             registered_data = coll_tunnel_ip.find_one({"uuid": data["uuid"]})
             print("regdata",registered_data)
