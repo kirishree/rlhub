@@ -3076,6 +3076,7 @@ def add_cisco_hub(request: HttpRequest):
         else:
             json_response = [{"message": f"Error:{response[0]['message']}"}]
     except Exception as e:
+        print(e)
         json_response = [{"message": f"Error:Internal Server Error"}]
     print(json_response)
     response = HttpResponse(content_type='application/zip')
