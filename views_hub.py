@@ -2892,6 +2892,7 @@ def add_cisco_device(request: HttpRequest):
                     json_response = [{"message": f"Error:while generating dialerip"}]
                     response = HttpResponse(content_type='application/zip')
                     response['X-Message'] = json.dumps(json_response)
+                    response["Access-Control-Expose-Headers"] = "X-Message"
                     return response
             else:
                 newdialerinfo = devicedialerinfo                 
@@ -2951,6 +2952,7 @@ def add_cisco_device(request: HttpRequest):
     print(json_response)
     response = HttpResponse(content_type='application/zip')
     response['X-Message'] = json.dumps(json_response)
+    response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
 @csrf_exempt
