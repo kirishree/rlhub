@@ -3077,6 +3077,7 @@ def add_cisco_hub(request: HttpRequest):
             response = HttpResponse(buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="reachlink_hub_conf.zip"'
             response['X-Message'] = json.dumps(json_response)
+            response["Access-Control-Expose-Headers"] = "X-Message"
             print("hub config response", response)
             return response
         else:
@@ -3087,6 +3088,7 @@ def add_cisco_hub(request: HttpRequest):
     print(json_response)
     response = HttpResponse(content_type='application/zip')
     response['X-Message'] = json.dumps(json_response)
+    response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
 @csrf_exempt
