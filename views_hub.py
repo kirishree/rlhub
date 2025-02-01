@@ -2980,12 +2980,13 @@ def add_cisco_hub(request: HttpRequest):
     hub_dialer_network = str(subnet.network_address)   
     for hubinf in coll_hub_info.find({}):
         if hubinf["hub_dialer_network"] == hub_dialer_network:
-            json_response = [{"message": f"Error: This Dialer network ID already available, pl choose different one."}]
-            print(json_response)
-            response = HttpResponse(content_type='application/zip')
-            response['X-Message'] = json.dumps(json_response)
-            response["Access-Control-Expose-Headers"] = "X-Message"
-            return response
+            if hubinf["hub_ip"] != data["hub_ip"]:
+                json_response = [{"message": f"Error: This Dialer network ID already available, pl choose different one."}]
+                print(json_response)
+                response = HttpResponse(content_type='application/zip')
+                response['X-Message'] = json.dumps(json_response)
+                response["Access-Control-Expose-Headers"] = "X-Message"
+                return response
     data["uuid"] = data['branch_location'] + "_ciscohub.net"
     print(data)
     data["username"] = "none"
