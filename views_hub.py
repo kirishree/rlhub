@@ -2823,7 +2823,14 @@ def generate_router_password_cisco():
 
 @csrf_exempt
 def add_cisco_device(request: HttpRequest):
-    data = json.loads(request.body)    
+    data = json.loads(request.body)   
+    check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
+    if not check_hub_configured:
+        json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
+        response = HttpResponse(content_type='application/zip')
+        response['X-Message'] = json.dumps(json_response)
+        response["Access-Control-Expose-Headers"] = "X-Message"
+        return response
     data["uuid"] = data['system_name'] + "_ciscodevice.net"
     print(data)
     data["username"] = "none"
@@ -2844,7 +2851,7 @@ def add_cisco_device(request: HttpRequest):
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
-            dialer_ip = data.get("dialer_ip", "78.110.5.90")
+            dialer_ip = data.get("dialer_ip", "")
             if not devicedialerinfo:
                 newdialerinfo = get_dialer_ip_fromciscohub(devicename, dialer_ip )
                 if newdialerinfo:
