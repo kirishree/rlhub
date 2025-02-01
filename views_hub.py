@@ -253,7 +253,7 @@ def check_user_renewed(data, organization_id):
                                     "uuid": data["uuid"],
                                     "spokedevice_name":  spokedevice_name,
                                     "gretunnel_ip": gretunnel_ip,
-                                    "hub_ip": data["dialer_ip"]                      
+                                    "hub_ip": data.get("dialer_ip", "")                      
                                    }
                 registered_devices_info.append(new_device_info)  
                 query = {"username": data["user_name"] }
@@ -354,7 +354,7 @@ def check_user(data):
                                     "uuid": data["uuid"],
                                     "spokedevice_name":  spokedevice_name,
                                     "gretunnel_ip": gretunnel_ip,
-                                    "hub_ip": data["dialer_ip"]
+                                    "hub_ip": data.get("dialer_ip", "")
 
                                    }
                     registered_devices_info.append(new_device_info)  
