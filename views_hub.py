@@ -2978,9 +2978,9 @@ def add_cisco_hub(request: HttpRequest):
     hub_dialer_netmask = str(subnet.netmask) 
     # Extract the network address
     hub_dialer_network = str(subnet.network_address)   
-    for hubinf in coll_hub_info({}):
+    for hubinf in coll_hub_info.find({}):
         if hubinf["hub_dialer_network"] == hub_dialer_network:
-            json_response = [{"message": f"Error: This Dialer network already available, pl choose different one."}]
+            json_response = [{"message": f"Error: This Dialer network ID already available, pl choose different one."}]
             print(json_response)
             response = HttpResponse(content_type='application/zip')
             response['X-Message'] = json.dumps(json_response)
