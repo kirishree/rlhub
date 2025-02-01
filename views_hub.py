@@ -227,7 +227,8 @@ def get_tunnel_ip(data, spokedevice_name):
                                "uuid": data["uuid"],
                                "router_username": data.get("device_username", "None"),
                                "router_password": data.get("device_password", "None"),
-                               "spokedevice_name": spokedevice_name
+                               "spokedevice_name": spokedevice_name,
+                               "hub_ip": data.get("dialer_ip", "")
                               })    
     return tunnel_ip
 
@@ -248,10 +249,11 @@ def check_user_renewed(data, organization_id):
                 spokedevice_name =  generate_device_name(length, details)
                 gretunnel_ip =  get_tunnel_ip(data, spokedevice_name)                  
                 new_device_info = {
-                                    "system_name": data["system_name"], 
+                                    
                                     "uuid": data["uuid"],
                                     "spokedevice_name":  spokedevice_name,
-                                    "gretunnel_ip": gretunnel_ip                           
+                                    "gretunnel_ip": gretunnel_ip,
+                                    "hub_ip": data["dialer_ip"]                      
                                    }
                 registered_devices_info.append(new_device_info)  
                 query = {"username": data["user_name"] }
@@ -348,10 +350,12 @@ def check_user(data):
                     spokedevice_name =  generate_device_name(length, details)    
                     gretunnel_ip =  get_tunnel_ip(data, spokedevice_name)               
                     new_device_info = {
-                                    "system_name": data["system_name"], 
+                                    
                                     "uuid": data["uuid"],
                                     "spokedevice_name":  spokedevice_name,
-                                    "gretunnel_ip": gretunnel_ip                                       
+                                    "gretunnel_ip": gretunnel_ip,
+                                    "hub_ip": data["dialer_ip"]
+
                                    }
                     registered_devices_info.append(new_device_info)  
                     registered_users = details["regusers"]
@@ -1259,7 +1263,8 @@ def deactivate_spoke(data):
                                       "tunnel_ip": data["tunnel_ip"],
                                       "branch_location": data["branch_location"],
                                       "subnet": data["subnet"],
-                                     "vrf": data["vrf"]
+                                     "vrf": data["vrf"],
+                                     "hub_ip": data.get("dialer_ip", "")
                                     })
     except Exception as e:
         print(e)
@@ -1317,7 +1322,8 @@ def activate_spoke(data):
                                        "tunnel_ip": data["tunnel_ip"],
                                        "branch_location": data["branch_location"],
                                        "subnet": data["subnet"],
-                                        "vrf": data["vrf"]
+                                        "vrf": data["vrf"],
+                                        "hub_ip": data.get("dialer_ip", "")
                                        })
     except Exception as e:
         print(e)
@@ -1343,7 +1349,8 @@ def onboard_unblock(request: HttpRequest):
                                        "tunnel_ip": spoke_details["tunnel_ip"],
                                        "branch_location": spoke_details["branch_location"],
                                        "subnet": spoke_details["subnet"],
-                                        "vrf": spoke_details["vrf"]
+                                        "vrf": spoke_details["vrf"],
+                                        "hub_ip": data.get("dialer_ip", "")
                                        })
         print(total_branches)
         # Use a set to keep track of unique tuples (a, b)
@@ -1404,7 +1411,8 @@ def background_delete(data1):
                                       "tunnel_ip": data["tunnel_ip"],
                                       "branch_location": data["branch_location"],
                                       "subnet": data["subnet"],
-                                     "vrf": data["vrf"]
+                                     "vrf": data["vrf"],
+                                     "hub_ip": data.get("dialer_ip", "")
                                     })  
                             coll_tunnel_ip.delete_many({"uuid":device["uuid"]})                               
                         total_branches = [item for item in total_branches if item.get("tunnel_ip") != data["tunnel_ip"]]
@@ -2831,7 +2839,7 @@ def add_cisco_device(request: HttpRequest):
         response['X-Message'] = json.dumps(json_response)
         response["Access-Control-Expose-Headers"] = "X-Message"
         return response
-    data["uuid"] = data['system_name'] + "_ciscodevice.net"
+    data["uuid"] = data['branch_location'] + "_ciscodevice.net"
     print(data)
     data["username"] = "none"
     data["password"] = "none" 
@@ -2876,7 +2884,8 @@ def add_cisco_device(request: HttpRequest):
                                                 "router_wan_ip_gateway": data["router_wan_gateway"],
                                                 "hub_dialer_network": newdialerinfo["hub_dialer_network"],
                                                 "hub_dialer_netmask":newdialerinfo["hub_dialer_netmask"],
-                                                "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"] 
+                                                "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
+                                                "branch_location": data["branch_location"]
                                                 }) 
                     orgid = get_organization_id(data)
                     details = coll_registered_organization.find_one({"organization_id":orgid})
@@ -2965,7 +2974,19 @@ def add_cisco_device(request: HttpRequest):
 @csrf_exempt
 def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
-    data["uuid"] = data['system_name'] + "_ciscohub.net"
+    subnet = ipaddress.IPv4Network(data["hub_dialer_ip"], strict=False)  # Allow non-network addresses
+    hub_dialer_netmask = str(subnet.netmask) 
+    # Extract the network address
+    hub_dialer_network = str(subnet.network_address)   
+    for hubinf in coll_hub_info({}):
+        if hubinf["hub_dialer_network"] == hub_dialer_network:
+            json_response = [{"message": f"Error: This Dialer network already available, pl choose different one."}]
+            print(json_response)
+            response = HttpResponse(content_type='application/zip')
+            response['X-Message'] = json.dumps(json_response)
+            response["Access-Control-Expose-Headers"] = "X-Message"
+            return response
+    data["uuid"] = data['branch_location'] + "_ciscohub.net"
     print(data)
     data["username"] = "none"
     data["password"] = "none" 
@@ -2992,10 +3013,9 @@ def add_cisco_hub(request: HttpRequest):
                 devicehubinfo["router_username"] = devicename.lower()
                 devicehubinfo["router_password"] = generate_router_password_cisco() 
                 devicehubinfo["hub_dialer_ip"] = data["hub_dialer_ip"].split("/")[0]
-                subnet = ipaddress.IPv4Network(data["hub_dialer_ip"], strict=False)  # Allow non-network addresses
-                devicehubinfo["hub_dialer_netmask"] = str(subnet.netmask) 
+                devicehubinfo["hub_dialer_netmask"] = hub_dialer_netmask
                 # Extract the network address
-                devicehubinfo["hub_dialer_network"] = str(subnet.network_address)                     
+                devicehubinfo["hub_dialer_network"] = hub_dialer_network                   
                 data["hub_wan_ip"] = data["hub_ip"]                
                 devicehubinfo["hub_wan_ip_only"] = data["hub_wan_ip"].split("/")[0]
                 wansubnet = ipaddress.IPv4Network(data["hub_wan_ip"], strict=False)  # Allow non-network addresses
@@ -3010,7 +3030,9 @@ def add_cisco_hub(request: HttpRequest):
                                                 "hub_ip":data["hub_ip"],
                                                 "hub_wan_ip_only": devicehubinfo["hub_wan_ip_only"] ,
                                                 "hub_wan_ip_netmask": devicehubinfo["hub_wan_ip_netmask"],
-                                                "hub_wan_ip_gateway": data["hub_wan_ip_gateway"]
+                                                "hub_wan_ip_gateway": data["hub_wan_ip_gateway"],
+                                                'branch_location': data["branch_location"],
+                                                "hub_dialer_ip_cidr": data["hub_dialer_ip"]
                                                 })   
                 with open("/root/reachlink/.env", "r") as f:
                     env_data = f.read()
@@ -3126,3 +3148,46 @@ def get_configured_hub(request):
     except Exception as e:
         print("error in fetch hubips:", e)
     return JsonResponse(hubips, safe=False)
+
+@csrf_exempt
+def hub_info(request: HttpRequest):
+    try:
+        print(request)
+        response = {}
+        data = []     
+        active_hubs = 0
+        inactive_hubs = 0
+        total_no_hubs = 0
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/total_hubs.json", "r") as f:
+            total_branches = json.load(f)
+            f.close()
+        reg_devices = coll_registered_organization.find_one({"organization_id":organization_id})
+        for device in reg_devices["registered_devices"]:
+            for branch in total_branches:
+                if device["uuid"] == branch["uuid"]:
+                    branch["spokedevice_name"] = device.get("spokedevice_name", "None")
+                    data.append({"hub_ip":branch["hub_wan_ip_only"],
+                            "branch_location": branch["branch_location"],
+                            "hub_dialer_ip_cidr": branch["hub_dialer_ip_cidr"],
+                            "hub_status": branch["status"],
+                            "uuid": branch["uuid"] })
+                    if branch.get("status", "") == "active":
+                        active_hubs = active_hubs + 1
+                    else:
+                        inactive_hubs = inactive_hubs + 1
+                    total_no_hubs = total_no_hubs + 1
+        response = {    "data":data,
+                        "total_hubs":total_no_hubs,
+                        "inactive_hubs":inactive_hubs,
+                        "active_hubs": active_hubs,
+                        "organization_id": organization_id
+                    }
+    except Exception as e:
+        response = {    "data":data,
+                        "total_hubs":total_no_hubs,
+                        "inactive_hubs":inactive_hubs,
+                        "active_hubs": active_hubs,
+                        "organization_id": organization_id
+                    }
+    return JsonResponse(response, safe=False)
