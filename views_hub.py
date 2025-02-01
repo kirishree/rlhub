@@ -2839,7 +2839,7 @@ def add_cisco_device(request: HttpRequest):
         response['X-Message'] = json.dumps(json_response)
         response["Access-Control-Expose-Headers"] = "X-Message"
         return response
-    data["uuid"] = data['branch_location'] + "_ciscodevice.net"
+    data["uuid"] = data['branch_location'] + data["dialer_ip"] + "_ciscodevice.net"
     print(data)
     data["username"] = "none"
     data["password"] = "none" 
