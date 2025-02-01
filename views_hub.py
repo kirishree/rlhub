@@ -2957,7 +2957,12 @@ def add_cisco_device(request: HttpRequest):
             print("regdata",registered_data)
             os.system("systemctl stop reachlink_test") 
             os.system("python3 /root/reachlink/reachlink_zabbix.py")
-            os.system("python3 del.py")
+            spokedata = []
+            for device in coll_tunnel_ip.find({},{"_id":0}):
+                spokedata.append(device)
+            with open("/root/reachlink/total_branches.json", "w") as f:
+                json.dump(spokedata, f)
+                f.close()
             os.system("systemctl start reachlink_test") 
             return response
         else:
@@ -3035,25 +3040,14 @@ def add_cisco_hub(request: HttpRequest):
                                                 'branch_location': data["branch_location"],
                                                 "hub_dialer_ip_cidr": data["hub_dialer_ip"]
                                                 })   
-                with open("/root/reachlink/.env", "r") as f:
-                    env_data = f.read()
-                    f.close()
-                dialer_network_ips = devicehubinfo["hub_dialer_network"].split(".")
-                dialernetwork = dialer_network_ips[0] + "." + dialer_network_ips[1] + "." +dialer_network_ips[2] + "."
-                # Replace the value of DIALER_HUB_IP
-                env_data = re.sub(r"DIALER_HUB_IP\s*=\s*.*", f"DIALER_HUB_IP={devicehubinfo['hub_wan_ip_only']}", env_data)
-                # Replace the value of DIALER_HUB_USERNAME
-                env_data = re.sub(r"DIALER_HUB_USERNAME\s*=\s*.*", f"DIALER_HUB_USERNAME={devicehubinfo['router_username']}", env_data)
-                # Replace the value of DIALER_HUB_PASSWORD
-                env_data = re.sub(r"DIALER_HUB_PASSWORD\s*=\s*.*", f"DIALER_HUB_PASSWORD={devicehubinfo['router_password']}", env_data)
-                # Replace the value of DIALER_NERWORK_IP
-                env_data = re.sub(r"DIALER_NERWORK_IP\s*=\s*.*", f"DIALER_NERWORK_IP={dialernetwork}", env_data)
-                # Replace the value of DIALER_NETMASK
-                env_data = re.sub(r"DIALER_NETMASK\s*=\s*.*", f"DIALER_NETMASK={devicehubinfo['hub_dialer_netmask']}", env_data)
-                # Write the updated data back to the file
-                with open("/root/reachlink/.env", "w") as f:
-                    f.write(env_data)
-                    f.close()              
+                os.system("systemctl stop reachlink_test")
+                hubdata = []
+                for device in coll_hub_info.find({},{"_id":0}):
+                    hubdata.append(device)
+                with open("/root/reachlink/total_hubs.json", "w") as f:
+                    json.dump(hubdata, f)
+                    f.close()   
+                os.system("systemctl restart reachlink_test")  
             list1 = ["{dialernetwork}",
                      "{dialernetmask}",
                      "{dialerhubip}",
