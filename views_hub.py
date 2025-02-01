@@ -3165,7 +3165,7 @@ def hub_info(request: HttpRequest):
                     data.append({"hub_ip":branch["hub_wan_ip_only"],
                             "branch_location": branch["branch_location"],
                             "hub_dialer_ip_cidr": branch["hub_dialer_ip_cidr"],
-                            "hub_status": branch["status"],
+                            "hub_status": branch.get("status", "inactive"),
                             "uuid": branch["uuid"] })
                     if branch.get("status", "") == "active":
                         active_hubs = active_hubs + 1
