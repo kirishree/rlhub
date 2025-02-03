@@ -3023,53 +3023,14 @@ def add_cisco_hub(request: HttpRequest):
                     json.dump(hubdata, f)
                     f.close()   
                 os.system("systemctl restart reachlink_test")  
-            list1 = ["{dialernetwork}",
-                     "{dialernetmask}",
-                     "{dialerhubip}",
-                     "{hubip}",
-                     "{ubuntuhubip}",
-                     "{router_username}",
-                     "{router_password}",
-                     "{snmpcommunitystring}",
-                     "{interface_wan_ip}",
-                     "{interface_wan_netmask}",
-                     "{interface_wan_gateway}"
-                     ]
-            list2 = [ devicehubinfo["hub_dialer_network"],
-                      devicehubinfo["hub_dialer_netmask"],
-                      devicehubinfo["hub_dialer_ip"],
-                      data["hub_ip"].split("/")[0],
-                      hub_ip,
-                      devicehubinfo["router_username"],
-                      devicehubinfo["router_password"],
-                      snmpcommunitystring,
-                      devicehubinfo["hub_wan_ip_only"],
-                      devicehubinfo["hub_wan_ip_netmask"],
-                      data["hub_wan_ip_gateway"]
-                      ]
-            with open("dialer_hub_configure.py", "r") as f:
-                data1 = f.read()
-                f.close()
-            for i in range(0, len(list1)):
-                data1 = data1.replace(list1[i], list2[i])     
-
-            with open("install_python.bat", "r")as f:
-                installscript = f.read()
-                f.close()         
-           
-            encoded_script = base64.b64encode(data1.encode()).decode()
-            files_to_send = {
-                    "reachlink_config.b64":encoded_script,
-                    "install_python.bat": f"{installscript}",
-                    }
+            
             # Create a buffer for the ZIP file
             buffer = io.BytesIO()
-
             # Create a ZIP archive
             with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                for filename, content in files_to_send.items():
-                    zip_file.writestr(filename, content)
-
+                # Read the EXE file and add it to the ZIP
+                with open("reachlink_hub_config.exe", "rb") as f:
+                    zip_file.writestr("reachlink_hub_config.exe", f.read())
             # Prepare the response
             buffer.seek(0)
             json_response = [{"message": response[0]["message"]}]

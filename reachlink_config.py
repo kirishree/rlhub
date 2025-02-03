@@ -145,11 +145,16 @@ def main():
     com_port = find_com_port(target_description)
     if not com_port:
         print("No Cisco router found. Please check the connection.")
+        print("Enter a key to exit")
+        input()
         return
 
     # Step 2: Connect to the router
     ser = connect_to_router(com_port)
     if not ser:
+        print("Connection failed. Pl try again.")
+        print("Enter a key to exit")
+        input()
         return
     # Step 3: Send configuration commands
     # Example configuration commands
@@ -244,6 +249,8 @@ def main():
     # Close the connection
     ser.close()
     print("Configuration completed and connection closed.")
+    print("Enter a key to exit")
+    input()
 
 if __name__ == "__main__":
     main()
