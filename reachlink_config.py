@@ -89,7 +89,7 @@ def main():
     branch_location = input()
     print(f"Enter the HUB IP:")
     hubip = input()
-    uuid = branch_location + "-" + hubip + "_ciscodevice.net"
+    uuid = branch_location + "_" + hubip + "_ciscodevice.net"
     url = "https://reachlink.cloudetel.com/get_ciscospoke_config"
     # Set the headers to indicate that you are sending JSON data
     headers = {"Content-Type": "application/json"}
