@@ -3202,7 +3202,7 @@ def get_ciscohub_config(request: HttpRequest):
                 if current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]                  
                     for device in registered_devices_info:
-                        if device['uuid'].lower() == data["uuid"].lower():  
+                        if device['uuid'] == data["uuid"]:  
                             hubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})
                             if hubinfo:
                                 response ={ "message": 'This device is already Registered',
@@ -3243,7 +3243,7 @@ def get_ciscospoke_config(request: HttpRequest):
                 if current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]                  
                     for device in registered_devices_info:
-                        if device['uuid'].lower() == data["uuid"].lower():  
+                        if device['uuid'] == data["uuid"]:  
                             spokeinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]})
                             if spokeinfo:
                                 response ={ "message": 'This device is already Registered',
