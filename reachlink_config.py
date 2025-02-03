@@ -3,7 +3,9 @@ import time
 from serial.tools import list_ports
 import json
 import requests
-
+import getpass
+import re
+import ipaddress
 def find_com_port(description=None):
     """
     Automatically find the COM port to which the Cisco router is connected.
@@ -78,17 +80,36 @@ def send_commands_rsa(ser, commands):
         if "Generating RSA keys" in output:
             print("RSA key generation in progress...")
 
+def is_valid_ip(ip):
+    """Check if the IP address is valid (IPv4 or IPv6)."""
+    try:
+        ipaddress.ip_address(ip)  # If this doesn't raise an error, it's a valid IP
+        return True
+    except ValueError:
+        return False
+    
+def is_valid_email(email):
+    """Validate email format."""
+    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    return re.match(pattern, email) is not None
 
 def main():    
-    
-    print(f"Enter the Registered username with ReachLink \n Username (Mail ID):")
-    username = input()
-    print(f"Enter the password of {username}.\n Password:")
-    password = input()
+    while True:
+        username = input("Enter the Registered username with ReachLink\nUsername (Mail ID): ")
+        if is_valid_email(username):
+            break  # Exit the loop if email is valid
+        else:
+            print("❌ Invalid email format. Please enter a valid email.")
+    print(f"Enter the password of {username}:")
+    password = getpass.getpass() 
     print(f"Enter the registered Branch location:")
     branch_location = input()
-    print(f"Enter the HUB IP:")
-    hubip = input()
+    while True:
+        hubip = input("Enter the HUB IP: ")
+        if is_valid_ip(hubip):
+            break
+        else:
+            print("❌ Invalid IP format. Please enter a valid IP.")
     bl = branch_location.lower()
     uuid = bl + "_" + hubip + "_ciscodevice.net"
     url = "https://reachlink.cloudetel.com/get_ciscospoke_config"
@@ -108,8 +129,11 @@ def main():
             print(json_response)
             if  "This device is already Registered" not in json_response["message"]:
                 print(json_response["message"])  
+                print("Enter a key to exit")
+                input()
+                return
             else: 
-                print(json_response) 
+                print(json_response)                
         else:
             print("Error while authenticating data")
             return

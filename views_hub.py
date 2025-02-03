@@ -2912,39 +2912,14 @@ def add_cisco_device(request: HttpRequest):
                     return response
             else:
                 newdialerinfo = devicedialerinfo                 
-            
-            
-            list1 = ["{dialer_client_ip}", "{dialer_username}", "{dialer_password}", "{dialer_netmask}", "{dialerserverip}", "{router_username}",
-                     "{router_password}", "{ubuntu_dialerclient_ip}", "{snmpcommunitystring}", "{interface_wan_ip}",
-                     "{interface_wan_netmask}", "{interface_wan_gateway}",
-                     "{dialer_network}", "{dialer_wildcardmask}"]
-            list2 = [ newdialerinfo['dialerip'], newdialerinfo['dialerusername'], newdialerinfo['dialerpassword'], dialer_netmask,
-                      dialer_ip, newdialerinfo["router_username"], newdialerinfo["router_password"],
-                      ubuntu_dialerclient_ip, snmpcommunitystring, newdialerinfo["router_wan_ip_only"],
-                      newdialerinfo["router_wan_ip_netmask"], data["router_wan_gateway"], 
-                      newdialerinfo["hub_dialer_network"], newdialerinfo["hub_dialer_wildcardmask"] ]
-            with open("com_router_config.py", "r") as f:
-                data1 = f.read()
-                f.close()
-            for i in range(0, len(list1)):
-                data1 = data1.replace(list1[i], list2[i])     
-
-            with open("install_python.bat", "r")as f:
-                installscript = f.read()
-                f.close()         
-            encoded_script = base64.b64encode(data1.encode()).decode()
-            files_to_send = {
-                    "reachlink_config.b64": encoded_script,
-                    "install_python.bat": f"{installscript}",
-                    }
             # Create a buffer for the ZIP file
             buffer = io.BytesIO()
 
             # Create a ZIP archive
             with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                for filename, content in files_to_send.items():
-                    zip_file.writestr(filename, content)
-
+                # Read the EXE file and add it to the ZIP
+                with open("reachlink_config.exe", "rb") as f:
+                    zip_file.writestr("reachlink_config.exe", f.read())
             # Prepare the response
             buffer.seek(0)
             json_response = [{"message": response[0]["message"]}]
