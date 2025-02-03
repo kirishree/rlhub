@@ -3166,7 +3166,9 @@ def hub_info(request: HttpRequest):
                             "branch_location": branch["branch_location"],
                             "hub_dialer_ip_cidr": branch["hub_dialer_ip_cidr"],
                             "hub_status": branch.get("status", "inactive"),
-                            "uuid": branch["uuid"] })
+                            "uuid": branch["uuid"],
+                            "host_id": branch.get("host_id", "")
+                            })
                     if branch.get("status", "") == "active":
                         active_hubs = active_hubs + 1
                     else:
@@ -3186,3 +3188,87 @@ def hub_info(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def get_ciscohub_config(request: HttpRequest):
+    data = json.loads(request.body)  
+    current_datetime = datetime.now()
+    try:
+        organization_id = get_organization_id(data)
+        print("orgid", organization_id)  
+        if organization_id:            
+            details = coll_registered_organization.find_one({"organization_id":organization_id})
+            if details:                                                   
+                if current_datetime < details["subscription_to"]:
+                    registered_devices_info = details["registered_devices"]                  
+                    for device in registered_devices_info:
+                        if device['uuid'] == data["uuid"]:  
+                            hubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})
+                            if hubinfo:
+                                response ={ "message": 'This device is already Registered',
+                                            "interface_wan_ip":hubinfo["hub_wan_ip_only"],
+                                            "interface_wan_netmask":hubinfo["hub_wan_ip_netmask"],
+                                            "interface_wan_gateway":hubinfo["hub_wan_ip_gateway"],
+                                            "dialernetwork": hubinfo["hub_dialer_network"],
+                                            "dialernetmask": hubinfo["hub_dialer_netmask"],
+                                            "dialerhubip": hubinfo["hub_dialer_ip"],
+                                            "ubuntuhubip": hub_ip,
+                                            "router_username": hubinfo["router_username"],
+                                            "router_password": hubinfo["router_password"],
+                                            "snmpcommunitystring": snmpcommunitystring,
+                                            }
+                                return JsonResponse(response) 
+                    response = {"message": "This HUB location was not configuared yet."}
+                else:
+                    response = {"message": "Your subscription was expired. Kindly renew it"} 
+            else:
+                response = {"message": "This organization is not registered with ReachLink"} 
+        else:
+            response = {"message": "This username is not registered with CloudEtel"} 
+    except Exception as e:
+        print(f"Exception while get_hub_config end point: {e}")
+        response = {"message": "Some internal error. Pl try again"}
+    return JsonResponse(response)
+
+@csrf_exempt
+def get_ciscospoke_config(request: HttpRequest):
+    data = json.loads(request.body)  
+    current_datetime = datetime.now()
+    try:
+        organization_id = get_organization_id(data)
+        print("orgid", organization_id)  
+        if organization_id:            
+            details = coll_registered_organization.find_one({"organization_id":organization_id})
+            if details:                                                   
+                if current_datetime < details["subscription_to"]:
+                    registered_devices_info = details["registered_devices"]                  
+                    for device in registered_devices_info:
+                        if device['uuid'] == data["uuid"]:  
+                            spokeinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]})
+                            if spokeinfo:
+                                response ={ "message": 'This device is already Registered',
+                                            "interface_wan_ip": spokeinfo["router_wan_ip_only"],
+                                            "interface_wan_netmask":spokeinfo["router_wan_ip_netmask"],
+                                            "dialerserverip":spokeinfo["dialer_hub_ip"],
+                                            "interface_wan_gateway": spokeinfo["router_wan_ip_gateway"],
+                                            "dialer_client_ip": spokeinfo["dialerip"],
+                                            "dialer_netmask": spokeinfo["hub_dialer_netmask"],
+                                            "dialer_username": spokeinfo["dialerusername"],
+                                            "dialer_password": spokeinfo["dialerpassword"],
+                                            "router_username": spokeinfo["router_username"],
+                                            "router_password": spokeinfo["router_password"],
+                                            "ubuntu_dialerclient_ip": spokeinfo["ubuntu_dialerclient_ip"],
+                                            "snmpcommunitystring": snmpcommunitystring,
+                                            }
+                                return JsonResponse(response) 
+                    response = {"message": "This Branch location was not configuared yet."}
+                else:
+                    response = {"message": "Your subscription was expired. Kindly renew it"} 
+            else:
+                response = {"message": "This organization is not registered with ReachLink"} 
+        else:
+            response = {"message": "This username is not registered with CloudEtel"} 
+    except Exception as e:
+        print(f"Exception while get_hub_config end point: {e}")
+        response = {"message": "Some internal error. Pl try again"}
+    return JsonResponse(response)
