@@ -1134,8 +1134,7 @@ def get_routing_table_ubuntu(request):
 @csrf_exempt
 def get_routing_table(request):
     try:
-        data ={}
-        data["hub_wan_ip"] = "78.110.5.90"
+        data = json.loads(request.body) 
         hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
         if hub_info:
             data["tunnel_ip"] = data["hub_wan_ip"]
