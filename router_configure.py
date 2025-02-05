@@ -519,32 +519,35 @@ def adduser(data):
         return False
 
 def deletevlaninterface(data):
-    # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Define the router details
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password)
 
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
 
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'no interface {data["intfc_name"]}')
-    send_command(shell, 'end')
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'no interface {data["intfc_name"]}')
+        send_command(shell, 'end')
    
-    # Save the configuration
-    send_command(shell, 'write memory')    
-    # Close the SSH connection
-    ssh_client.close()
+        # Save the configuration
+        send_command(shell, 'write memory')    
+        # Close the SSH connection
+        ssh_client.close()
+    except Exception as e:
+        print(e)
     return [{"message": f"Succesfully interface {data['intfc_name']} deleted"}]

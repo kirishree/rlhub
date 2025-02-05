@@ -2025,9 +2025,11 @@ def vlan_interface_delete_spoke(request):
             router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
+            print(data)
             response = router_configure.deletevlaninterface(data)
     except Exception as e:
         response = {"message": f"Error: {e}"}
+    print("deletevlan", response)
     return JsonResponse(response, safe=False)
 
 @csrf_exempt
