@@ -323,7 +323,7 @@ def get_routingtable_cisco(data):
             # Clean up extra spaces or non-visible characters using regex
             routeinfo = re.sub(r'\s+', ' ', routeinfo)  # Replace multiple spaces with a single space
             #print(f"After regex cleanup: '{intfcinfo}'")
-            if "." not in  routeinfo.split(" ")[0] or "[" not in routeinfo.split(" ")[0]:
+            if "." not in  routeinfo.split(" ")[0] and "[" not in routeinfo.split(" ")[0]:
                 protocol = routeinfo.split(" ")[0]
                 destination = routeinfo.split(" ")[1]
                 if " is directly" in routeinfo:
