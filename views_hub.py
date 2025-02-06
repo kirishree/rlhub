@@ -2336,44 +2336,12 @@ def get_interface_details_hub(request):
             else:
                 response = []
         elif data["hub_wan_ip"] == hub_ip:
+
             response = []
     except Exception as e:
         print(e)
         response = []
 #    print("hub interface details", response)
-    return JsonResponse(response, safe=False)
-
-@csrf_exempt
-def delstaticroute_hub_ubuntu(request: HttpRequest):
-    response = [{"message":"Successfully deleted"}]
-    try:         
-        data = json.loads(request.body)      
-        print("delstatichub",data) 
-        subnet_info = data["routes_info"]
-        with open("/etc/netplan/00-installer-config.yaml", "r") as f:
-            data1 = yaml.safe_load(f)
-            f.close()
-        dat=[]
-        for rr in data1["network"]["tunnels"]["Reach_link1"]:
-            if rr == "routes":
-                dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
-        
-        for r in subnet_info:            
-            dat = [item for item in dat if item.get('to') != r['destination']]
-        data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
-        with open("/etc/netplan/00-installer-config.yaml", "w") as f:
-            yaml.dump(data1, f, default_flow_style=False)
-            f.close()
-        os.system("sudo netplan apply")
-        for branch in coll_tunnel_ip.find({}):
-            try:
-                tunip =  branch['tunnel_ip'].split("/")[0]
-                os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
-            except Exception as e:
-                print(f"Neighbor add error: {e}")  
-    except Exception as e:
-        print(e)
-        response = [{"message":f"Error while adding route: {e}"}]
     return JsonResponse(response, safe=False)
 
 @csrf_exempt
@@ -2451,9 +2419,13 @@ def del_staticroute_spoke(request):
             route_details = microtek_configure.delstaticroute(data)                 
             return JsonResponse(route_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
+            for subnet in data["routes_info"]:
+                if subnet["destination"].split("/")[0] == router_info["dialer_hub_ip"]:
+                    response = {"message":f"Error: This route ({subnet}) not able to delete"}
+                    return JsonResponse(response, safe=False)  
             status = router_configure.delstaticroute(data)
             if status:
                 response = {"message": "Successfully route deleted"}
