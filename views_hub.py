@@ -2325,7 +2325,8 @@ def addstaticroute_hub(request: HttpRequest):
 @csrf_exempt
 def get_interface_details_hub(request):
     try:
-        data = json.loads(request.body)    
+        data = json.loads(request.body)  
+        print(data)  
         if "_ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
