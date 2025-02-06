@@ -25,6 +25,9 @@ import uuid
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pyroute2 import IPRoute
+ipr = IPRoute()
+from netaddr import IPAddress
+import psutil
 import socket
 import threading
 import random
@@ -2338,8 +2341,74 @@ def get_interface_details_hub(request):
             else:
                 response = []
         elif data["hub_wan_ip"] == hub_ip:
+            interface_details = []
+            interface = psutil.net_if_addrs()
+            intfc_ubuntu = []
+            for intfc_name in interface:            
+                if intfc_name == "gre0" or intfc_name == "gretap0" or intfc_name == "erspan0" or intfc_name =="lo":   
+                    continue
+                colect = {"interface_name":intfc_name}
+                if intfc_name == "eth1":
+                    colect.update({"type":"ether"})
+                addresses = interface[intfc_name]
+                interface_addresses = []
+                for address in addresses:      
+                    if address.family == 2:
+                        pre_len = IPAddress(address.netmask).netmask_bits()
+                        ipaddr_prefix = str(address.address)+"/"+str(pre_len)
+                        interface_addresses.append({
+                                    "IPv4address_noprefix":str(address.address),
+                                    "IPv4address":ipaddr_prefix,
+                                    "netmask":str(address.netmask),
+                                    "broadcast":str(address.broadcast)
+                                  })
+                    if address.family == 17:
+                        colect.update({
+                                    "mac_address":str(address.address)
+                                   })         
+                colect.update({"addresses":interface_addresses})   
+                intfc_ubuntu.append(colect)
+                interface_details.append(colect)
+            #By using pyroute module, we get the default route info & conclude which interface is WAN.  
+            # And about its Gateway
+            default_route = ipr.get_default_routes(family = socket.AF_INET)
+            for route in default_route:
+                multipath = 0
+                for attr in route['attrs']:
+                    if attr[0] == 'RTA_OIF':
+                        intfc_name = ipr.get_links(attr[1])[0].get_attr('IFLA_IFNAME')
+                    if attr[0] == 'RTA_GATEWAY':
+                        gateway = attr[1]
+                    if attr[0] == 'RTA_MULTIPATH':
+                        multipath = 1
+                        for elem in attr[1]:
+                            intfc_name = ipr.get_links(elem['oif'])[0].get_attr('IFLA_IFNAME')
+                            for attr2 in elem['attrs']:
+                                if attr2[0] == 'RTA_GATEWAY':
+                                    gateway = attr2[1] 
+                                    for intfc in interface_details:
+                                        if intfc["interface_name"] == intfc_name:
+                                            intfc["gateway"] = gateway
+                                            intfc["type"] = "ether"
+                if multipath == 0:
+                    for intfc in interface_details:
+                        if intfc["interface_name"] == intfc_name:
+                            intfc["gateway"] = gateway
+                            intfc["type"] = "ether" 
+                        if "." in intfc["interface_name"]:
+                            intfc["type"] = "VLAN"
+                        elif "eth" in intfc["interface_name"]:
+                            intfc["type"] = "ether"
+                        if intfc["interface_name"] == "Reach_link1" or intfc["interface_name"] == "tun0":
+                            intfc["type"] = "tunnel"
+                        if "vrf" in intfc["interface_name"]:
+                            intfc["type"] = "VRF"
+                        if intfc["interface_name"] == "Reach_link1":
+                            intfc["interface_name"] = "Overlay Tunnel"
+                        if intfc["interface_name"] == "tun0":
+                            intfc["interface_name"] = "Base Tunnel"
 
-            response = []
+            response = interface_details
     except Exception as e:
         print(e)
         response = []
