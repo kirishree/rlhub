@@ -1135,14 +1135,79 @@ def get_routing_table_ubuntu(request):
 def get_routing_table(request):
     try:
         data = json.loads(request.body) 
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
-        if hub_info:
-            data["tunnel_ip"] = data["hub_wan_ip"]
-            data["router_username"] = hub_info["router_username"]
-            data["router_password"] = hub_info["router_password"]
-            response = router_configure.get_routingtable_cisco(data)
-        else:
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.get_routingtable_cisco(data)
+            else:
+                response = []
+        elif data["hub_wan_ip"] == hub_ip:
             response = []
+            ipr = IPRoute()
+            routes = ipr.get_routes(family=socket.AF_INET)
+            for route in routes:            
+                if route['type'] == 1:
+                    destination = "0.0.0.0"
+                    metric = 0
+                    gateway = "-"
+                    protocol = int(route['proto'])
+                    multipath = 0
+                    dst_len = route['dst_len']
+                    for attr in route['attrs']:
+                        if attr[0] == 'RTA_OIF':
+                            intfc_name = ipr.get_links(attr[1])[0].get_attr('IFLA_IFNAME')
+                            if str(table) != "Main Routing Table":
+                                command = (f"ip link show {intfc_name}")
+                                output = subprocess.check_output(command.split()).decode()
+                                lines = output.strip().split("\n")
+                                try:
+                                    table = lines[0].split("master")[1].split(" ")[1]
+                                except IndexError:
+                                    table = table
+                        if attr[0] == 'RTA_GATEWAY':
+                            gateway = attr[1]
+                        if attr[0] == 'RTA_PRIORITY':
+                            metric = attr[1]
+                        if attr[0] == 'RTA_DST':
+                            destination = attr[1]
+                        if attr[0] == 'RTA_TABLE':
+                            if attr[1] == 254:
+                                table = "Main Routing Table"
+                            else:
+                                table = attr[1]                            
+                        if attr[0] == 'RTA_MULTIPATH':
+                            for elem in attr[1]:
+                                intfc_name = ipr.get_links(elem['oif'])[0].get_attr('IFLA_IFNAME')
+                                for attr2 in elem['attrs']:
+                                    if attr2[0] == 'RTA_GATEWAY':
+                                        gateway = attr2[1] 
+                                        multipath = 1                                    
+                                        if str(intfc_name) == "Reach_link1":
+                                            intfc_name = "Overlay Tunnel"
+                                        if str(intfc_name) == "tun0":
+                                            intfc_name = "Base Tunnel"
+                                        response.append({"outgoing_interface_name":str(intfc_name),
+                                                    "gateway":str(gateway),
+                                                    "destination":str(destination)+"/"+str(dst_len),
+                                                    "metric":int(metric),
+                                                    "protocol":routes_protocol_map.get(protocol, "unknown"),
+                                                    "table_id": table
+                                                    })
+                    if multipath == 0:      
+                        if str(intfc_name) == "Reach_link1":
+                            intfc_name = "Overlay Tunnel"
+                        if str(intfc_name) == "tun0":
+                            intfc_name = "Base Tunnel"   
+                        response.append({"outgoing_interface_name":str(intfc_name),
+                                  "gateway":str(gateway),
+                                  "destination":str(destination)+"/"+str(dst_len),
+                                  "metric":int(metric),
+                                  "protocol":routes_protocol_map.get(protocol, "unknown"),
+                                  "table_id": table
+                                })     
         
     except Exception as e:
         print(e)
@@ -2170,15 +2235,14 @@ def addstaticroute_hub_ubuntu(request: HttpRequest):
     try:
         data = json.loads(request.body)         
         routes = data["routes_info"]    
-        invalid_routes = []   
+        
         valid_routes = [] 
         real_routes = []
         past_subnets = []
         for route in routes:
             route["destination"] = route["subnet"]
-            if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
-                invalid_routes.append(route["destination"])
-            else:
+            
+        
                 valid_routes.append(route)
                 past_subnets.append(route["destination"]) 
                 if route["destination"].split(".")[0] != "10":
@@ -2267,20 +2331,80 @@ def addstaticroute_hub(request: HttpRequest):
             if dialernetworkip in route["destination"]:
                 response = {"message":"Error Invalid destination"}
                 return JsonResponse(response, safe=False) 
-        data["hub_wan_ip"] = "78.110.5.90"
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
-        if hub_info:
-            data["tunnel_ip"] = data["hub_wan_ip"]
-            data["router_username"] = hub_info["router_username"]
-            data["router_password"] = hub_info["router_password"]
-            data["subnet_info"] = data["routes_info"]
-            status = router_configure.addroute(data)
-            if status:
-                response = {"message": "Successfully route added"}
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                data["subnet_info"] = data["routes_info"]
+                status = router_configure.addroute(data)
+                if status:
+                    response = {"message": "Successfully route added"}
+                else:
+                    response = {"message":"Error in adding route"}
             else:
-                response = {"message":"Error in adding route"}
-        else:
-            response = {"message":"Error in getting hub info"}
+                response = {"message":"Error in getting hub info"}
+        elif data["hub_wan_ip"] == hub_ip:
+            real_routes = []
+            past_subnets = []
+            for route in routes:
+                route["destination"] = route["subnet"] 
+                past_subnets.append(route["destination"]) 
+                if route["destination"].split(".")[0] != "10":
+                    if route["destination"].split(".")[0] == "172":
+                        if 15 < int(route["destination"].split(".")[1]) < 32:
+                            private_ip = True
+                        else:
+                            private_ip = False
+                    elif route["destination"].split(".")[0] == "192":
+                        if route["destination"].split(".")[1] == "168":
+                            private_ip = True
+                        else:
+                            private_ip = False
+                    elif int(route["destination"].split(".")[0]) > 223: 
+                        private_ip = True
+                    else:
+                        private_ip = False
+                else:
+                    private_ip = True
+                if not private_ip:
+                    real_routes.append(route)                     
+            #  interface_addresses = configured_address_interface()
+            with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+                data1 = yaml.safe_load(f)
+                f.close()
+            dat=[]
+            for rr in data1["network"]["tunnels"]["Reach_link1"]:
+                if rr == "routes":
+                    dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
+            for r in routes:
+                r["destination"] = r["subnet"]
+                try:                    
+                    if (ipaddress.ip_network(r["destination"], strict=False) and ipaddress.ip_address(r["gateway"])):
+                        dat.append({"to": r["destination"],
+                                    "via": r["gateway"]}
+                                )
+                    
+                except ValueError:
+                    response = [{"message":"Either subnet or Gateway is not valid IP"}]        
+            data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
+            with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                yaml.dump(data1, f, default_flow_style=False)
+                f.close()
+            os.system("sudo netplan apply")  
+            for branch in coll_tunnel_ip.find({}):
+                try:
+                    tunip = branch["tunnel_ip"].split("/")[0]
+                    os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
+                except Exception as e:
+                    print(f"Neighbor add error: {e}")
+            if len(real_routes) > 0:
+                pbr_spoke_data = { "realip_subnet": real_routes
+                              }
+                background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
+                background_thread.start() 
+            response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
     except Exception as e:    
         response = {"message": f"Error in adding route, pl try again {e}" }
     logger.debug(f'Received request: {request.method} {request.path}')   
@@ -2290,15 +2414,17 @@ def addstaticroute_hub(request: HttpRequest):
 @csrf_exempt
 def get_interface_details_hub(request):
     try:
-        data = {}
-        data["hub_wan_ip"] = "78.110.5.90"
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
-        if hub_info:
-            data["tunnel_ip"] = data["hub_wan_ip"]
-            data["router_username"] = hub_info["router_username"]
-            data["router_password"] = hub_info["router_password"]
-            response = router_configure.get_interface_cisco(data)
-        else:
+        data = json.loads(request.body)    
+        if "_ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.get_interface_cisco(data)
+            else:
+                response = []
+        elif data["hub_wan_ip"] == hub_ip:
             response = []
     except Exception as e:
         print(e)
@@ -2356,9 +2482,33 @@ def delstaticroute_hub(request: HttpRequest):
                 response = {"message": "Successfully route deleted"}
             else:
                 response = {"message":"Error in deleting route"}
+        elif data["hub_wan_ip"] == hub_ip:
+            subnet_info = data["routes_info"]
+            with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+                data1 = yaml.safe_load(f)
+                f.close()
+            dat=[]
+            for rr in data1["network"]["tunnels"]["Reach_link1"]:
+                if rr == "routes":
+                    dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
+        
+            for r in subnet_info:            
+                dat = [item for item in dat if item.get('to') != r['destination']]
+            data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
+            with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                yaml.dump(data1, f, default_flow_style=False)
+                f.close()
+            os.system("sudo netplan apply")
+            for branch in coll_tunnel_ip.find({}):
+                try:
+                    tunip =  branch['tunnel_ip'].split("/")[0]
+                    os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
+                except Exception as e:
+                    print(f"Neighbor add error: {e}")  
+            response = {"message": "Successfully route deleted"}
     except Exception as e:
         print(e)
-        response = [{"message":f"Error while adding route: {e}"}]
+        response = {"message":f"Error while deleting route: {e}"}
     return JsonResponse(response, safe=False)
 
 @csrf_exempt
@@ -3055,7 +3205,7 @@ def add_cisco_hub(request: HttpRequest):
 def create_interface_hub(request):
     try:
         data = json.loads(request.body)
-        data["hub_wan_ip"] = "78.110.5.90"
+        #data["hub_wan_ip"] = "78.110.5.90"
         hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
         if hub_info:
             data["tunnel_ip"] = data["hub_wan_ip"]
