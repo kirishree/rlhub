@@ -2333,6 +2333,7 @@ def get_interface_details_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
+                print(data)
                 response = router_configure.get_interface_cisco(data)
             else:
                 response = []
