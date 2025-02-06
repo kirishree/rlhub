@@ -56,8 +56,12 @@ def addroute(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    try:
     # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return False
 
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -93,9 +97,12 @@ def delroute(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    try:
     # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
-
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return False
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
 
@@ -177,8 +184,12 @@ def pingspoke(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    try:
     # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return False
 
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -239,8 +250,12 @@ def get_interface_cisco(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []
 
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -300,8 +315,13 @@ def get_routingtable_cisco(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []
+        
 
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -367,10 +387,12 @@ def delstaticroute(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+    try:
     # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
-
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return False
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
 
@@ -402,9 +424,12 @@ def createvlaninterface(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    try:
     # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
-
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
 
@@ -446,9 +471,12 @@ def createsubinterface(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+    try:
     # Connect to the router
-    ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
 
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -488,8 +516,12 @@ def adduser(data):
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return False
         
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -530,9 +562,12 @@ def deletevlaninterface(data):
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
-
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
