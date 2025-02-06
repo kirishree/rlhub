@@ -2259,8 +2259,7 @@ def addstaticroute_hub(request: HttpRequest):
         elif data["hub_wan_ip"] == hub_ip:
             real_routes = []
             past_subnets = []
-            for route in routes:
-                route["destination"] = route["subnet"] 
+            for route in routes: 
                 past_subnets.append(route["destination"]) 
                 if route["destination"].split(".")[0] != "10":
                     if route["destination"].split(".")[0] == "172":
@@ -2290,7 +2289,6 @@ def addstaticroute_hub(request: HttpRequest):
                 if rr == "routes":
                     dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
             for r in routes:
-                r["destination"] = r["subnet"]
                 try:                    
                     if (ipaddress.ip_network(r["destination"], strict=False) and ipaddress.ip_address(r["gateway"])):
                         dat.append({"to": r["destination"],
