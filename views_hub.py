@@ -2239,10 +2239,12 @@ def addstaticroute_hub(request: HttpRequest):
             if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
                 response = {"message":"Error Invalid destination"}
                 return JsonResponse(response, safe=False) 
+            print("hiiiiiiii")
             if dialernetworkip in route["destination"]:
                 response = {"message":"Error Invalid destination"}
                 return JsonResponse(response, safe=False) 
         if "ciscohub" in data["uuid"]:
+            print("hiciscohub")
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
