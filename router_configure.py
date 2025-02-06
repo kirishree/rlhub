@@ -248,14 +248,14 @@ def get_interface_cisco(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+    intfcdetails = []
     try:
         try:
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []
+            return intfcdetails
 
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -266,8 +266,9 @@ def get_interface_cisco(data):
         # Send the command and get the output
         output = get_command_output(shell, 'show ip int brief')
         interfacedetails = output.split("\n")[2:-1]
-        intfcdetails = []
+        print(interfacedetails)
         for intfcinfo in interfacedetails:
+            print(intfcinfo)
             intfcinfo = intfcinfo.strip()
             # Clean up extra spaces or non-visible characters using regex
             intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
