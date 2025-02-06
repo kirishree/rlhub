@@ -74,7 +74,7 @@ def addroute(data):
     for subnet in subnets:        
         subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
         if subnet_key:
-            subnet_ip = subnet["subnet_key"].split("/")[0]
+            subnet_ip = subnet_key.split("/")[0]
             netmask = str(ipaddress.IPv4Network(subnet["destination"]).netmask)
             send_command(shell, f'ip route {subnet_ip} {netmask} {subnet["gateway"]}')
     send_command(shell, 'end')
