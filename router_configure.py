@@ -71,10 +71,12 @@ def addroute(data):
         
     send_command(shell, 'configure terminal')
     subnets = data["subnet_info"]
-    for subnet in subnets:
-        subnet_ip = subnet["subnet"].split("/")[0]
-        netmask = str(ipaddress.IPv4Network(subnet["subnet"]).netmask)
-        send_command(shell, f'ip route {subnet_ip} {netmask} {subnet["gateway"]}')
+    for subnet in subnets:        
+        subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
+        if subnet_key:
+            subnet_ip = subnet["subnet_key"].split("/")[0]
+            netmask = str(ipaddress.IPv4Network(subnet["destination"]).netmask)
+            send_command(shell, f'ip route {subnet_ip} {netmask} {subnet["gateway"]}')
     send_command(shell, 'end')
     # Save the configuration
     send_command(shell, 'write memory')    

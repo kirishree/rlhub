@@ -2236,7 +2236,6 @@ def addstaticroute_hub(request: HttpRequest):
         data = json.loads(request.body)
         routes = data["routes_info"]    
         for route in routes:
-            route["destination"] = route["subnet"]
             if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
                 response = {"message":"Error Invalid destination"}
                 return JsonResponse(response, safe=False) 
@@ -2383,17 +2382,17 @@ def delstaticroute_hub(request: HttpRequest):
     try:         
         data = json.loads(request.body)      
         print("delstatichub",data)
-        data["hub_wan_ip"] = "78.110.5.90"
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
-        if hub_info:
-            data["tunnel_ip"] = data["hub_wan_ip"]
-            data["router_username"] = hub_info["router_username"]
-            data["router_password"] = hub_info["router_password"]
-            status = router_configure.delstaticroute(data)
-            if status:
-                response = {"message": "Successfully route deleted"}
-            else:
-                response = {"message":"Error in deleting route"}
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                status = router_configure.delstaticroute(data)
+                if status:
+                    response = {"message": "Successfully route deleted"}
+                else:
+                    response = {"message":"Error in deleting route"}
         elif data["hub_wan_ip"] == hub_ip:
             subnet_info = data["routes_info"]
             with open("/etc/netplan/00-installer-config.yaml", "r") as f:
