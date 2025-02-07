@@ -59,6 +59,9 @@ coll_hub_info = db_tunnel["hub_info"]
 vrf1_ip = '10.200.202.0/24'
 url = "https://dev-api.cloudetel.com/api/v1/"
 hub_ip = config('HUB_IP')
+hub_location = "jeddah"
+hub_uuid = "reachlinkserver.net"
+hub_hostid = "10084"
 gretunnelnetwork = "10.200.202.0/24"
 gretunnelnetworkip = "10.200.202."
 hub_tunnel_endpoint = "10.200.202.2"
@@ -3189,10 +3192,17 @@ def hub_info(request: HttpRequest):
     try:
         print(request)
         response = {}
-        data = []     
-        active_hubs = 0
+        data = []
+        data.append({"hub_ip":hub_ip,
+                            "branch_location": hub_location,
+                            "hub_dialer_ip_cidr": hub_tunnel_endpoint,
+                            "hub_status": "active",
+                            "uuid": hub_uuid,
+                            "host_id": hub_hostid
+                            })     
+        active_hubs = 1
         inactive_hubs = 0
-        total_no_hubs = 0
+        total_no_hubs = 1
         organization_id = str(request.GET.get('organization_id'))
         with open("/root/reachlink/total_hubs.json", "r") as f:
             total_branches = json.load(f)
@@ -3214,6 +3224,7 @@ def hub_info(request: HttpRequest):
                     else:
                         inactive_hubs = inactive_hubs + 1
                     total_no_hubs = total_no_hubs + 1
+        
         response = {    "data":data,
                         "total_hubs":total_no_hubs,
                         "inactive_hubs":inactive_hubs,
