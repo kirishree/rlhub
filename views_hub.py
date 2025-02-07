@@ -3158,21 +3158,98 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
+def configured_address():
+    try:
+        interface_addresses= []
+        interface = psutil.net_if_addrs()        
+        for intfc_name in interface:  
+            if intfc_name == "gre0" or intfc_name == "gretap0" or intfc_name == "erspan0" or intfc_name =="lo":   
+                continue
+            addresses = interface[intfc_name]
+            for address in addresses:      
+                if address.family == 2:
+                    pre_len = IPAddress(address.netmask).netmask_bits()
+                    ipaddr_prefix = str(address.address)+"/"+str(pre_len)
+                    interface_addresses.append(ipaddr_prefix)
+    except Exception as e:
+        print(e)
+    return interface_addresses
+
+def create_vlan_interface(data):
+    try:
+        interface_addresses = configured_address()
+        for vlan_address in data["addresses"]:
+            for address in interface_addresses:
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(vlan_address.split("/")[0])
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring VLAN interface due to address conflict {vlan_address}"}]
+                    return JsonResponse(response, safe=False)
+        if os.path.exists("/etc/netplan/00-installer-config.yaml"):
+            # Open and read the Netplan configuration
+            with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+                network_config = yaml.safe_load(f)
+                f.close()           
+            # Ensure the `vlans` section exists
+            if "vlans" not in network_config["network"]:
+                network_config["network"]["vlans"] = {}
+
+            # Create the VLAN interface name
+            vlan_int_name = f"{data['link']}.{data['vlan_id']}"
+            if vlan_int_name not in network_config["network"]["vlans"]:
+            # Add VLAN configuration
+                network_config["network"]["vlans"][vlan_int_name] = {
+                                                                "id": int(data["vlan_id"]),
+                                                                "link": data["link"],
+                                                                "addresses": data["addresses"],
+                                                                "nameservers": {"addresses": data["nameservers"]},
+                                                                }
+
+                # Write the updated configuration back to the file
+                with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                    yaml.dump(network_config, f, default_flow_style=False)
+                os.system("netplan apply")
+                response = [{"message": f"Successfully configured VLAN Interface: {vlan_int_name}"}]
+            else:
+                response = [{"message": f"Error already VLAN: {vlan_int_name} exist."}]
+        else:
+            vlan_int_name = data["link"] + "." + str(data["vlan_id"])
+            cmd = f"sudo ip link add link {data['link']} name {vlan_int_name} type vlan id {str(data['vlan_id'])}"
+            result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )
+            for ip_addr in data["addresses"]:
+                cmd = f"sudo ip addr add {ip_addr} dev eth1.100"
+                result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )
+            cmd = f"sudo ip link set dev {vlan_int_name} up"
+            result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )
+            response = [{"message": f"Successfully configured VLAN Interface: {vlan_int_name}"}]
+
+    except Exception as e:
+        response = [{"message": f"Error while configuring VLAN interface with id {data['vlan_id']}: {e}"}]
+    return response
+
 @csrf_exempt
 def create_interface_hub(request):
     try:
         data = json.loads(request.body)
         #data["hub_wan_ip"] = "78.110.5.90"
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
-        if hub_info:
-            data["tunnel_ip"] = data["hub_wan_ip"]
-            data["router_username"] = hub_info["router_username"]
-            data["router_password"] = hub_info["router_password"]
-            if data["interface_type"].lower() == "vlan":
-                response = router_configure.createvlaninterface(data)
-            if data["interface_type"].lower() == "sub interface":
-                response = router_configure.createsubinterface(data)          
-           
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                if data["interface_type"].lower() == "vlan":
+                    response = router_configure.createvlaninterface(data)
+                if data["interface_type"].lower() == "sub interface":
+                    response = router_configure.createsubinterface(data) 
+        elif data["hub_wan_ip"] == hub_ip:
+            response = create_vlan_interface(data)        
     except Exception as e:
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
