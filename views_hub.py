@@ -3255,6 +3255,63 @@ def create_interface_hub(request):
     return JsonResponse(response, safe=False)
 
 @csrf_exempt
+def create_vlan_interface_hub(request):
+    try:
+        data = json.loads(request.body)
+        #data["hub_wan_ip"] = "78.110.5.90"
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.createvlaninterface(data)
+                if data["interface_type"].lower() == "sub interface":
+                    response = router_configure.createsubinterface(data) 
+        elif data["hub_wan_ip"] == hub_ip:
+            response = create_vlan_interface(data)        
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def create_sub_interface_hub(request):
+    try:
+        data = json.loads(request.body)
+        #data["hub_wan_ip"] = "78.110.5.90"
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.createsubinterface(data) 
+        elif data["hub_wan_ip"] == hub_ip:
+            response = create_vlan_interface(data)        
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def create_loopback_interface_hub(request):
+    try:
+        data = json.loads(request.body)
+        #data["hub_wan_ip"] = "78.110.5.90"
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.createloopbackinterface(data) 
+        elif data["hub_wan_ip"] == hub_ip:
+            response = [] 
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+
+@csrf_exempt
 def get_configured_hub(request):
     try:
         hubips = []

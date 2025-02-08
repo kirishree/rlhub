@@ -19,6 +19,7 @@ from reach.views import activebranches, inactivebranches, spoke_update, add_cisc
 from reach.views import lan_info, lan_config, dhcp_config, traceroute_hub, traceroute_spoke, add_ip_rule_spoke, get_routing_table_spoke, get_interface_details_spoke, create_vlan_interface_spoke, interface_config_spoke
 from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_info_spoke, addstaticroute_hub, delstaticroute_hub, del_staticroute_spoke, create_subinterface_interface_spoke, get_interface_details_hub, add_cisco_hub
 from reach.views import create_interface_hub, get_configured_hub, hub_info, get_ciscospoke_config, get_ciscohub_config
+from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('add_ip_rule_spoke', add_ip_rule_spoke, name='add_ip_rule_spoke'),
@@ -64,4 +65,8 @@ urlpatterns = [
     path('hub_info', hub_info, name='hub_info'),
     path('get_ciscospoke_config', get_ciscospoke_config, name='get_ciscospoke_config'),
     path('get_ciscohub_config', get_ciscohub_config, name='get_ciscohub_config'),
+    path('create_vlan_interface_hub', create_vlan_interface_hub, name='create_vlan_interface_hub'),
+    path('create_sub_interface_hub', create_sub_interface_hub, name='create_sub_interface_hub'),
+    path('create_loopback_interface_hub', create_loopback_interface_hub, name='create_loopback_interface_hub'),
+
 ]
