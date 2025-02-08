@@ -22,7 +22,7 @@ data = []
 #        f.close()
 os.system("cp views_hub.py /root/reachlink/reach/views.py")
 #os.system("cp com_router_config.py /root/reachlink/")
-#os.system("cp urls_hub.py /root/reachlink/reachlink/urls.py")
+os.system("cp urls_hub.py /root/reachlink/reachlink/urls.py")
 #os.system("cp reachlinkst.py /root/reachlink/")
 #os.system("systemctl restart reachlink_test")
 #os.system("cp reachlink_config.exe /root/reachlink/")
