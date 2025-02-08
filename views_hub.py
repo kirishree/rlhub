@@ -2333,13 +2333,15 @@ def get_interface_details_hub(request):
     try:
         data = json.loads(request.body)  
         print(data)  
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of get interface:{public_ip}")
         if "_ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                print(data)
                 response = router_configure.get_interface_cisco(data)
             else:
                 response = []
@@ -3233,26 +3235,6 @@ def create_vlan_interface(data):
         response = [{"message": f"Error while configuring VLAN interface with id {data['vlan_id']}: {e}"}]
     return response
 
-@csrf_exempt
-def create_interface_hub(request):
-    try:
-        data = json.loads(request.body)
-        #data["hub_wan_ip"] = "78.110.5.90"
-        if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
-            if hub_info:
-                data["tunnel_ip"] = data["hub_wan_ip"]
-                data["router_username"] = hub_info["router_username"]
-                data["router_password"] = hub_info["router_password"]
-                if data["interface_type"].lower() == "vlan":
-                    response = router_configure.createvlaninterface(data)
-                if data["interface_type"].lower() == "sub interface":
-                    response = router_configure.createsubinterface(data) 
-        elif data["hub_wan_ip"] == hub_ip:
-            response = create_vlan_interface(data)        
-    except Exception as e:
-        response = [{"message": f"Error: {e}"}]
-    return JsonResponse(response, safe=False)
 
 @csrf_exempt
 def create_vlan_interface_hub(request):
