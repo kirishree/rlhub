@@ -1557,6 +1557,8 @@ def spoke_update(request: HttpRequest):
 def branch_info(request: HttpRequest):
     try:
         print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of branch info:{public_ip}")
         response = {}
         data = []     
         active_branches = 0
@@ -3305,6 +3307,8 @@ def get_configured_hub(request):
 def hub_info(request: HttpRequest):
     try:
         print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of hub_info:{public_ip}")
         response = {}
         data = []
         data.append({"hub_ip":hub_ip,
