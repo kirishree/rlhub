@@ -2336,7 +2336,7 @@ def addstaticroute_hub(request: HttpRequest):
     return JsonResponse(response, safe=False) 
 
 @csrf_exempt
-@ratelimit(key='ip', rate='2/m', method='POST', block=True)
+#@ratelimit(key='ip', rate='2/m', method='POST', block=True)
 def get_interface_details_hub(request):
     try:
         data = json.loads(request.body)  
