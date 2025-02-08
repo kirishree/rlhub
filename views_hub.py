@@ -2425,7 +2425,7 @@ def get_interface_details_hub(request):
     except Exception as e:
         print(e)
         response = []
-#    print("hub interface details", response)
+    print("hub interface details", response)
     return JsonResponse(response, safe=False)
 
 @csrf_exempt
