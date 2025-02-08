@@ -1942,6 +1942,8 @@ def get_routing_table_spoke(request):
 def get_interface_details_spoke(request):
     try:
         data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of branch info:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
