@@ -266,9 +266,9 @@ def get_interface_cisco(data):
         # Send the command and get the output
         output = get_command_output(shell, 'show ip int brief')
         interfacedetails = output.split("\n")[2:-1]
-        print(interfacedetails)
+        
         for intfcinfo in interfacedetails:
-            print(intfcinfo)
+            
             intfcinfo = intfcinfo.strip()
             # Clean up extra spaces or non-visible characters using regex
             intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
