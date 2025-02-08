@@ -11,6 +11,7 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 
 from django.http import HttpRequest, HttpResponse,  JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django_ratelimit.decorators import ratelimit
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -2335,6 +2336,7 @@ def addstaticroute_hub(request: HttpRequest):
     return JsonResponse(response, safe=False) 
 
 @csrf_exempt
+@ratelimit(key='ip', rate='5/m', method='POST', block=True)
 def get_interface_details_hub(request):
     try:
         data = json.loads(request.body)  
