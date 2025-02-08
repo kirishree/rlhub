@@ -3266,8 +3266,6 @@ def create_vlan_interface_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 response = router_configure.createvlaninterface(data)
-                if data["interface_type"].lower() == "sub interface":
-                    response = router_configure.createsubinterface(data) 
         elif data["hub_wan_ip"] == hub_ip:
             response = create_vlan_interface(data)        
     except Exception as e:
