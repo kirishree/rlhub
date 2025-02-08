@@ -1141,6 +1141,8 @@ def get_routing_table_ubuntu(request):
 def get_routing_table(request):
     try:
         data = json.loads(request.body) 
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of hub routing table: {public_ip}")
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
