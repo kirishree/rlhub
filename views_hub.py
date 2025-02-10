@@ -619,7 +619,10 @@ def set_ass(request: HttpRequest):
 @csrf_exempt
 def deactivate(request: HttpRequest):
     try:
-        data = json.loads(request.body)   
+        data = json.loads(request.body) 
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of deactivate:{public_ip}")  
         print(data)
         response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
         tunnel_ip = data["tunnel_ip"].split("/")[0]
@@ -672,7 +675,10 @@ def deactivate(request: HttpRequest):
 @csrf_exempt
 def activate(request: HttpRequest):
     try:       
-        data = json.loads(request.body)        
+        data = json.loads(request.body)      
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of activate:{public_ip}")  
         print(data)
         response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
         tunnel_ip = data["tunnel_ip"].split("/")[0]
@@ -807,6 +813,9 @@ def prefix_length_to_netmask(prefix_length):
 @csrf_exempt 
 def diagnostics(request: HttpRequest):
   data = json.loads(request.body)  
+  # Capture the public IP from the request headers
+  public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+  print(f"requested ip of diagnostics:{public_ip}")
   ip_addresses = [data["subnet"].split("/")[0]]
 #  prefix_length =int(data["subnet"].split("/")[1])
  # netmask = prefix_length_to_netmask(prefix_length)
@@ -1027,6 +1036,9 @@ def background_deletesubnet(data):
 def delsubnet(request: HttpRequest):
     try:
         data = json.loads(request.body)   
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of delsubnet:{public_ip}")
         response = {"message":f"Successfully deleted {len(data['subnet_info'])} subnet(s)"}  
         subnets = data["subnet_info"]
         tunnel_ip = data["tunnel_ip"].split("/")[0] 
@@ -1228,6 +1240,9 @@ def ping_spoke(request: HttpRequest):
     try: 
 
         data = json.loads(request.body) 
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of ping spoke:{public_ip}")
         if ".net" not in data["uuid"]:       
             print(data)
             route_add = {"subnet": data["subnet"]}
@@ -1286,7 +1301,10 @@ def ping_spoke(request: HttpRequest):
 @csrf_exempt
 def autofix(request: HttpRequest):  
     try:       
-        data = json.loads(request.body)        
+        data = json.loads(request.body)  
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of autofix:{public_ip}")      
         print(data)
         response = {"message": f"Successfully fixed the Gateway issue: {data['tunnel_ip']}"}
         route_add = {"default_gw": hub_tunnel_endpoint}
@@ -1347,6 +1365,9 @@ def deactivate_spoke(data):
 @csrf_exempt
 def onboard_block(request: HttpRequest):
     data = json.loads(request.body)
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of onboard block:{public_ip}")
     response = [{"message": "Organization spokes disconnected successfully"}]
     with open("/root/reachlink/total_branches.json", "r") as f:
        total_branches = json.load(f)
@@ -1404,7 +1425,10 @@ def activate_spoke(data):
     return 
 @csrf_exempt
 def onboard_unblock(request: HttpRequest):
-    data = json.loads(request.body)    
+    data = json.loads(request.body)   
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of onboard unblock:{public_ip}") 
     response = [{"message": "Organization spokes activated successfully"}]
     with open("/root/reachlink/total_branches.json", "r") as f:
        total_branches = json.load(f)
@@ -1503,6 +1527,9 @@ def background_delete(data1):
 @csrf_exempt
 def onboard_delete(request: HttpRequest):
     data = json.loads(request.body)
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of onboard delete:{public_ip}")
     response = [{"message": "Organization spokes disconnected successfully"}]
     background_thread = threading.Thread(target=background_delete, args=(data,))
     background_thread.start()    
@@ -1693,6 +1720,9 @@ def add_cisco_deviceold(request: HttpRequest):
 @csrf_exempt
 def traceroute_hub(request):
     data = json.loads(request.body)
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of traceroute hub:{public_ip}")
     host_ip = data.get('trace_ip', None)
     if host_ip:           
             result1 = subprocess.run(['traceroute', '-d', host_ip], capture_output=True, text=True)
@@ -1704,6 +1734,9 @@ def traceroute_hub(request):
 @csrf_exempt
 def traceroute_spoke(request):
     data = json.loads(request.body)
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of traceroute spoke:{public_ip}")
     host_ip = data.get('trace_ip', None)
     if "microtek" in data["uuid"]:
         router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
@@ -1757,6 +1790,9 @@ def traceroute_spoke(request):
 def lan_info(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of get lan info:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1793,6 +1829,9 @@ def lan_info(request):
 def lan_config(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of lan config:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1828,6 +1867,9 @@ def lan_config(request):
 def dhcp_config(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of dhcp_config:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1863,6 +1905,9 @@ def dhcp_config(request):
 def add_ip_rule_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of add ip rule:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1898,6 +1943,9 @@ def add_ip_rule_spoke(request):
 def get_routing_table_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of get routing table spoke:{public_ip}")
         print(data)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
@@ -1946,7 +1994,7 @@ def get_interface_details_spoke(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        print(f"requested ip of branch info:{public_ip}")
+        print(f"requested ip of get interface details spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1990,6 +2038,9 @@ def get_interface_details_spoke(request):
 def create_vlan_interface_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of create vlan interface:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2035,6 +2086,9 @@ def create_vlan_interface_spoke(request):
 def interface_config_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of interface config spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2074,6 +2128,9 @@ def interface_config_spoke(request):
 def vlan_interface_delete_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of vlan interface delete spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2114,6 +2171,9 @@ def vlan_interface_delete_spoke(request):
 def add_route_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of add route spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2157,6 +2217,9 @@ def add_route_spoke(request):
 def get_pbr_info_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of get pbr info spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"                   
@@ -2247,6 +2310,9 @@ def configurepbr_spoke_new(realipdata):
 def addstaticroute_hub(request: HttpRequest):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of get static route hub:{public_ip}")
         routes = data["routes_info"]    
         for route in routes:
             if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
@@ -2343,7 +2409,7 @@ def get_interface_details_hub(request):
         print(data)  
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        print(f"requested ip of get interface:{public_ip}")
+        print(f"requested ip of get interface hub:{public_ip}")
         if "_ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
@@ -2431,6 +2497,9 @@ def get_interface_details_hub(request):
 @csrf_exempt
 def delstaticroute_hub(request: HttpRequest):
     response = [{"message":"Successfully deleted"}]
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of del static route hub:{public_ip}")
     try:         
         data = json.loads(request.body)      
         print("delstatichub",data)
@@ -2478,6 +2547,9 @@ def delstaticroute_hub(request: HttpRequest):
 def del_staticroute_spoke(request):
     try:
         data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of del static route spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2522,7 +2594,10 @@ def del_staticroute_spoke(request):
 @csrf_exempt
 def addsubnet(request: HttpRequest):
     try:
-        data = json.loads(request.body)         
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of addsubnet:{public_ip}")         
         subnets = data["subnet_info"]
         tunnel_ip = data["tunnel_ip"].split("/")[0] 
         tunnel_info = coll_tunnel_ip.find_one({"tunnel_ip": data['tunnel_ip']}) 
@@ -2700,6 +2775,9 @@ def get_dialer_ip(devicename):
 @csrf_exempt
 def add_cisco_device_spoke(request: HttpRequest):
     data = json.loads(request.body)    
+    # Capture the public IP from the request headers
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of add cisco device spoke:{public_ip}")
     data["uuid"] = data['system_name'] + "_cisco.net"
     print(data)
     data["username"] = "none"
@@ -2833,6 +2911,8 @@ def add_cisco_device_spoke(request: HttpRequest):
 def create_subinterface_interface_spoke(request):
     try:
         data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of create sub interface spoke:{public_ip}")
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2948,7 +3028,9 @@ def generate_router_password_cisco():
 
 @csrf_exempt
 def add_cisco_device(request: HttpRequest):
-    data = json.loads(request.body)   
+    data = json.loads(request.body)  
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of add cisco device spoke:{public_ip}") 
     check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
     if not check_hub_configured:
         json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
@@ -3071,6 +3153,8 @@ def add_cisco_device(request: HttpRequest):
 @csrf_exempt
 def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of add cisco device hub:{public_ip}")
     subnet = ipaddress.IPv4Network(data["hub_dialer_ip"], strict=False)  # Allow non-network addresses
     hub_dialer_netmask = str(subnet.netmask) 
     # Extract the network address
@@ -3248,6 +3332,8 @@ def create_vlan_interface(data):
 def create_vlan_interface_hub(request):
     try:
         data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of add vlan hub:{public_ip}")
         #data["hub_wan_ip"] = "78.110.5.90"
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
@@ -3266,6 +3352,8 @@ def create_vlan_interface_hub(request):
 def create_sub_interface_hub(request):
     try:
         data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of add sub interface hub:{public_ip}")
         #data["hub_wan_ip"] = "78.110.5.90"
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
@@ -3284,6 +3372,8 @@ def create_sub_interface_hub(request):
 def create_loopback_interface_hub(request):
     try:
         data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of add loopback hub:{public_ip}")
         #data["hub_wan_ip"] = "78.110.5.90"
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
@@ -3366,7 +3456,9 @@ def hub_info(request: HttpRequest):
 
 @csrf_exempt
 def get_ciscohub_config(request: HttpRequest):
-    data = json.loads(request.body)  
+    data = json.loads(request.body) 
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of cisco hub config:{public_ip}") 
     current_datetime = datetime.now()
     try:
         organization_id = get_organization_id(data)
@@ -3407,7 +3499,9 @@ def get_ciscohub_config(request: HttpRequest):
 
 @csrf_exempt
 def get_ciscospoke_config(request: HttpRequest):
-    data = json.loads(request.body)  
+    data = json.loads(request.body) 
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    print(f"requested ip of get cisco spoke config:{public_ip}") 
     current_datetime = datetime.now()
     try:
         organization_id = get_organization_id(data)
