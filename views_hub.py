@@ -3541,3 +3541,53 @@ def get_ciscospoke_config(request: HttpRequest):
         print(f"Exception while get_hub_config end point: {e}")
         response = {"message": "Some internal error. Pl try again"}
     return JsonResponse(response)
+@csrf_exempt
+def vlan_interface_delete_hub(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of vlan interface delete hub:{public_ip}")
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.deletevlaninterface(data) 
+        elif data["hub_wan_ip"] == hub_ip:
+            response = [] 
+            intfc_name = data["intfc_name"]
+            if os.path.exists("/etc/netplan/00-installer-config.yaml"):
+                # Open and read the Netplan configuration
+                with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+                    network_config = yaml.safe_load(f)
+                    f.close()             
+                if "." in data["intfc_name"]:
+                    # Ensure the `vlans` section exists
+                    if "vlans" not in network_config["network"]:
+                        response = [{"message": f"No such VLAN available"}]
+                    # Add VLAN configuration
+                    else:
+                        if intfc_name in network_config["network"]["vlans"]:
+                            del network_config["network"]["vlans"][intfc_name]          
+                        response = [{"message": f"Successfully deleted the VLAN Interface: {intfc_name}"}]                                              
+                # Write the updated configuration back to the file
+                with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                    yaml.dump(network_config, f, default_flow_style=False)
+                    f.close()
+                os.system("netplan apply")            
+                cmd = f"sudo ip link del {intfc_name}"
+                result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )    
+            else:            
+                cmd = f"sudo ip link del {intfc_name}"
+                result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )            
+                response = [{"message": f"Successfully  deleted VLAN Interface: {intfc_name}"}]
+    except Exception as e:
+        print(e)
+        response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
+    return JsonResponse(response, safe=False)
