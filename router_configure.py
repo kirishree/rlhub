@@ -274,6 +274,7 @@ def get_interface_cisco(data):
             intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
  #           print(f"After regex cleanup: '{intfcinfo}'")
             intfcname = intfcinfo.split(" ")[0]
+            intfctype = "-"
             if "ethernet" in intfcname.lower():
                 intfctype = "ether"
             elif "vlan" in intfcname.lower():
@@ -288,6 +289,8 @@ def get_interface_cisco(data):
                 intfctype = "BVI"
             if "." in intfcname:
                 intfctype = "SubInterface"
+            if "virtual-template" in intfcname.lower():
+                intfctype = "Virtual"
             if "virtual-access" not in intfcname.lower():
                 intfcdetails.append({"interface_name": intfcinfo.split(" ")[0],
                                  "type": intfctype,
