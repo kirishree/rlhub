@@ -2072,12 +2072,135 @@ def create_vlan_interface_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            if data["interface_type"].lower() == "vlan":
-                response = router_configure.createvlaninterface(data)
-            if data["interface_type"].lower() == "sub interface":
-                response = router_configure.createsubinterface(data)
+            response = router_configure.createvlaninterface(data)         
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def create_sub_interface_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of create vlan interface:{public_ip}")
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"} 
            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "create_vlan_interface", data=json_data, headers=headers)  # Timeout set to 5 seconds
+                               
+                if response.status_code == 200:           
+                    print(response.text)
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)                
+                               
+                else:
+                    response = {"message":"Error while configuring VLAN interface in spoke"}
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+        elif "microtek" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            interface_details = microtek_configure.createvlaninterface(data)                 
+            return JsonResponse(interface_details,safe=False) 
+        elif "cisco" in data["uuid"]:
+            print("vlan data", data)
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = router_configure.createsubinterface(data)      
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def create_loopback_interface_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of create vlan interface:{public_ip}")
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"} 
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "create_vlan_interface", data=json_data, headers=headers)  # Timeout set to 5 seconds
+                if response.status_code == 200:           
+                    print(response.text)
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)     
+                else:
+                    response = {"message":"Error while configuring VLAN interface in spoke"}
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+        elif "microtek" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = microtek_configure.createvlaninterface(data)   
+            response = [{"message": "Loopback Interface created successfully"}]              
+            return JsonResponse(response,safe=False) 
+        elif "cisco" in data["uuid"]:
+            print("vlan data", data)
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = router_configure.createloopbackinterface(data)      
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def create_tunnel_interface_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of create vlan interface:{public_ip}")
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"} 
            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "create_tunnel_interface", data=json_data, headers=headers)  # Timeout set to 5 seconds
+                               
+                if response.status_code == 200:           
+                    print(response.text)
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)                
+                               
+                else:
+                    response = {"message":"Error while configuring VLAN interface in spoke"}
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+        elif "microtek" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = microtek_configure.createtunnelinterface(data)   
+            interface_details = [{"message":"Tunnel interface created successfully"}]              
+            return JsonResponse(interface_details,safe=False) 
+        elif "cisco" in data["uuid"]:
+            print("vlan data", data)
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = router_configure.createtunnelinterface(data)      
     except Exception as e:
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
@@ -2906,51 +3029,6 @@ def add_cisco_device_spoke(request: HttpRequest):
     response = HttpResponse(content_type='application/zip')
     response['X-Message'] = json.dumps(json_response)
     return response
-
-@csrf_exempt
-def create_subinterface_interface_spoke(request):
-    try:
-        data = json.loads(request.body)
-        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        print(f"requested ip of create sub interface spoke:{public_ip}")
-        if ".net" not in data.get("uuid", ""):            
-            tunnel_ip = data["tunnel_ip"].split("/")[0] 
-            url = "http://" + tunnel_ip + ":5000/"
-            # Set the headers to indicate that you are sending JSON data
-            headers = {"Content-Type": "application/json"} 
-           
-            json_data = json.dumps(data)           
-            try:
-                response = requests.post(url + "create_sub_interface", data=json_data, headers=headers)  # Timeout set to 5 seconds
-                               
-                if response.status_code == 200:           
-                    print(response.text)
-                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    response = json.loads(get_response)                
-                               
-                else:
-                    response = [{"message":"Error while configuring sub-interface in spoke"}]
-            except requests.exceptions.RequestException as e:
-                print("disconnected")
-                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
-        elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.createsubinterface(data)                 
-            return JsonResponse(interface_details,safe=False) 
-        elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            status = router_configure.createsubinterface(data)
-            if status:
-                response = [{"message": "Successfully sub-interface created"}]
-            else:
-                response = [{"message":"Error in creating sub-interfaces"}]
-    except Exception as e:
-        response = [{"message": f"Error: {e}"}]
-    return JsonResponse(response, safe=False)
 
 def generate_dialerip_cisco(networkip, netmaskip):
     network = ipaddress.IPv4Network(f"{networkip}/{netmaskip}", strict=False)

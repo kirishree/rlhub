@@ -17,10 +17,10 @@ from reach.views import branch_info, get_routing_table, addsubnet, diagnostics
 from reach.views import set_ass, activate, deactivate, totalbranches, delsubnet, onboard_delete
 from reach.views import activebranches, inactivebranches, spoke_update, add_cisco_device
 from reach.views import lan_info, lan_config, dhcp_config, traceroute_hub, traceroute_spoke, add_ip_rule_spoke, get_routing_table_spoke, get_interface_details_spoke, create_vlan_interface_spoke, interface_config_spoke
-from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_info_spoke, addstaticroute_hub, delstaticroute_hub, del_staticroute_spoke, create_subinterface_interface_spoke, get_interface_details_hub, add_cisco_hub
+from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_info_spoke, addstaticroute_hub, delstaticroute_hub, del_staticroute_spoke, get_interface_details_hub, add_cisco_hub
 from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get_ciscohub_config
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub
-from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub
+from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('add_ip_rule_spoke', add_ip_rule_spoke, name='add_ip_rule_spoke'),
@@ -58,7 +58,6 @@ urlpatterns = [
     path('addstaticroute_hub', addstaticroute_hub, name='addstaticroute_hub'),
     path('deletestaticroute_hub', delstaticroute_hub, name='delstaticroute_hub'),
     path('del_staticroute_spoke', del_staticroute_spoke, name='del_staticroute_spoke'),
-    path('create_subinterface_interface_spoke', create_subinterface_interface_spoke, name='create_subinterface_interface_spoke'),
     path('get_interface_details_hub', get_interface_details_hub, name='get_interface_details_hub'),
     path('add_cisco_hub', add_cisco_hub, name='add_cisco_hub'),
     path('get_configured_hub', get_configured_hub, name='get_configured_hub'),
@@ -70,4 +69,7 @@ urlpatterns = [
     path('create_loopback_interface_hub', create_loopback_interface_hub, name='create_loopback_interface_hub'),
     path('vlan_interface_delete_hub', vlan_interface_delete_hub, name='vlan_interface_delete_hub'),
     path('create_tunnel_interface_hub', create_tunnel_interface_hub, name='create_tunnel_interface_hub'),
+    path('create_loopback_interface_spoke', create_loopback_interface_spoke, name='create_loopback_interface_spoke'),
+    path('create_sub_interface_spoke', create_sub_interface_spoke, name='create_sub_interface_spoke'),
+    path('create_tunnel_interface_spoke', create_tunnel_interface_spoke, name='create_tunnel_interface_spoke'),
 ]
