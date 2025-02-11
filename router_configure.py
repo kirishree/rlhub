@@ -631,3 +631,57 @@ def deletevlaninterface(data):
     except Exception as e:
         print(e)
     return [{"message": f"Succesfully interface {data['intfc_name']} deleted"}]
+
+def createtunnelinterface(data):
+    try:
+        # Define the router details
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        tunnel_ip = data["addresses"][0].split("/")[0]
+        subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+        netmask = str(subnet.netmask)
+
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'interface {data["tunnel_intfc_name"]}')
+        send_command(shell, f'ip address {tunnel_ip} {netmask}')
+        send_command(shell, "ip tcp adjust-mss 1450")
+        send_command(shell, f"tunnel source {data['link']}")
+        send_command(shell, f"tunnel destination {data['destination_ip']}")
+        send_command(shell, 'no shutdown')
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')    
+        # Disable paging
+        get_command_output(shell, 'terminal length 0', wait_time=1)
+
+        # Send the command and get the output
+        output1 = get_command_output(shell, 'show ip int brief')
+        # Validate Interface Existence
+        if data["tunnel_intfc_name"] not in output1:
+            return [{"message": f"Error: Tunnel interface {data['tunnel_intfc_name']} not found after creation"}]
+
+        # Close the SSH connection
+        ssh_client.close()
+    except Exception as e:
+        print(e)
+    return [{"message": f"Succesfully tunnel interface {data['tunnel_intfc_name']} created"}]

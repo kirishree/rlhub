@@ -3383,7 +3383,71 @@ def create_loopback_interface_hub(request):
                 data["router_password"] = hub_info["router_password"]
                 response = router_configure.createloopbackinterface(data) 
         elif data["hub_wan_ip"] == hub_ip:
-            response = [] 
+            response = [{"message":"Loopback interface created successfully"}] 
+    except Exception as e:
+        response = [{"message": f"Error: {e}"}]
+    return JsonResponse(response, safe=False)
+
+def create_tunnel_interface(data):
+    try:
+        interface_addresses = configured_address()
+        for vlan_address in data["addresses"]:
+            for address in interface_addresses:
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(vlan_address.split("/")[0])
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring VLAN interface due to address conflict {vlan_address}"}]
+                    return JsonResponse(response, safe=False)
+        if os.path.exists("/etc/netplan/00-installer-config.yaml"):
+            # Open and read the Netplan configuration
+            with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+                network_config = yaml.safe_load(f)
+                f.close()           
+            # Ensure the `vlans` section exists
+            if "tunnels" not in network_config["network"]:
+                network_config["network"]["tunnels"] = {}
+
+            # Create the VLAN interface name
+            
+            if data["tunnel_intfc_name"] not in network_config["network"]["tunnels"]:
+            # Add VLAN configuration
+                network_config["network"]["tunnels"][data['tunnel_intfc_name']] = {
+                                                                "local": "any",
+                                                                "mode": "gre",
+                                                                "addresses": data["addresses"],
+                                                                "mtu":"1476",
+                                                                "remote": data["destination_ip"]                                                                
+                                                                }
+
+                # Write the updated configuration back to the file
+                with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                    yaml.dump(network_config, f, default_flow_style=False)
+                os.system("netplan apply")
+                response = [{"message": f"Successfully configured tunnel Interface: {data['tunnel_intfc_name']}"}]
+            else:
+                response = [{"message": f"Error already interface: {data['tunnel_intfc_name']} exist."}]
+        
+    except Exception as e:
+        response = [{"message": f"Error while configuring tunnel interface with id {data['tunnel_intfc_name']}: {e}"}]
+    return response
+
+
+@csrf_exempt
+def create_tunnel_interface_hub(request):
+    try:
+        data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of add loopback hub:{public_ip}")
+        #data["hub_wan_ip"] = "78.110.5.90"
+        if "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = router_configure.createtunnelinterface(data) 
+        elif data["hub_wan_ip"] == hub_ip:
+            response = create_tunnel_interface(data)            
     except Exception as e:
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
