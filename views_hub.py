@@ -3554,7 +3554,9 @@ def vlan_interface_delete_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.deletevlaninterface(data) 
+                print(data)
+                response = router_configure.deletevlaninterface(data)
+                print(response) 
         elif data["hub_wan_ip"] == hub_ip:
             response = [] 
             intfc_name = data["intfc_name"]
@@ -3590,4 +3592,5 @@ def vlan_interface_delete_hub(request):
     except Exception as e:
         print(e)
         response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
+    print(response)
     return JsonResponse(response, safe=False)
