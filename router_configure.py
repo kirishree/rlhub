@@ -676,6 +676,7 @@ def createtunnelinterface(data):
 
         # Send the command and get the output
         output1 = get_command_output(shell, 'show ip int brief')
+        print(output1)
         # Validate Interface Existence
         if data["tunnel_intfc_name"] not in output1:
             return [{"message": f"Error: Tunnel interface {data['tunnel_intfc_name']} not found after creation"}]
