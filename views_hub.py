@@ -3685,6 +3685,7 @@ def get_ciscospoke_config(request: HttpRequest):
         print(f"Exception while get_hub_config end point: {e}")
         response = {"message": "Some internal error. Pl try again"}
     return JsonResponse(response)
+
 @csrf_exempt
 def vlan_interface_delete_hub(request):
     try:
@@ -3737,4 +3738,83 @@ def vlan_interface_delete_hub(request):
         print(e)
         response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
     print(response)
+    return JsonResponse(response, safe=False)
+
+def interface_config(data):  
+    try:
+        if data["intfc_name"] == "enp0s3" or data["intfc_name"] == "Base Tunnel" or data["intfc_name"] == "Overlay Tunnel":
+            response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
+            print(response)
+            return response
+        for addr in data["current_addresses"]:
+            os.system(f"sudo ip addr del {addr} dev {data['intfc_name']}")
+        interface_addresses = configured_address()
+        #print(interface_address)
+        for int_addr in data["new_addresses"]:
+            for address in interface_addresses:
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
+                    return JsonResponse(response, safe=False)
+        intfc_name = data["intfc_name"]
+        if os.path.exists("/etc/netplan/00-installer-config.yaml"):
+            # Open and read the Netplan configuration
+            with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+                network_config = yaml.safe_load(f)
+                f.close()             
+            if "." in data["intfc_name"]:
+                # Ensure the `vlans` section exists
+                if "vlans" not in network_config["network"]:
+                    network_config["network"]["vlans"] = {}
+                # Add VLAN configuration
+                network_config["network"]["vlans"][intfc_name]["addresses"] = data["new_addresses"]                
+            elif "enp" in data["intfc_name"]:                
+                network_config["network"]["ethernets"][intfc_name]["addresses"] = data["new_addresses"]                                                                       
+            
+
+            # Write the updated configuration back to the file
+            with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                yaml.dump(network_config, f, default_flow_style=False)
+            os.system("netplan apply")
+            response = [{"message": f"Successfully configured Interface: {intfc_name}"}]
+        else:            
+            for ip_addr in data["addresses"]:
+                cmd = f"sudo ip addr add {ip_addr} dev {intfc_name}"
+                result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )            
+            response = [{"message": f"Successfully configured Interface: {intfc_name}"}]
+    except Exception as e:
+        print(e)
+        response = [{"message": f"Error while configuring interface with  {data['intfc_name']}: {e}"}]
+        print("excep", response)
+    return JsonResponse(response, safe=False)
+@csrf_exempt
+def interface_config_hub(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of interface config spoke:{public_ip}")
+        if data["hub_wan_ip"] == hub_ip:
+            response = interface_config(data)  
+               
+        elif "microtekhub" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.interfaceconfig(data)                 
+            
+        elif "ciscohub" in data["uuid"]:
+            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                print(data)
+            response = router_configure.interfaceconfig(data)
+            print(response)
+    except Exception as e:
+        response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
