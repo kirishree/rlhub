@@ -3491,7 +3491,7 @@ def create_tunnel_interface(data):
             if data["tunnel_intfc_name"] not in network_config["network"]["tunnels"]:
             # Add VLAN configuration
                 network_config["network"]["tunnels"][data['tunnel_intfc_name']] = {
-                                                                "local": "any",
+                                                                "local": "0.0.0.0",
                                                                 "mode": "gre",
                                                                 "addresses": data["addresses"],
                                                                 "mtu":"1476",
