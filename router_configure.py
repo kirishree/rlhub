@@ -686,3 +686,77 @@ def createtunnelinterface(data):
     except Exception as e:
         print(e)
     return [{"message": f"Succesfully tunnel interface {data['tunnel_intfc_name']} created"}]
+
+def interfaceconfig(data):
+    try:
+        # Define the router details
+        if data["intfc_name"].lower() == "fastethernet4" or data["intfc_name"].lower() == "dialer1":
+            response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
+            return response
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        send_command(shell, "configure terminal")
+        send_command(shell, f"interface {data["intfc_name"]}")
+        send_command(shell, "no ip address")
+        send_command(shell, 'end')
+        # Disable paging
+        get_command_output(shell, 'terminal length 0', wait_time=1)
+        # Send the command and get the output
+        output = get_command_output(shell, 'show ip int brief')
+        interfacedetails = output.split("\n")[2:-1]
+        interface_addresses = [] 
+        for intfcinfo in interfacedetails:            
+            intfcinfo = intfcinfo.strip()
+            # Clean up extra spaces or non-visible characters using regex
+            intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
+            interface_addresses.append(intfcinfo.split(" ")[1]) 
+        for int_addr in data["new_addresses"]:
+            for address in interface_addresses:
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
+                    ssh_client.close()            
+                    return response
+        send_command(shell, "configure terminal")
+        send_command(shell, f"interface {data["intfc_name"]}") 
+        interface_ip = data["addresses"][0].split("/")[0]
+        subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+        netmask = str(subnet.netmask)
+        send_command(shell, f"ip address {interface_ip} {netmask}")   
+        if len(data['new_addresses']) > 1:
+            for newaddr in data["new_addresses"][1:0]:
+                interface_ip = newaddr[0].split("/")[0]
+                subnet = ipaddress.IPv4Network(newaddr, strict=False)  # Allow non-network addresses
+                netmask = str(subnet.netmask)
+                send_command(shell, f"ip address {interface_ip} {netmask} sec")   
+        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')    
+        # Close the SSH connection
+        ssh_client.close()
+    except Exception as e:
+        response = [{"message": f"Error while configuring the interface {data['intfc_name']} "}]
+        print(e)
+    return response

@@ -2241,7 +2241,7 @@ def interface_config_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            #status = router_configure.addroute(data)
+            status = router_configure.interfaceconfig(data)
             response = {"message":"Dummy"}
     except Exception as e:
         response = {"message": f"Error: {e}"}
