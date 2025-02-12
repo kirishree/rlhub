@@ -741,6 +741,7 @@ def interfaceconfig(data):
                     return response
         send_command(shell, "configure terminal")
         send_command(shell, f"interface {data['intfc_name']}") 
+        send_command(shell, "no switchport")
         interface_ip = data["new_addresses"][0].split("/")[0]
         subnet = ipaddress.IPv4Network(data["new_addresses"][0], strict=False)  # Allow non-network addresses
         netmask = str(subnet.netmask)
@@ -752,6 +753,7 @@ def interfaceconfig(data):
                 netmask = str(subnet.netmask)
                 send_command(shell, f"ip address {interface_ip} {netmask} sec")   
         response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+        send_command(shell, "no shutdown")
         send_command(shell, 'end')
         # Save the configuration
         send_command(shell, 'write memory')    
