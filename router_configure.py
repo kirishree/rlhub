@@ -729,7 +729,8 @@ def interfaceconfig(data):
             intfcinfo = intfcinfo.strip()
             # Clean up extra spaces or non-visible characters using regex
             intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
-            interface_addresses.append(intfcinfo.split(" ")[1]) 
+            if intfcinfo.split(" ")[1] != "unassigned":
+                interface_addresses.append(intfcinfo.split(" ")[1]) 
         for int_addr in data["new_addresses"]:
             for address in interface_addresses:
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
