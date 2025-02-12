@@ -3294,6 +3294,7 @@ def add_cisco_hub(request: HttpRequest):
                                                 'branch_location': data["branch_location"],
                                                 "hub_dialer_ip_cidr": data["hub_dialer_ip"]
                                                 })   
+                os.system("python3 /root/reachlink/reachlink_zabbix_hub.py")
                 os.system("systemctl stop reachlink_test")
                 hubdata = []
                 for device in coll_hub_info.find({},{"_id":0}):
