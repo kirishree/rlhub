@@ -716,7 +716,7 @@ def interfaceconfig(data):
         if "Password" in output:  # Prompt for enable password
             send_command_wo(shell, password)
         send_command(shell, "configure terminal")
-        send_command(shell, f"interface {data["intfc_name"]}")
+        send_command(shell, f"interface {data['intfc_name']}")
         send_command(shell, "no ip address")
         send_command(shell, 'end')
         # Disable paging
@@ -739,7 +739,7 @@ def interfaceconfig(data):
                     ssh_client.close()            
                     return response
         send_command(shell, "configure terminal")
-        send_command(shell, f"interface {data["intfc_name"]}") 
+        send_command(shell, f"interface {data['intfc_name']}") 
         interface_ip = data["addresses"][0].split("/")[0]
         subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
         netmask = str(subnet.netmask)
