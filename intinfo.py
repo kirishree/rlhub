@@ -71,6 +71,7 @@ def get_interface_cisco():
 
         # Send the command and get the output
         output = get_command_output(shell, 'sh run | section include int')
+        print(output)
         interfacedetails = output.split("\n")[1:0]
         intfcname = "None"
         ipaddress = "None"
