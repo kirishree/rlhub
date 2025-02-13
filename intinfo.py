@@ -78,6 +78,7 @@ def get_interface_cisco():
         vlan_link = "None"
         intfcdetails = []
         for intfc in interfacedetails:
+            print(intfc)
             if "interface" in intfc:
                 if intfcname != "None":
                     if "ethernet" in intfcname.lower():
