@@ -237,7 +237,7 @@ def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=1
     
     return full_output
 
-def get_interface_cisco(data):
+def get_interface_ciscoold(data):
     """
     Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
     """
@@ -762,3 +762,132 @@ def interfaceconfig(data):
         response = [{"message": f"Error while configuring the interface {data['intfc_name']} "}]
         print(e)
     return response
+
+def get_interface_cisco(data):
+    """
+    Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    intfcdetails = []
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return intfcdetails
+
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Disable paging
+        get_command_output(shell, 'terminal length 0', wait_time=1)
+
+        # Send the command and get the output
+        output = get_command_output(shell, 'sh run | section include int')
+        #print(output)
+        interfacedetails = output.split("\n")[2:]
+        print(interfacedetails)
+        intfcname = "None"
+        cidraddr = "None"
+        netmask = "None"
+        vlan_link = "None"
+        intfcdetails = []
+        for intfc in interfacedetails:            
+            if "interface" in intfc:
+                if intfcname != "None":
+                    if "ethernet" in intfcname.lower():
+                        intfctype = "ether"
+                    elif "vlan" in intfcname.lower():
+                        intfctype = "VLAN"
+                    elif "loopback" in intfcname.lower():
+                        intfctype = "Loopback"
+                    elif "tunnel" in intfcname.lower():
+                        intfctype = "Tunnel"
+                    elif "dialer" in intfcname.lower():
+                        intfctype = "Dialer"
+                    elif "bvi" in intfcname.lower():
+                        intfctype = "BVI"
+                    if "." in intfcname:
+                        intfctype = "SubInterface"
+                    if "virtual-template" in intfcname.lower():
+                        intfctype = "Virtual"
+                    intfcdetails.append({"interface_name": intfcname,
+                                 "type": intfctype,                                 
+                                 "addresses":cidraddr,                                 
+                                 "vlan_link": vlan_link,
+                                 "gateway": '-'                        
+                                })
+                 
+                intfcname = intfc.strip().split(" ")[1]
+                cidraddr = []
+                netmask = "None"
+                vlan_link = "None"
+                
+            else:
+                if "no ip address" in intfc:
+                    cidraddr = "unassigned"
+                elif "ip address" in intfc:
+                    if len(intfc.strip().split("ip address")[1].split(" ")) > 2:
+                        addrinfo = intfc.strip().split("ip address")[1].split(" ")
+                        ipaddr = addrinfo[1]
+                        netmask = addrinfo[2]
+                        network = f"{ipaddr}/{netmask}"
+                        # Create an IPv4Network object
+                        ipintf = ipaddress.IPv4Interface(network)
+                        primary= True
+                        if "secondary" in intfc:
+                            primary = False
+                        cidraddr.append({"IPv4address" :ipintf.with_prefixlen, "primary": primary})
+                if "vlan" in intfc:
+                    if len(intfc.strip().split("vlan")) > 1:
+                        vlan_link = intfc.strip().split("vlan")[1]
+                if "dot1Q" in intfc:
+                    if len(intfc.strip().split(" ")) > 2:
+                        vlan_link = intfc.strip().split(" ")[2]   
+        # Disable paging
+        get_command_output(shell, 'terminal length 0', wait_time=1)
+
+        # Send the command and get the output
+        output = get_command_output(shell, 'show ip int brief')
+        interfacedetails = output.split("\n")[2:-1]
+        intfcdetailsnew = []
+        for intfcinfo in interfacedetails:
+            
+            intfcinfo = intfcinfo.strip()
+            # Clean up extra spaces or non-visible characters using regex
+            intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
+ #           print(f"After regex cleanup: '{intfcinfo}'")
+            intfcname = intfcinfo.split(" ")[0]
+            intfctype = "-"            
+            if "virtual-access" not in intfcname.lower():
+                intfcdetailsnew.append({"interface_name": intfcinfo.split(" ")[0],                                                                 
+                                 "status": intfcinfo.split(" ")[4],
+                                 "protocol": intfcinfo.split(" ")[5],
+                                 "method": intfcinfo.split(" ")[3]
+                                }) 
+        interfaceinfo = []
+        for info in intfcdetails:
+            for infonew in intfcdetailsnew:
+                if info["interface_name"] == infonew["interface_new"]:
+                    interfaceinfo.append({"interface_name": info["interface_name"],
+                                 "type": info["type"],
+                                 "Gateway": '-',
+                                 "mac_address": "-",
+                                 "addresses":info["addresses"], 
+                                 "status": infonew["status"],
+                                 "protocol": infonew["protocol"],
+                                 "method": infonew["method"],
+                                 "vlan_link": info["vlan_link"]
+                                })    
+    except Exception as e:
+        print(e)
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return interfaceinfo
