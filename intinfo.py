@@ -43,7 +43,7 @@ def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=1
     
     return full_output
 
-def get_interface_cisco(data):
+def get_interface_cisco():
     """
     Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
     """
@@ -124,3 +124,5 @@ def get_interface_cisco(data):
         # Close the SSH connection
         ssh_client.close()
     return intfcdetails
+
+print(get_interface_cisco())
