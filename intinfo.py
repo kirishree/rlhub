@@ -102,13 +102,13 @@ def get_interface_cisco():
                     intfcdetails.append({"interface_name": intfcname,
                                  "type": intfctype,
                                  
-                                 "addresses":[{"IPv4address": cidraddr}],
+                                 "addresses":cidraddr,
                                  
                                  "vlan_link": vlan_link                             
                                 })
                  
                 intfcname = intfc.strip().split(" ")[1]
-                cidraddr = "None"
+                cidraddr = []
                 netmask = "None"
                 vlan_link = "None"
                 
@@ -124,7 +124,10 @@ def get_interface_cisco():
                         network = f"{ipaddr}/{netmask}"
                         # Create an IPv4Network object
                         ipintf = ipaddress.IPv4Interface(network)
-                        cidraddr = ipintf.with_prefixlen
+                        primary= True
+                        if "secondary" in intfc:
+                            primary = False
+                        cidraddr.append({"IPv4address" :ipintf.with_prefixlen, "primary": primary})
                 if "vlan" in intfc:
                     if len(intfc.strip().split("vlan")) > 1:
                         vlan_link = intfc.strip().split("vlan")[1]
