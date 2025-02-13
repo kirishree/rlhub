@@ -792,7 +792,7 @@ def get_interface_cisco(data):
         output = get_command_output(shell, 'sh run | section include int')
         #print(output)
         interfacedetails = output.split("\n")[2:]
-        print(interfacedetails)
+        
         intfcname = "None"
         cidraddr = "None"
         netmask = "None"
