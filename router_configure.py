@@ -874,7 +874,7 @@ def get_interface_cisco(data):
         interfaceinfo = []
         for info in intfcdetails:
             for infonew in intfcdetailsnew:
-                if info["interface_name"] == infonew["interface_new"]:
+                if info["interface_name"] == infonew["interface_name"]:
                     interfaceinfo.append({"interface_name": info["interface_name"],
                                  "type": info["type"],
                                  "Gateway": '-',
