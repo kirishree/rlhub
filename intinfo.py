@@ -116,8 +116,10 @@ def get_interface_cisco():
                 if "no ip address" in intfc:
                     cidraddr = "unassigned"
                 elif "ip address" in intfc:
-                    ipaddr = intfc.strip().split("ip address")[1].split(" ")[0]
-                    netmask = intfc.strip().split("ip address")[1].split(" ")[1]
+                    addrinfo = intfc.strip().split("ip address")[1].split(" ")
+                    print(addrinfo)
+                    ipaddr = addrinfo[1]
+                    netmask = addrinfo[2]
                     network = f"{ipaddr}/{netmask}"
                     # Create an IPv4Network object
                     net = ipaddress.IPv4Network(network, strict=False)
