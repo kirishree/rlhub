@@ -126,9 +126,11 @@ def get_interface_cisco():
                         ipintf = ipaddress.IPv4Interface(network, strict=False)
                         cidraddr = ipintf.with_prefixlen
                 if "vlan" in intfc:
-                    vlan_link = intfc.strip().split("vlan")[1]
+                    if len(intfc.strip().split("vlan")) > 1:
+                        vlan_link = intfc.strip().split("vlan")[1]
                 if "dot1Q" in intfc:
-                    vlan_link = intfc.strip().split(" ")[2]        
+                    if len(intfc.strip().split(" ")) > 2:
+                        vlan_link = intfc.strip().split(" ")[2]        
     except Exception as e:
         print(e)
     finally:
