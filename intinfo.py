@@ -104,11 +104,11 @@ def get_interface_cisco():
                                  "netmask":netmask,
                                  "vlan_link": vlan_link                             
                                 })
-                    
-                intfcname = intfc.strip().split(" ")[1]
-                ipaddress = "None"
-                netmask = "None"
-                vlan_link = "None"
+                else:   
+                    intfcname = intfc.strip().split(" ")[1]
+                    ipaddress = "None"
+                    netmask = "None"
+                    vlan_link = "None"
                 
             else:
                 if "no ip address" in intfc:
