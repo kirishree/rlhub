@@ -72,10 +72,10 @@ def get_interface_cisco():
         # Send the command and get the output
         output = get_command_output(shell, 'sh run | section include int')
         #print(output)
-        interfacedetails = output.split("\n")
+        interfacedetails = output.split("\n")[2:]
         print(interfacedetails)
         intfcname = "None"
-        ipaddress = "None"
+        cidraddr = "None"
         netmask = "None"
         vlan_link = "None"
         intfcdetails = []
@@ -101,15 +101,14 @@ def get_interface_cisco():
                         intfctype = "Virtual"
                     intfcdetails.append({"interface_name": intfcname,
                                  "type": intfctype,
-                                 "Gateway": '-',
-                                 "mac_address": "-",
-                                 "addresses":[{"IPv4address": ipaddress}],
-                                 "netmask":netmask,
+                                 
+                                 "addresses":[{"IPv4address": cidraddr}],
+                                 
                                  "vlan_link": vlan_link                             
                                 })
                 else:   
                     intfcname = intfc.strip().split(" ")[1]
-                    ipaddress = "None"
+                    cidraddr = "None"
                     netmask = "None"
                     vlan_link = "None"
                 
@@ -117,8 +116,12 @@ def get_interface_cisco():
                 if "no ip address" in intfc:
                     ipaddress = "unassigned"
                 elif "ip address" in intfc:
-                    ipaddress = intfc.strip().split("ip address")[1].split(" ")[0]
-                    netmask = ipaddress = intfc.strip().split("ip address")[1].split(" ")[1]
+                    ipaddr = intfc.strip().split("ip address")[1].split(" ")[0]
+                    netmask = intfc.strip().split("ip address")[1].split(" ")[1]
+                    network = f"{ipaddr}/{netmask}"
+                    # Create an IPv4Network object
+                    net = ipaddress.IPv4Network(network, strict=False)
+                    cidraddr = net.with_prefixlen
                 if "vlan" in intfc:
                     vlan_link = intfc.strip().split("vlan")[1]
                 if "dot1Q" in intfc:
