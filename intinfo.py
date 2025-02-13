@@ -116,7 +116,7 @@ def get_interface_cisco():
                 if "no ip address" in intfc:
                     cidraddr = "unassigned"
                 elif "ip address" in intfc:
-                    if len(intfc.strip().split("ip address")) > 1:
+                    if len(intfc.strip().split("ip address")[1].split(" ")) > 2:
                         addrinfo = intfc.strip().split("ip address")[1].split(" ")
                         print(addrinfo)
                         ipaddr = addrinfo[1]
