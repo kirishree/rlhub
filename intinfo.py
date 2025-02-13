@@ -123,7 +123,7 @@ def get_interface_cisco():
                         netmask = addrinfo[2]
                         network = f"{ipaddr}/{netmask}"
                         # Create an IPv4Network object
-                        ipintf = ipaddress.IPv4Interface(network, strict=False)
+                        ipintf = ipaddress.IPv4Interface(network)
                         cidraddr = ipintf.with_prefixlen
                 if "vlan" in intfc:
                     if len(intfc.strip().split("vlan")) > 1:
