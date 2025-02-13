@@ -116,14 +116,15 @@ def get_interface_cisco():
                 if "no ip address" in intfc:
                     cidraddr = "unassigned"
                 elif "ip address" in intfc:
-                    addrinfo = intfc.strip().split("ip address")[1].split(" ")
-                    print(addrinfo)
-                    ipaddr = addrinfo[1]
-                    netmask = addrinfo[2]
-                    network = f"{ipaddr}/{netmask}"
-                    # Create an IPv4Network object
-                    net = ipaddress.IPv4Network(network, strict=False)
-                    cidraddr = net.with_prefixlen
+                    if len(intfc.strip().split("ip address")) > 1:
+                        addrinfo = intfc.strip().split("ip address")[1].split(" ")
+                        print(addrinfo)
+                        ipaddr = addrinfo[1]
+                        netmask = addrinfo[2]
+                        network = f"{ipaddr}/{netmask}"
+                        # Create an IPv4Network object
+                        ipintf = ipaddress.IPv4Interface(network, strict=False)
+                        cidraddr = ipintf.with_prefixlen
                 if "vlan" in intfc:
                     vlan_link = intfc.strip().split("vlan")[1]
                 if "dot1Q" in intfc:
