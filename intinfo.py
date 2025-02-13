@@ -120,6 +120,8 @@ def get_interface_cisco():
                     vlan_link = intfc.strip().split("vlan")[1]
                 if "dot1Q" in intfc:
                     vlan_link = intfc.strip().split(" ")[2]        
+    except Exception as e:
+        print(e)
     finally:
         # Close the SSH connection
         ssh_client.close()
