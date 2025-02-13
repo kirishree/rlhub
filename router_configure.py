@@ -831,7 +831,7 @@ def get_interface_cisco(data):
                 
             else:
                 if "no ip address" in intfc:
-                    cidraddr = "unassigned"
+                    cidraddr.append({"IPv4address" :"unassigned", "primary": True})
                 elif "ip address" in intfc:
                     if len(intfc.strip().split("ip address")[1].split(" ")) > 2:
                         addrinfo = intfc.strip().split("ip address")[1].split(" ")
