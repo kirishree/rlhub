@@ -114,7 +114,7 @@ def get_interface_cisco():
                 
             else:
                 if "no ip address" in intfc:
-                    ipaddress = "unassigned"
+                    cidraddr = "unassigned"
                 elif "ip address" in intfc:
                     ipaddr = intfc.strip().split("ip address")[1].split(" ")[0]
                     netmask = intfc.strip().split("ip address")[1].split(" ")[1]
