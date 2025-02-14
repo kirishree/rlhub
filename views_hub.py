@@ -3342,7 +3342,7 @@ def add_cisco_hub(request: HttpRequest):
                 list2 = [devicehubinfo["hub_wan_ip_only"],
                          str(first_ip),
                          devicehubinfo["hub_dialer_ip"],
-                         unitno
+                         str(unitno)
                          ]
                 with open("pon.txt", "r") as f:
                     data1 = f.read()
