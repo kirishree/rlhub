@@ -253,7 +253,14 @@ def check_user_renewed(data, organization_id):
                 expiry_date_original = str(details["subscription_to"]).split(" ")[0]
                 for device in registered_devices_info:
                     if device['uuid'] == data["uuid"]:                            
-                        response =[{ "message": 'This device is already Registered', "expiry_date": expiry_date_original, "spokedevice_name":device["spokedevice_name"], "gretunnel_ip":device["gretunnel_ip"], "remote_ip":openvpnhubip, "hub_gretunnel_endpoint":hub_tunnel_endpoint }]
+                        response =[{ "message": 'This device is already Registered', 
+                                    "expiry_date": expiry_date_original, 
+                                    "spokedevice_name":device["spokedevice_name"], 
+                                    "gretunnel_ip":device["gretunnel_ip"], 
+                                    "remote_ip":openvpnhubip, 
+                                    "hub_gretunnel_endpoint":hub_tunnel_endpoint,
+                                    "organization_id":organization_id
+                                    }]
                         return response 
                 length = len(registered_devices_info)+1
                 spokedevice_name =  generate_device_name(length, details)
@@ -272,7 +279,14 @@ def check_user_renewed(data, organization_id):
                                         }
                                        }
                 coll_registered_organization.update_many(query, update_data)
-                response = [{"message":"Successfully Registered", "expiry_date": expiry_date_original, "spokedevice_name":spokedevice_name, "gretunnel_ip":gretunnel_ip, "remote_ip":openvpnhubip, "hub_gretunnel_endpoint":hub_tunnel_endpoint}]
+                response = [{"message":"Successfully Registered", 
+                             "expiry_date": expiry_date_original, 
+                             "spokedevice_name":spokedevice_name, 
+                             "gretunnel_ip":gretunnel_ip, 
+                             "remote_ip":openvpnhubip, 
+                             "hub_gretunnel_endpoint":hub_tunnel_endpoint,
+                             "organization_id":organization_id
+                             }]
                 return response
             else:
                 response = [{"message":"Your plan reached the limit. Pl upgrade it", "expiry_date":dummy_expiry_date }]
@@ -354,7 +368,14 @@ def check_user(data):
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
                     for device in registered_devices_info:
                         if device['uuid'] == data["uuid"]:                            
-                            response =[{ "message": 'This device is already Registered', "expiry_date": expiry_date_original, "spokedevice_name":device["spokedevice_name"], "gretunnel_ip":device["gretunnel_ip"], "remote_ip":openvpnhubip, "hub_gretunnel_endpoint":hub_tunnel_endpoint }]
+                            response =[{ "message": 'This device is already Registered',
+                                         "expiry_date": expiry_date_original, 
+                                         "spokedevice_name":device["spokedevice_name"],
+                                         "gretunnel_ip":device["gretunnel_ip"],
+                                         "remote_ip":openvpnhubip, 
+                                         "hub_gretunnel_endpoint":hub_tunnel_endpoint,
+                                         "organization_id":organization_id
+                                         }]
                             return response 
                     length = len(registered_devices_info)+1
                     spokedevice_name =  generate_device_name(length, details)    
@@ -385,7 +406,14 @@ def check_user(data):
                                         }
                                        }
                     coll_registered_organization.update_many(query, update_data)
-                    response = [{"message":"Successfully Registered", "expiry_date": expiry_date_original, "spokedevice_name":spokedevice_name, "gretunnel_ip":gretunnel_ip, "remote_ip":openvpnhubip, "hub_gretunnel_endpoint":hub_tunnel_endpoint}]
+                    response = [{"message":"Successfully Registered",
+                                 "expiry_date": expiry_date_original, 
+                                 "spokedevice_name":spokedevice_name, 
+                                 "gretunnel_ip":gretunnel_ip, 
+                                 "remote_ip":openvpnhubip, 
+                                 "hub_gretunnel_endpoint":hub_tunnel_endpoint,
+                                 "organization_id":organization_id
+                                 }]
                     return response
                 else:
                     userStatus = check_subscription_renewed(data, organization_id)
@@ -3034,12 +3062,14 @@ def add_cisco_device_spoke(request: HttpRequest):
     response['X-Message'] = json.dumps(json_response)
     return response
 
-def generate_dialerip_cisco(networkip, netmaskip):
+def generate_dialerip_cisco(networkip, netmaskip, hubdialerip):
     network = ipaddress.IPv4Network(f"{networkip}/{netmaskip}", strict=False)
-    newdialerip =  str(random.choice(list(network.hosts())))
-    for dialerip in coll_dialer_ip.find({},{"_id":0}):
-        if dialerip["dialerip"] == newdialerip:
-            return generate_dialerip(networkip, netmaskip)
+    excluded_ips = {dialerin["dialerip"] for dialerin in coll_dialer_ip.find({}, {"_id": 0})}
+    excluded_ips.add(hubdialerip) 
+    while True:
+        newdialerip = str(random.choice(list(network.hosts())[1:]))
+        if newdialerip not in excluded_ips:
+            break
     return newdialerip
 
 def generate_dialer_password_cisco():
@@ -3070,7 +3100,7 @@ def get_dialer_ip_fromciscohub(devicename, dialerip):
         newdialerpassword = generate_dialer_password_cisco()
         hub_info = coll_hub_info.find_one({"hub_wan_ip_only": dialerip})       
         if hub_info:
-            newdialerip = generate_dialerip_cisco(hub_info["hub_dialer_network"], hub_info["hub_dialer_netmask"])            
+            newdialerip = generate_dialerip_cisco(hub_info["hub_dialer_network"], hub_info["hub_dialer_netmask"], hub_info["hub_dialer_ip"])            
             if (router_configure.adduser({"username":devicename,
                                   "password":newdialerpassword,
                                   "tunnel_ip": dialerip,
@@ -3297,7 +3327,31 @@ def add_cisco_hub(request: HttpRequest):
                                                 "hub_wan_ip_gateway": data["hub_wan_ip_gateway"],
                                                 'branch_location': data["branch_location"],
                                                 "hub_dialer_ip_cidr": data["hub_dialer_ip"]
-                                                })   
+                                                })  
+                network = ipaddress.ip_network(data["hub_dialer_ip"], strict=False)
+                first_ip = list(network.hosts())[0]
+                if str(first_ip) == devicehubinfo["hub_dialer_ip"]:
+                    first_ip = list(network.hosts())[1]
+                unitno = len([f for f in os.listdir("/etc/ppp/peers/") if os.path.isfile(os.path.join("/etc/ppp/peers/", f))])
+                list1 = ["{hub_ip}",
+                         "{dialer_ubuntu_ip}",
+                         "{dialer_hub_ip}",
+                         "{unitno}"
+                         ] 
+                
+                list2 = [devicehubinfo["hub_wan_ip_only"],
+                         str(first_ip),
+                         devicehubinfo["hub_dialer_ip"],
+                         unitno
+                         ]
+                with open("pon.txt", "r") as f:
+                    data1 = f.read()
+                    f.close()
+                for i in range(0, len(list1)):
+                    data1 = data1.replace(list1[i], list2[i]) 
+                with open(f"/etc/ppp/peers/{devicename.lower()}", "w") as f:
+                    f.write(data1)
+                    f.close()
                 os.system("python3 /root/reachlink/reachlink_zabbix_hub.py")
                 os.system("systemctl stop reachlink_test")
                 hubdata = []
