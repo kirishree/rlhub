@@ -11,6 +11,8 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 
 from django.http import HttpRequest, HttpResponse,  JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 from django_ratelimit.decorators import ratelimit
 import logging
 logger = logging.getLogger(__name__)
@@ -3817,4 +3819,45 @@ def interface_config_hub(request):
             print(response)
     except Exception as e:
         response = {"message": f"Error: {e}"}
+    return JsonResponse(response, safe=False)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def branch_info_jwt(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of branch info:{public_ip}")
+        response = {}
+        data = []     
+        active_branches = 0
+        inactive_branches = 0
+        total_no_branches = 0
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/total_branches.json", "r") as f:
+            total_branches = json.load(f)
+            f.close()
+        reg_devices = coll_registered_organization.find_one({"organization_id":organization_id})
+        for device in reg_devices["registered_devices"]:
+            for branch in total_branches:
+                if device["uuid"] == branch["uuid"]:
+                    branch["spokedevice_name"] = device.get("spokedevice_name", "None")
+                    data.append(branch)
+                    if branch.get("status", "") == "active":
+                        active_branches = active_branches + 1
+                    else:
+                        inactive_branches = inactive_branches + 1
+                    total_no_branches = total_no_branches + 1
+        response = {    "data":data,
+                        "total_branches":total_no_branches,
+                        "inactive_branches":inactive_branches,
+                        "active_branches": active_branches,
+                        "organization_id": organization_id
+                    }
+    except Exception as e:
+        response = {    "data":data,
+                        "total_branches":total_no_branches,
+                        "inactive_branches":inactive_branches,
+                        "active_branches": active_branches,
+                        "organization_id": organization_id
+                    }
     return JsonResponse(response, safe=False)

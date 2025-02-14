@@ -11,6 +11,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.urls import path
 from reach.views import login, onboard_block, onboard_unblock, ping_spoke, autofix
 from reach.views import branch_info, get_routing_table, addsubnet, diagnostics
@@ -19,10 +20,12 @@ from reach.views import activebranches, inactivebranches, spoke_update, add_cisc
 from reach.views import lan_info, lan_config, dhcp_config, traceroute_hub, traceroute_spoke, add_ip_rule_spoke, get_routing_table_spoke, get_interface_details_spoke, create_vlan_interface_spoke, interface_config_spoke
 from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_info_spoke, addstaticroute_hub, delstaticroute_hub, del_staticroute_spoke, get_interface_details_hub, add_cisco_hub
 from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get_ciscohub_config
-from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
+from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub, branch_info_jwt
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
+    path('branch_info_jwt', branch_info_jwt, name='branch_info_jwt'),
     path('add_ip_rule_spoke', add_ip_rule_spoke, name='add_ip_rule_spoke'),
     path('traceroute_hub', traceroute_hub, name='traceroute_hub'),
     path('traceroute_spoke', traceroute_spoke, name='traceroute_spoke'),
