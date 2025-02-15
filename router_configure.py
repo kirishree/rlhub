@@ -743,7 +743,7 @@ def interfaceconfig(data):
         send_command(shell, f"interface {data['intfc_name']}") 
         for newaddr in data["new_addresses"]:
             interface_ip = newaddr['address'].split("/")[0]
-            subnet = ipaddress.IPv4Network(newaddr, strict=False)  # Allow non-network addresses
+            subnet = ipaddress.IPv4Network(newaddr['address'], strict=False)  # Allow non-network addresses
             netmask = str(subnet.netmask)
             if newaddr['primary'].lower() == "true":
                 send_command(shell, f"ip address {interface_ip} {netmask}") 
