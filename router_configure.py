@@ -734,23 +734,21 @@ def interfaceconfig(data):
         for int_addr in data["new_addresses"]:
             for address in interface_addresses:
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
-                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])
+                ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
                     return response
         send_command(shell, "configure terminal")
         send_command(shell, f"interface {data['intfc_name']}") 
-        interface_ip = data["new_addresses"][0].split("/")[0]
-        subnet = ipaddress.IPv4Network(data["new_addresses"][0], strict=False)  # Allow non-network addresses
-        netmask = str(subnet.netmask)
-        send_command(shell, f"ip address {interface_ip} {netmask}")   
-        if len(data['new_addresses']) > 1:
-            for newaddr in data["new_addresses"][1:0]:
-                interface_ip = newaddr[0].split("/")[0]
-                subnet = ipaddress.IPv4Network(newaddr, strict=False)  # Allow non-network addresses
-                netmask = str(subnet.netmask)
-                send_command(shell, f"ip address {interface_ip} {netmask} sec")   
+        for newaddr in data["new_addresses"]:
+            interface_ip = newaddr['address'].split("/")[0]
+            subnet = ipaddress.IPv4Network(newaddr, strict=False)  # Allow non-network addresses
+            netmask = str(subnet.netmask)
+            if newaddr['primary'].lower() == "true":
+                send_command(shell, f"ip address {interface_ip} {netmask}") 
+            else:
+                send_command(shell, f"ip address {interface_ip} {netmask} sec")             
         response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
         send_command(shell, "no shutdown")
         send_command(shell, 'end')
