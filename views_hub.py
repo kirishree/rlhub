@@ -14,6 +14,11 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status
 from django_ratelimit.decorators import ratelimit
 import logging
 logger = logging.getLogger(__name__)
@@ -3916,3 +3921,87 @@ def branch_info_jwt(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+
+
+def check_onboarding(username, password):
+    try:
+        data_login = {
+                    "email": username,
+                    "password": password
+                 }
+        # Send a POST request with the data
+        login_response = requests.post(url+"auth/login", json=data_login)
+        if login_response.status_code == 200:
+        # Parse the JSON response
+            loginjson_response = login_response.json()
+            access_token = loginjson_response["data"]["access_token"]
+        else:
+            return 'Invalid Login & password'
+        headers = {
+                    "Authorization": f"Bearer {access_token}"
+                  }
+        service_response = requests.get(url+"services/", headers=headers)
+        if service_response.status_code == 200:
+            servicejson_response = service_response.json()
+            services_info = servicejson_response["data"]["services"]
+            subscription_status = False
+            for service in services_info:
+                if service["name"] == "link":
+                    subscription_status = True
+            if subscription_status:
+                current_datetime = datetime.now() 
+                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                subsjson_response = subscription_response.json()
+                timestamp = int(subsjson_response["data"]["created_at"])
+                # Convert Unix timestamp to datetime
+                from_date = datetime.utcfromtimestamp(timestamp)
+                # Add Duration to get to_date
+                to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
+                if current_datetime < to_date:
+                    return 'True'
+            else:
+                    return 'Not Subscribed for Reach WAN'
+        else:
+                return 'Not Subscribed for any services'
+    except:
+        return 'Internal Server Error'
+
+
+@api_view(['POST'])
+def login_or_register(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+
+    if not username or not password:
+        return Response({"error": "Username and password are required"}, status=400)
+
+    # Authenticate existing user
+    user = authenticate(username=username, password=password)
+
+    if user:
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User authenticated successfully"
+        })
+
+    # Perform your custom validation before creating a new user (add logic here)
+    # Example: Check if username meets your policy, etc.
+    onboard_status = check_onboarding(username, password)
+    if onboard_status == "True":
+        # Create new user
+        user = User.objects.create_user(username=username, password=password)
+
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
+    else:
+        return Response({            
+            "message": onboard_status
+        })
