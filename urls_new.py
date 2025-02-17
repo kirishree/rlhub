@@ -26,7 +26,7 @@ from reach.views import login_or_register
 urlpatterns = [
     path('token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth', login_or_register, name='login_or_register'),
-    path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('add_ip_rule_spoke', add_ip_rule_spoke, name='add_ip_rule_spoke'),
     path('traceroute_hub', traceroute_hub, name='traceroute_hub'),
     path('traceroute_spoke', traceroute_spoke, name='traceroute_spoke'),
