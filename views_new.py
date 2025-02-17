@@ -208,7 +208,7 @@ def login_or_register(request):
         return Response({            
             "message": onboard_status
         })
-
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def login(request: HttpRequest):
     data = json.loads(request.body)
@@ -248,6 +248,7 @@ def login(request: HttpRequest):
         response1['X-Message'] = json.dumps(response)
     return response1
 
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
     data = json.loads(request.body)  
@@ -372,6 +373,7 @@ def add_cisco_device(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
@@ -499,6 +501,7 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:
@@ -540,6 +543,7 @@ def branch_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def hub_info(request: HttpRequest):
     try:
@@ -595,11 +599,14 @@ def hub_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 ###########SPOKE####################
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def deactivate(request: HttpRequest):
     data = json.loads(request.body)      
     response = ubuntu_info.deactivate(data)
     return JsonResponse(response, safe=False)
+
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def lan_info(request):
     try:
@@ -638,7 +645,8 @@ def lan_info(request):
         response = {"message": f"Error: {e}"}
     print(response)
     return JsonResponse(response, safe=False)
-        
+
+@api_view(['POST'])      
 @permission_classes([IsAuthenticated])
 def lan_config(request):
     try:
@@ -674,6 +682,7 @@ def lan_config(request):
     print(response)
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def dhcp_config(request):
     try:
@@ -709,6 +718,7 @@ def dhcp_config(request):
     print(response)
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_interface_details_spoke(request):
     try:
@@ -746,6 +756,7 @@ def get_interface_details_spoke(request):
         response = []
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_vlan_interface_spoke(request):
     try:
@@ -786,6 +797,7 @@ def create_vlan_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_sub_interface_spoke(request):
     try:
@@ -826,6 +838,7 @@ def create_sub_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_loopback_interface_spoke(request):
     try:
@@ -867,6 +880,7 @@ def create_loopback_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_tunnel_interface_spoke(request):
     try:
@@ -909,6 +923,7 @@ def create_tunnel_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def interface_config_spoke(request):
     try:
@@ -949,6 +964,7 @@ def interface_config_spoke(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def vlan_interface_delete_spoke(request):
     try:
@@ -992,6 +1008,7 @@ def vlan_interface_delete_spoke(request):
     print("deletevlan", response)
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_routing_table_spoke(request):
     try:
@@ -1031,6 +1048,7 @@ def get_routing_table_spoke(request):
     print(response)
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def add_route_spoke(request):
     try:
@@ -1074,6 +1092,7 @@ def add_route_spoke(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def del_staticroute_spoke(request):
     try:
@@ -1120,6 +1139,7 @@ def del_staticroute_spoke(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)        
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_pbr_info_spoke(request):
     try:
@@ -1159,12 +1179,14 @@ def get_pbr_info_spoke(request):
     return JsonResponse(response, safe=False)
 
 #Ping_hub end point
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated]) 
 def diagnostics(request: HttpRequest):
     data = json.loads(request.body)      
     response = ubuntu_info.diagnostics(data)
     return JsonResponse(response, safe=False)  
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def ping_spoke(request: HttpRequest):  
     try: 
@@ -1225,6 +1247,7 @@ def ping_spoke(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return JsonResponse(response, safe=False)    
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def traceroute_spoke(request):
     data = json.loads(request.body)
@@ -1267,6 +1290,7 @@ def traceroute_spoke(request):
     print(response) 
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def traceroute_hub(request):
     data = json.loads(request.body)
@@ -1281,6 +1305,7 @@ def traceroute_hub(request):
     response = {"message":"Invalid trace ip"}
     return JsonResponse(response,safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def addsubnet(request: HttpRequest):
     try:
@@ -1295,6 +1320,7 @@ def addsubnet(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')   
     return JsonResponse(response, safe=False) 
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def add_ip_rule_spoke(request):
     try:
@@ -1331,6 +1357,7 @@ def add_ip_rule_spoke(request):
     print(response)
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def autofix(request: HttpRequest):  
     try:       
@@ -1358,7 +1385,8 @@ def autofix(request: HttpRequest):
         print(e)
     logger.debug(f'Received request: {request.method} {request.path}')      
     return JsonResponse(response, safe=False)  
-  
+
+@api_view(['POST'])    
 @permission_classes([IsAuthenticated])
 def delsubnet(request: HttpRequest):
     data = json.loads(request.body)   
@@ -1369,6 +1397,7 @@ def delsubnet(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return JsonResponse(response, safe=False)
 ##############Inactive branch##############
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def activate(request: HttpRequest):
     data = json.loads(request.body)      
@@ -1376,6 +1405,7 @@ def activate(request: HttpRequest):
     return JsonResponse(response, safe=False)
 
 ###############HUB info page##############################
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_routing_table(request):
     try:
@@ -1398,6 +1428,7 @@ def get_routing_table(request):
         response = []
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def addstaticroute_hub(request: HttpRequest):
     try:
@@ -1436,6 +1467,7 @@ def addstaticroute_hub(request: HttpRequest):
     print(response) 
     return JsonResponse(response, safe=False) 
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def delstaticroute_hub(request: HttpRequest):
     response = [{"message":"Successfully deleted"}]
@@ -1463,6 +1495,7 @@ def delstaticroute_hub(request: HttpRequest):
         response = {"message":f"Error while deleting route: {e}"}
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 #@ratelimit(key='ip', rate='5/m', method='POST', block=True)
 def get_interface_details_hub(request):
@@ -1489,6 +1522,7 @@ def get_interface_details_hub(request):
     print("hub interface details")
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_vlan_interface_hub(request):
     try:
@@ -1509,6 +1543,7 @@ def create_vlan_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_sub_interface_hub(request):
     try:
@@ -1529,6 +1564,7 @@ def create_sub_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_loopback_interface_hub(request):
     try:
@@ -1549,6 +1585,7 @@ def create_loopback_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_tunnel_interface_hub(request):
     try:
@@ -1569,6 +1606,7 @@ def create_tunnel_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def vlan_interface_delete_hub(request):
     try:
@@ -1623,6 +1661,7 @@ def vlan_interface_delete_hub(request):
     print(response)
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def interface_config_hub(request):
     try:
@@ -1653,6 +1692,7 @@ def interface_config_hub(request):
 
 
 ####################HUB & Spoke setup end point###############
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_ciscohub_config(request: HttpRequest):
     data = json.loads(request.body) 
@@ -1661,6 +1701,7 @@ def get_ciscohub_config(request: HttpRequest):
     response = hub_config.get_ciscohub_config(data)
     return JsonResponse(response)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_ciscospoke_config(request: HttpRequest):
     data = json.loads(request.body) 
@@ -1669,6 +1710,7 @@ def get_ciscospoke_config(request: HttpRequest):
     response = hub_config.get_ciscospoke_config(data)
     return JsonResponse(response)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def onboard_block(request: HttpRequest):
     data = json.loads(request.body)
@@ -1679,6 +1721,7 @@ def onboard_block(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return HttpResponse(response)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def onboard_unblock(request: HttpRequest):
     data = json.loads(request.body)   
@@ -1689,6 +1732,7 @@ def onboard_unblock(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return HttpResponse(response)      
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def onboard_delete(request: HttpRequest):
     data = json.loads(request.body)
@@ -1698,6 +1742,7 @@ def onboard_delete(request: HttpRequest):
     onboardblock.onboard_delete(data)
     return HttpResponse
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def spoke_update(request: HttpRequest):
     data = json.loads(request.body)
@@ -1705,6 +1750,7 @@ def spoke_update(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_configured_hub(request):
     try:
