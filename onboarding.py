@@ -339,3 +339,47 @@ def check_subscription_renewed(data, organization_id):
             return "not subscribed for any services"          
     except:
         return "Internal Server Error"
+    
+def check_onboarding(username, password):
+    try:
+        data_login = {
+                    "email": username,
+                    "password": password
+                 }
+        # Send a POST request with the data
+        login_response = requests.post(url+"auth/login", json=data_login)
+        if login_response.status_code == 200:
+        # Parse the JSON response
+            loginjson_response = login_response.json()
+            access_token = loginjson_response["data"]["access_token"]
+        else:
+            return 'Invalid Login & password'
+        headers = {
+                    "Authorization": f"Bearer {access_token}"
+                  }
+        service_response = requests.get(url+"services/", headers=headers)
+        if service_response.status_code == 200:
+            servicejson_response = service_response.json()
+            services_info = servicejson_response["data"]["services"]
+            subscription_status = False
+            for service in services_info:
+                if service["name"] == "link":
+                    subscription_status = True
+            if subscription_status:
+                current_datetime = datetime.now() 
+                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                subsjson_response = subscription_response.json()
+                timestamp = int(subsjson_response["data"]["created_at"])
+                # Convert Unix timestamp to datetime
+                from_date = datetime.utcfromtimestamp(timestamp)
+                # Add Duration to get to_date
+                to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
+                if current_datetime < to_date:
+                    return 'True'
+            else:
+                    return 'Not Subscribed for Reach WAN'
+        else:
+                return 'Not Subscribed for any services'
+    except:
+        return 'Internal Server Error'
+

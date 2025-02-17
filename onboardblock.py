@@ -9,11 +9,13 @@ import os
 import subprocess
 import threading
 from decouple import config
+vrf1_ip = '10.200.202.0/24'
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 coll_registered_organization = db_tunnel["registered_organization"]
+coll_deleted_organization = db_tunnel["deleted_organization"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
 
 def activate_spoke(data):

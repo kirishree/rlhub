@@ -14,6 +14,11 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status
 from django_ratelimit.decorators import ratelimit
 import logging
 logger = logging.getLogger(__name__)
@@ -176,7 +181,7 @@ def setass(response):
     except Exception as e:
         print(f"set ass execption:{e}")
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def login(request: HttpRequest):
     data = json.loads(request.body)
     print(data)
@@ -215,25 +220,25 @@ def login(request: HttpRequest):
         response1['X-Message'] = json.dumps(response)
     return response1
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def deactivate(request: HttpRequest):
     data = json.loads(request.body)      
     response = ubuntu_info.deactivate(data)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def activate(request: HttpRequest):
     data = json.loads(request.body)      
     response = ubuntu_info.activate(data)
     return JsonResponse(response, safe=False)
     
-@csrf_exempt 
+@permission_classes([IsAuthenticated])
 def diagnostics(request: HttpRequest):
     data = json.loads(request.body)      
     response = ubuntu_info.diagnostics(data)
     return JsonResponse(response, safe=False)  
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def delsubnet(request: HttpRequest):
     data = json.loads(request.body)   
     # Capture the public IP from the request headers
@@ -243,7 +248,7 @@ def delsubnet(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_routing_table(request):
     try:
         data = json.loads(request.body) 
@@ -265,7 +270,7 @@ def get_routing_table(request):
         response = []
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def ping_spoke(request: HttpRequest):  
     try: 
         data = json.loads(request.body) 
@@ -326,7 +331,7 @@ def ping_spoke(request: HttpRequest):
     return JsonResponse(response, safe=False)    
 
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def autofix(request: HttpRequest):  
     try:       
         data = json.loads(request.body)  
@@ -364,7 +369,7 @@ def onboard_block(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return HttpResponse(response)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def onboard_unblock(request: HttpRequest):
     data = json.loads(request.body)   
     # Capture the public IP from the request headers
@@ -374,7 +379,7 @@ def onboard_unblock(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')
     return HttpResponse(response)      
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def onboard_delete(request: HttpRequest):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
@@ -383,14 +388,14 @@ def onboard_delete(request: HttpRequest):
     onboardblock.onboard_delete(data)
     return HttpResponse
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def spoke_update(request: HttpRequest):
     data = json.loads(request.body)
     response = onboardblock.spoke_update(data)
     logger.debug(f'Received request: {request.method} {request.path}')
     return JsonResponse(response, safe=False)
            
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:
         print(request)
@@ -431,7 +436,7 @@ def branch_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def traceroute_hub(request):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
@@ -445,7 +450,7 @@ def traceroute_hub(request):
     response = {"message":"Invalid trace ip"}
     return JsonResponse(response,safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def traceroute_spoke(request):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
@@ -487,7 +492,7 @@ def traceroute_spoke(request):
     print(response) 
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def lan_info(request):
     try:
         data = json.loads(request.body)
@@ -526,7 +531,7 @@ def lan_info(request):
     print(response)
     return JsonResponse(response, safe=False)
         
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def lan_config(request):
     try:
         data = json.loads(request.body)
@@ -561,7 +566,7 @@ def lan_config(request):
     print(response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def dhcp_config(request):
     try:
         data = json.loads(request.body)
@@ -596,7 +601,7 @@ def dhcp_config(request):
     print(response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def add_ip_rule_spoke(request):
     try:
         data = json.loads(request.body)
@@ -632,7 +637,7 @@ def add_ip_rule_spoke(request):
     print(response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_routing_table_spoke(request):
     try:
         data = json.loads(request.body)
@@ -671,7 +676,7 @@ def get_routing_table_spoke(request):
     print(response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_interface_details_spoke(request):
     try:
         data = json.loads(request.body)
@@ -709,7 +714,7 @@ def get_interface_details_spoke(request):
     return JsonResponse(response, safe=False)
 
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_vlan_interface_spoke(request):
     try:
         data = json.loads(request.body)
@@ -749,7 +754,7 @@ def create_vlan_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_sub_interface_spoke(request):
     try:
         data = json.loads(request.body)
@@ -789,7 +794,7 @@ def create_sub_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_loopback_interface_spoke(request):
     try:
         data = json.loads(request.body)
@@ -830,7 +835,7 @@ def create_loopback_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_tunnel_interface_spoke(request):
     try:
         data = json.loads(request.body)
@@ -872,7 +877,7 @@ def create_tunnel_interface_spoke(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def interface_config_spoke(request):
     try:
         data = json.loads(request.body)
@@ -912,7 +917,7 @@ def interface_config_spoke(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def vlan_interface_delete_spoke(request):
     try:
         data = json.loads(request.body)
@@ -955,7 +960,7 @@ def vlan_interface_delete_spoke(request):
     print("deletevlan", response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def add_route_spoke(request):
     try:
         data = json.loads(request.body)
@@ -998,7 +1003,7 @@ def add_route_spoke(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_pbr_info_spoke(request):
     try:
         data = json.loads(request.body)
@@ -1036,7 +1041,7 @@ def get_pbr_info_spoke(request):
     print(response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def addstaticroute_hub(request: HttpRequest):
     try:
         data = json.loads(request.body)
@@ -1074,7 +1079,7 @@ def addstaticroute_hub(request: HttpRequest):
     print(response) 
     return JsonResponse(response, safe=False) 
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 #@ratelimit(key='ip', rate='5/m', method='POST', block=True)
 def get_interface_details_hub(request):
     try:
@@ -1100,7 +1105,7 @@ def get_interface_details_hub(request):
     print("hub interface details")
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def delstaticroute_hub(request: HttpRequest):
     response = [{"message":"Successfully deleted"}]
     # Capture the public IP from the request headers
@@ -1127,7 +1132,7 @@ def delstaticroute_hub(request: HttpRequest):
         response = {"message":f"Error while deleting route: {e}"}
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def del_staticroute_spoke(request):
     try:
         data = json.loads(request.body)
@@ -1173,7 +1178,7 @@ def del_staticroute_spoke(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)        
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def addsubnet(request: HttpRequest):
     try:
         data = json.loads(request.body)
@@ -1187,7 +1192,7 @@ def addsubnet(request: HttpRequest):
     logger.debug(f'Received request: {request.method} {request.path}')   
     return JsonResponse(response, safe=False) 
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
     data = json.loads(request.body)  
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -1311,7 +1316,7 @@ def add_cisco_device(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -1438,7 +1443,7 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_vlan_interface_hub(request):
     try:
         data = json.loads(request.body)
@@ -1458,7 +1463,7 @@ def create_vlan_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_sub_interface_hub(request):
     try:
         data = json.loads(request.body)
@@ -1478,7 +1483,7 @@ def create_sub_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_loopback_interface_hub(request):
     try:
         data = json.loads(request.body)
@@ -1498,7 +1503,7 @@ def create_loopback_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def create_tunnel_interface_hub(request):
     try:
         data = json.loads(request.body)
@@ -1518,8 +1523,7 @@ def create_tunnel_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
-
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_configured_hub(request):
     try:
         hubips = []
@@ -1529,7 +1533,7 @@ def get_configured_hub(request):
         print("error in fetch hubips:", e)
     return JsonResponse(hubips, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def hub_info(request: HttpRequest):
     try:
         print(request)
@@ -1584,7 +1588,7 @@ def hub_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def vlan_interface_delete_hub(request):
     try:
         data = json.loads(request.body)
@@ -1638,7 +1642,7 @@ def vlan_interface_delete_hub(request):
     print(response)
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def interface_config_hub(request):
     try:
         data = json.loads(request.body)
@@ -1665,7 +1669,7 @@ def interface_config_hub(request):
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_ciscohub_config(request: HttpRequest):
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -1673,7 +1677,7 @@ def get_ciscohub_config(request: HttpRequest):
     response = hub_config.get_ciscohub_config(data)
     return JsonResponse(response)
 
-@csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_ciscospoke_config(request: HttpRequest):
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -1722,3 +1726,43 @@ def branch_info_jwt(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+
+
+@api_view(['POST'])
+def login_or_register(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+
+    if not username or not password:
+        return Response({"error": "Username and password are required"}, status=400)
+
+    # Authenticate existing user
+    user = authenticate(username=username, password=password)
+
+    if user:
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User authenticated successfully"
+        })
+
+    # Perform your custom validation before creating a new user (add logic here)
+    # Example: Check if username meets your policy, etc.
+    onboard_status = onboarding.check_onboarding(username, password)
+    if onboard_status == "True":
+        # Create new user
+        user = User.objects.create_user(username=username, password=password)
+
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
+    else:
+        return Response({            
+            "message": onboard_status
+        })
