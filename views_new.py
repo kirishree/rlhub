@@ -58,6 +58,7 @@ coll_registered_organization = db_tunnel["registered_organization"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_dialer_ip = db_tunnel["dialer_ip"]
 coll_hub_info = db_tunnel["hub_info"]
+coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 vrf1_ip = '10.200.202.0/24'
 url = "https://dev-api.cloudetel.com/api/v1/"
 hub_ip = config('HUB_IP')
@@ -522,7 +523,17 @@ def branch_info(request: HttpRequest):
             for branch in total_branches:
                 if device["uuid"] == branch["uuid"]:
                     branch["spokedevice_name"] = device.get("spokedevice_name", "None")
-                    data.append(branch)
+                    data.append({   "public_ip": branch.get("public_ip", ""),
+                                    "tunnel_ip": branch.get("tunnel_ip", ""),
+                                    "branch_location": branch.get["branch_location", ""],
+                                    "subnet": branch.get("subnet", []),
+                                    "vrf": branch.get("vrf", ""),
+                                    "uuid": branch.get("uuid", ""),
+                                    "hub_ip":branch.get("hub_ip", ""),
+                                    "host_id": branch.get("host_id", ""),
+                                    "status": branch.get("status", ""),
+                                    "spokedevice_name": branch.get("spokedevice_name", "")
+                                    })
                     if branch.get("status", "") == "active":
                         active_branches = active_branches + 1
                     else:
@@ -602,8 +613,42 @@ def hub_info(request: HttpRequest):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def deactivate(request: HttpRequest):
-    data = json.loads(request.body)      
-    response = ubuntu_info.deactivate(data)
+    data = json.loads(request.body) 
+    if ".net" not in data.get("uuid", ""):         
+        response = ubuntu_info.deactivate(data)
+    if "ciscodevice" in data.get("uuid", ""):
+        hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
+        if hubinfo:
+            dialerinfo = coll_dialer_ip.find_one({"dialerip":data.get("tunnel_ip", "")})
+            if dialerinfo:
+                deactivate_data = {"tunnel_ip": data["hub_ip"],
+                                   "router_username": hubinfo["router_username"],
+                                   "router_password": hubinfo["router_password"],
+                                   "username": dialerinfo["dialerusername"]
+                                   }
+                response = router_configure.removeuser(deactivate_data)
+                if response:
+                    os.system("systemctl stop reachlink_test") 
+                    with open("/root/reachlink/total_branches.json", "r") as f:
+                        totalbranches = json.load(f)
+                        f.close()
+                    for dev in totalbranches:
+                        if dev["uuid"] == data["uuid"]:
+                            dev["status"] = "inactive"
+                    with open("/root/reachlink/total_branches.json", "w") as f:
+                        json.dump(totalbranches, f)
+                        f.close() 
+                    os.system("systemctl start reachlink_test")   
+                    coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
+                                      "dialer_ip": data["tunnel_ip"],
+                                      "uuid":data["uuid"]                                     
+                                                                          
+                                    })
+                    response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
+                else:
+                    response = {"message":f"Error:while deactivating data['tunnel_ip']"}     
+    if "microtek" in data.get("uuid", ""):
+        response = ubuntu_info.deactivate(data)
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])

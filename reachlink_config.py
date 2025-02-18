@@ -112,9 +112,36 @@ def main():
             print("❌ Invalid IP format. Please enter a valid IP.")
     bl = branch_location.lower()
     uuid = bl + "_" + hubip + "_ciscodevice.net"
+    urllogin = "https://reachlink.cloudetel.com/auth"
+    headers = {"Content-Type": "application/json"}
+    authinfo = json.dumps({"username": username,"password": password})
+    try:
+        authresponse = requests.post(urllogin, data= authinfo, headers= headers)
+        authresponse.raise_for_status()
+        if authresponse.status_code == 200:           
+            json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
+            json_authresponse = json.loads(json_authresponse)
+            if "access" not in json_authresponse:
+                print(json_authresponse["message"])  
+                print("Enter a key to exit...")
+                input()
+                return
+            else:
+                access_token = json_authresponse["access"]
+        else:
+            print("Error while authenticating data")
+            print("Enter a key to exit...")
+            input()
+            return
+    except Exception as e:
+        print("Error while getting configuration: {e}")
+        print("Enter a key to exit...")
+        input()
+        return
     url = "https://reachlink.cloudetel.com/get_ciscospoke_config"
     # Set the headers to indicate that you are sending JSON data
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json",
+               "Authorization": f"Bearer {access_token}"}
     userinfo = {"username": username,
                 "password": password,
                 "uuid": uuid} 
@@ -122,30 +149,30 @@ def main():
     try:
         response = requests.post(url, data=json_data, headers=headers)  # Timeout set to 5 seconds
         response.raise_for_status()
-        print(response)
         if response.status_code == 200:           
             json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_response = json.loads(json_response)
-            print(json_response)
             if  "This device is already Registered" not in json_response["message"]:
                 print(json_response["message"])  
-                print("Enter a key to exit")
+                print("Enter a key to exit...")
                 input()
-                return
-            else: 
-                print(json_response)                
+                return        
         else:
             print("Error while authenticating data")
+            print("Enter a key to exit...")
+            input()
             return
     except Exception as e:
         print("Error while getting configuration: {e}")
+        print("Enter a key to exit...")
+        input()
         return
     # Step 1: Identify the COM port
     target_description = "USB-to-Serial"
     com_port = find_com_port(target_description)
     if not com_port:
         print("No Cisco router found. Please check the connection.")
-        print("Enter a key to exit")
+        print("Enter a key to exit...")
         input()
         return
 

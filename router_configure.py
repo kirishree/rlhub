@@ -573,7 +573,7 @@ def adduser(data):
         # Enter enable mode
         output = send_command_wo(shell, 'enable')
         if "Password" in output:  # Prompt for enable password
-            send_command_wo(shell, "123@aabid.com")
+            send_command_wo(shell, password)
         
         # Enter configuration mode
         send_command_wo(shell, 'configure terminal')
@@ -889,3 +889,49 @@ def get_interface_cisco(data):
         # Close the SSH connection
         ssh_client.close()
     return interfaceinfo
+
+def removeuser(data):
+    try:
+        # Define the router details
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        # Enter configuration mode
+        send_command_wo(shell, 'configure terminal')
+        
+        # Add the user
+        nouseroutput = send_command_wo(shell, f'no username {data["username"]}')
+        if "This operation will remove all username related configurations with same name.Do you want to continue? [confirm]" in nouseroutput:
+            send_command_wo(shell, "")
+        # Exit configuration mode
+        send_command_wo(shell, 'end')
+        
+        # Save the configuration
+        send_command_wo(shell, 'write memory')
+        
+        # Close the SSH connection
+        ssh_client.close()
+        return True
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return False

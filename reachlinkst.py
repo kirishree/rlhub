@@ -69,7 +69,7 @@ def main():
             else:
 #                post_mail(device)
                 device["status"] = "inactive"
-                os.system(f"ip neighbor replace {spoke_ip} lladdr {device['public_ip']} dev Reach_link1")
+                #os.system(f"ip neighbor replace {spoke_ip} lladdr {device['public_ip']} dev Reach_link1")
                 inactive_branches.append(device) 
             tunnel_key = f"{spoke_ip}"
             current_state = tunnel_states.get(tunnel_key, None)

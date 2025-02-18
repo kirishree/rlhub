@@ -21,7 +21,7 @@ coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_spoke_active = db_tunnel["spoke_active"]
 coll_spoke_inactive = db_tunnel["spoke_inactive"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
-mongo_uri = config('DB_CONNECTION_STRING')
+vrf1_ip = '10.200.202.0/24'
 
 routes_protocol_map = {
     -1: '',
@@ -143,9 +143,6 @@ def deactivate(data):
                         command = f"sudo ip route del {i} via {tunnel_ip}"
                         print(command)
                         subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                        
-                        #command = f"ip route del {i} dev vrf1"
-                       # subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
                    except Exception as e:
                        print(f"Error occured while deleting route for {i}:",e)
             except:
@@ -155,17 +152,11 @@ def deactivate(data):
         coll_spoke_disconnect.insert_one({"public_ip": data["public_ip"], 
                                       "tunnel_ip": data["tunnel_ip"],
                                       "uuid":data["uuid"],                                      
-                                      "subnet": data["subnet"]
-                                     
+                                      "subnet": data["subnet"]                                     
                                     })
-        print("coll_deactivate")
-        dd = coll_spoke_disconnect.find({})
-        for d in dd:
-            print(d)
     except Exception as e:
         print(e)
-        response = {"message":f"Error: {e}"}  
-                 
+        response = {"message":f"Error:while deactivating data['tunnel_ip']"}                  
     return response
 
 def activate(data):
