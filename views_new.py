@@ -546,6 +546,7 @@ def branch_info(request: HttpRequest):
                         "organization_id": organization_id
                     }
     except Exception as e:
+        print(e)
         response = {    "data":data,
                         "total_branches":total_no_branches,
                         "inactive_branches":inactive_branches,
