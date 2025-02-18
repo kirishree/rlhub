@@ -525,7 +525,7 @@ def branch_info(request: HttpRequest):
                     branch["spokedevice_name"] = device.get("spokedevice_name", "None")
                     data.append({   "public_ip": branch.get("public_ip", ""),
                                     "tunnel_ip": branch.get("tunnel_ip", ""),
-                                    "branch_location": branch.get["branch_location", ""],
+                                    "branch_location": branch.get("branch_location", ""),
                                     "subnet": branch.get("subnet", []),
                                     "vrf": branch.get("vrf", ""),
                                     "uuid": branch.get("uuid", ""),
