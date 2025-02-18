@@ -917,7 +917,6 @@ def create_loopback_interface_spoke(request):
             response = [{"message": "Loopback Interface created successfully"}]              
             return JsonResponse(response,safe=False) 
         elif "cisco" in data["uuid"]:
-            print("vlan data", data)
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
@@ -1447,7 +1446,27 @@ def delsubnet(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def activate(request: HttpRequest):
     data = json.loads(request.body)      
-    response = ubuntu_info.activate(data)
+    if ".net" not in data.get("uuid", ""):         
+        response = ubuntu_info.activate(data)
+    if "ciscodevice" in data.get("uuid", ""):
+        hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
+        if hubinfo:
+            dialerinfo = coll_dialer_ip.find_one({"dialerip":data.get("tunnel_ip", "")})
+            if dialerinfo:
+                activate_data = {"tunnel_ip": data["hub_ip"],
+                                   "router_username": hubinfo["router_username"],
+                                   "router_password": hubinfo["router_password"],
+                                   "username": dialerinfo["dialerusername"],
+                                   "password": dialerinfo["dialerpassword"]
+                                   }
+                response = router_configure.adduser(activate_data)
+                if response:
+                    coll_spoke_disconnect.delete_many({"uuid": data["uuid"]})
+                    response = {"message":f"Successfully activated: {data['tunnel_ip']}"}
+                else:
+                    response = {"message":f"Error:while activating data['tunnel_ip']"}     
+    if "microtek" in data.get("uuid", ""):
+        response = ubuntu_info.activate(data)
     return JsonResponse(response, safe=False)
 
 ###############HUB info page##############################
