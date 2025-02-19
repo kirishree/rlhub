@@ -650,9 +650,12 @@ def deactivate(request: HttpRequest):
                                     })
                     response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
                 else:
-                    response = {"message":f"Error:while deactivating data['tunnel_ip']"}     
+                    response = {"message":f"Error:while deactivating data['tunnel_ip']"}   
+        else:
+            response = {"message": "Error HUB IP is missed"}
     if "microtek" in data.get("uuid", ""):
         response = ubuntu_info.deactivate(data)
+    print(response)
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])
