@@ -513,13 +513,13 @@ def interfaceconfig(data):
         for int_addr in data["new_addresses"]:
             for address in interface_addresses:
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
-                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])
+                ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
                     return response
         for newaddr in data["new_addresses"]:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={data["intfc_name"]}')  
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')  
         response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
     except Exception as e:
         print(f"An error occurred: {e}")
