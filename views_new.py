@@ -1834,6 +1834,8 @@ def get_configured_hub(request):
         print("error in fetch hubips:", e)
     return JsonResponse(hubips, safe=False)
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def change_password(request):
     try:
         data = json.loads(request.body)
