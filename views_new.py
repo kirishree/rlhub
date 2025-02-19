@@ -16,6 +16,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django_ratelimit.decorators import ratelimit
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -973,6 +975,7 @@ def create_tunnel_interface_spoke(request):
 def interface_config_spoke(request):
     try:
         data = json.loads(request.body)
+        print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         print(f"requested ip of interface config spoke:{public_ip}")
@@ -1006,7 +1009,8 @@ def interface_config_spoke(request):
             response = router_configure.interfaceconfig(data)
             print(response)
     except Exception as e:
-        response = {"message": f"Error: {e}"}
+        print(e)
+        response = {"message": f"Error: while configuring interface"}
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1825,3 +1829,17 @@ def get_configured_hub(request):
     except Exception as e:
         print("error in fetch hubips:", e)
     return JsonResponse(hubips, safe=False)
+
+def change_password(request):
+    try:
+        data = json.loads(request.body)
+        # Retrieve the user object
+        user = User.objects.get(username=data.get("username"))        
+        # Change the password
+        user.password = make_password(data.get("password"))
+        user.save()
+        return True        
+    except ObjectDoesNotExist:
+        return False
+    except Exception as e:
+        return False

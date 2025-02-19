@@ -22,7 +22,7 @@ from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_in
 from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get_ciscohub_config
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
-from reach.views import login_or_register
+from reach.views import login_or_register, change_password
 urlpatterns = [
     path('token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth', login_or_register, name='login_or_register'),
@@ -73,4 +73,5 @@ urlpatterns = [
     path('create_sub_interface_spoke', create_sub_interface_spoke, name='create_sub_interface_spoke'),
     path('create_tunnel_interface_spoke', create_tunnel_interface_spoke, name='create_tunnel_interface_spoke'),
     path('interface_config_hub', interface_config_hub, name='interface_config_hub'),
+    path('change_password', change_password, name='change_password'),
 ]
