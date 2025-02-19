@@ -1844,8 +1844,11 @@ def change_password(request):
         # Change the password
         user.password = make_password(data.get("password"))
         user.save()
-        return True        
+        response = {"message": "Password Changed successfully"}
+        return JsonResponse(response, safe=False)        
     except ObjectDoesNotExist:
-        return False
+        response = {"message": "Error User doesnot exist"}
+        return JsonResponse(response, safe=False)    
     except Exception as e:
-        return False
+        response = {"message": "Error while changing password"}
+        return JsonResponse(response, safe=False)    
