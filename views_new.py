@@ -617,6 +617,7 @@ def hub_info(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def deactivate(request: HttpRequest):
     data = json.loads(request.body) 
+    print(data)
     if ".net" not in data.get("uuid", ""):         
         response = ubuntu_info.deactivate(data)
     if "ciscodevice" in data.get("uuid", ""):
