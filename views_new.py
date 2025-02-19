@@ -1063,6 +1063,7 @@ def vlan_interface_delete_spoke(request):
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
+
 def get_routing_table_spoke(request):
     try:
         data = json.loads(request.body)
@@ -1098,7 +1099,6 @@ def get_routing_table_spoke(request):
     except Exception as e:
         print(e)
         response = []
-    print(response)
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
