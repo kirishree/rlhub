@@ -271,7 +271,7 @@ def create_hosts(new_host, new_ip, hostgroupid):
             ],
             "templates": [
                 {
-                    "templateid":"10248"
+                    "templateid":"10218"
 				
                 }
             ],

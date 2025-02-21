@@ -382,7 +382,7 @@ def add_cisco_device(request: HttpRequest):
 def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    print(f"requested ip of add cisco device hub:{public_ip}")
+    print(f"requested ip of add cisco hub:{public_ip}")
     logger.debug(f'Received request for configure HUB: {request.method} {request.path} Requested ip: {public_ip}')
     subnet = ipaddress.IPv4Network(data["hub_dialer_ip"], strict=False)  # Allow non-network addresses
     hub_dialer_netmask = str(subnet.netmask) 

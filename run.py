@@ -7,21 +7,21 @@ client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_hub_info = db_tunnel["hub_info"]
-#data = []
+data = []
 #os.system("cp reachlink_zabbix_hub.py /root/reachlink/")
-#os.system("python3 /root/reachlink/reachlink_zabbix_hub.py")
-#os.system("systemctl stop reachlink_test")
-#for device in coll_hub_info.find({},{"_id":0}):
-#      data.append(device)
-#with open("/root/reachlink/total_hubs.json", "w") as f:
-#       json.dump(data, f)
-#       f.close()
-#data = []
-#for device in coll_tunnel_ip.find({},{"_id":0}):
-#        data.append(device)
-#with open("/root/reachlink/total_branches.json", "w") as f:
-#        json.dump(data, f)
-#        f.close()
+os.system("python3 /root/reachlink/reachlink_zabbix.py")
+os.system("systemctl stop reachlink_test")
+for device in coll_hub_info.find({},{"_id":0}):
+      data.append(device)
+with open("/root/reachlink/total_hubs.json", "w") as f:
+       json.dump(data, f)
+       f.close()
+data = []
+for device in coll_tunnel_ip.find({},{"_id":0}):
+        data.append(device)
+with open("/root/reachlink/total_branches.json", "w") as f:
+        json.dump(data, f)
+        f.close()
 os.system("cp onboarding.py /root/reachlink/")
 os.system("cp hub_config.py /root/reachlink/")
 os.system("cp ubuntu_info.py /root/reachlink/")
@@ -30,7 +30,7 @@ os.system("cp views_new.py /root/reachlink/reach/views.py")
 #os.system("cp com_router_config.py /root/reachlink/")
 os.system("cp urls_new.py /root/reachlink/reachlink/urls.py")
 #os.system("cp reachlinkst.py /root/reachlink/")
-#os.system("systemctl restart reachlink_test")
+os.system("systemctl restart reachlink_test")
 #os.system("cp reachlink_config.exe /root/reachlink/")
 #os.system("cp reachlink_hub_config.exe /root/reachlink/")
 os.system("cp router_configure.py /root/reachlink/")
