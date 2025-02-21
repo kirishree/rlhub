@@ -76,6 +76,7 @@ def get_routingtable_robustel(data):
         for route in routes_info:
             route = re.sub(r'\s+', ' ', route)  # Replace multiple spaces with a single space
             if "id =" in route:
+                
                 routing_table.append({"protocol":"default",
                                 "destination": destination,
                                 "gateway": gateway,
@@ -86,6 +87,10 @@ def get_routingtable_robustel(data):
                 destination = route.split(" ")[3]
             if "netmask =" in route:
                 netmask = route.split(" ")[3]
+                network = f"{destination}/{netmask}"
+                # Create an IPv4Network object
+                ipintf = ipaddress.IPv4Interface(network)
+                destination = ipintf.with_prefixlen
             if "gateway =" in route:
                 gateway = route.split(" ")[3]
             if "interface =" in route:
@@ -101,7 +106,7 @@ def get_routingtable_robustel(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return routing_table
+    return routing_table[1:]
 #data = {"tunnel_ip":"10.8.0.9",
 #       "router_username": "etelriyad",
 #        "router_password": "Reachlink@08"}
