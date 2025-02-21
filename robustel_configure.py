@@ -66,6 +66,7 @@ def get_routingtable_robustel(data):
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'status route')
+        print(output)
 
     finally:
         # Close the SSH connection
