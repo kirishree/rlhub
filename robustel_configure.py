@@ -83,15 +83,15 @@ def get_routingtable_robustel(data):
                                 "outgoint_interface_name": interface,
                                 "table_id": "main"})
             if "destination =" in route:
-                destination = route.split(" ")[2]
+                destination = route.split(" ")[3]
             if "netmask =" in route:
-                netmask = route.split(" ")[2]
+                netmask = route.split(" ")[3]
             if "gateway =" in route:
-                gateway = route.split(" ")[2]
+                gateway = route.split(" ")[3]
             if "interface =" in route:
-                interface = route.split(" ")[2]
+                interface = route.split(" ")[3]
             if "metric =" in route:
-                distance = route.split(" ")[2]
+                distance = route.split(" ")[3]
         routing_table.append({"protocol":"default",
                                 "destination": destination,
                                 "gateway": gateway,
