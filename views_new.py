@@ -48,6 +48,7 @@ import onboarding
 import hub_config
 import ubuntu_info
 import onboardblock
+import robustel_configure
 from decouple import config
 resource_active = True
 resource_inactive = True
@@ -506,8 +507,8 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
+#@api_view(['GET'])
+#@permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:
         print(request)
@@ -1065,7 +1066,6 @@ def vlan_interface_delete_spoke(request):
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
-
 def get_routing_table_spoke(request):
     try:
         data = json.loads(request.body)
@@ -1098,6 +1098,11 @@ def get_routing_table_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.get_routingtable_cisco(data)
+        elif "robustel" in data["uuid"]:       
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = robustel_configure.get_routingtable_robustel(data)
     except Exception as e:
         print(e)
         response = []
