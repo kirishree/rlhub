@@ -67,12 +67,42 @@ def get_routingtable_robustel(data):
         # Send the command and get the output
         output = get_command_output(shell, 'status route')
         print(output)
-
+        routes_info = output.split("\n")
+        routing_table = []
+        destination = ""
+        gateway = ""
+        distance = "1"
+        interface = ""
+        for route in routes_info:
+            route = re.sub(r'\s+', ' ', route)  # Replace multiple spaces with a single space
+            if "id =" in route:
+                routing_table.append({"protocol":"default",
+                                "destination": destination,
+                                "gateway": gateway,
+                                "metric":distance,
+                                "outgoint_interface_name": interface,
+                                "table_id": "main"})
+            if "destination =" in route:
+                destination = route.split(" ")[2]
+            if "netmask =" in route:
+                netmask = route.split(" ")[2]
+            if "gateway =" in route:
+                gateway = route.split(" ")[2]
+            if "interface =" in route:
+                interface = route.split(" ")[2]
+            if "metric =" in route:
+                distance = route.split(" ")[2]
+        routing_table.append({"protocol":"default",
+                                "destination": destination,
+                                "gateway": gateway,
+                                "metric":distance,
+                                "outgoint_interface_name": interface,
+                                "table_id": "main"})
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return 
+    return routing_table
 data = {"tunnel_ip":"10.8.0.9",
         "router_username": "etelriyad",
         "router_password": "Reachlink@08"}
-get_routingtable_robustel(data)
+print(get_routingtable_robustel(data))
