@@ -14,6 +14,7 @@ from decouple import config
 import onboarding
 import pymongo
 import yaml
+ipr = IPRoute()
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
@@ -541,6 +542,7 @@ def get_interface_details_ubuntu(data):
                         intfc["interface_name"] = "Base Tunnel"
         response = interface_details
     except Exception as e:
+        print(e)
         response = []
     return response
 
