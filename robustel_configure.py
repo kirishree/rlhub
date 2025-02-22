@@ -106,7 +106,74 @@ def get_routingtable_robustel(data):
         # Close the SSH connection
         ssh_client.close()
     return routing_table[1:]
-#data = {"tunnel_ip":"10.8.0.9",
-#       "router_username": "etelriyad",
-#        "router_password": "Reachlink@08"}
-#print(get_routingtable_robustel(data))
+
+def get_interface_robustel(data):
+    """
+    Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    intfcdetails = []
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return intfcdetails
+
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+        output = get_command_output(shell, 'show lan')
+        interfacedetails = output.split("\n")
+        intfc_datas = []
+        status = "up"
+        for intfc in interfacedetails:
+            intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+            if "interface =" in intfc:
+                interface = intfc.split(" ")[3]
+                interfacetype = "ether"
+                vlanid = "None"
+            if "vid = " in intfc:
+                vlanid = intfc.split(" ")[3]
+                interfacetype = "vlan"
+            if "ip = " in intfc:
+                ipv4addres = intfc.split(" ")[3]
+            if "enable = " in intfc:
+                enable = intfc.split(" ")[3]
+                if enable == "true":
+                    status = "up"
+                else:
+                    status = "down"
+            if "netmask = " in intfc:
+                netmask = intfc.split(" ")[3]
+                network = f"{ipv4addres}/{netmask}"
+                # Create an IPv4Network object
+                ipintf = ipaddress.IPv4Interface(network)
+                intfc_datas.append({"interface_name": interface,
+                                 "type": interfacetype,
+                                 "Gateway": '-',
+                                 "mac_address": "-",
+                                 "addresses":[{"IPv4address" :ipintf.with_prefixlen, "primary": True}], 
+                                 "status": status,
+                                 "protocol": "static",                                 
+                                 "vlan_link": vlanid
+                                })
+                status = "up"
+    except Exception as e:
+        print(e)
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return intfc_datas
+
+
+data = {"tunnel_ip":"10.8.0.9",
+       "router_username": "etelriyad",
+        "router_password": "Reachlink@08"}
+print(get_interface_robustel(data))
