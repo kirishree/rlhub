@@ -129,7 +129,7 @@ def get_interface_robustel(data):
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
-        output = get_command_output(shell, 'show lan')
+        output = get_command_output(shell, 'show lan all')
         interfacedetails = output.split("\n")
         intfc_datas = []
         status = "up"
