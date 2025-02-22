@@ -86,7 +86,8 @@ def main():
                     "Severity: High \n"
                     f"The following routes are not Reachable: \n {device['subnet']}"
                 )
-                post_mail(subject, body_mail)
+                #for testing just uncommented
+                #post_mail(subject, body_mail)
 
             # State change: not connected -> connected
             elif current_state == "inactive" and device["status"] == "active":                
@@ -104,7 +105,8 @@ def main():
                     f"Problem Name:  Link Down at between {device['branch_location']}\n"
                     f"Current Status: Active \n "
                 )
-                post_mail(subject, body_mail)  
+                #for testing just uncommented
+                #post_mail(subject, body_mail)  
              # Update the tunnel state
             tunnel_states[tunnel_key] = device["status"]          
                 
@@ -151,7 +153,8 @@ def main():
                     "Severity: High \n"
                     
                 )
-                post_mail(subject, body_mail)
+                #for testing just uncommented
+                #post_mail(subject, body_mail)
 
             # State change: not connected -> connected
             elif current_state == "inactive" and device["status"] == "active":                
@@ -169,7 +172,8 @@ def main():
                     f"Problem Name:  Link Down at between {device['branch_location']}\n"
                     f"Current Status: Active \n "
                 )
-                post_mail(subject, body_mail)  
+                #for testing just uncommented
+                #post_mail(subject, body_mail)  
              # Update the tunnel state
             tunnel_states[hub_key] = device["status"]         
                 
