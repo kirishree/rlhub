@@ -780,6 +780,7 @@ def get_interface_details_spoke(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         print(f"requested ip of get interface details spoke:{public_ip}")
+        response = []
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -792,10 +793,8 @@ def get_interface_details_spoke(request):
                 else:
                     response =[]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
-                response = []
-        elif "microtek" in data["uuid"]:
-            print("hi")
+                print("disconnected")                
+        elif "microtek" in data["uuid"]:     
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
@@ -806,9 +805,13 @@ def get_interface_details_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.get_interface_cisco(data)
+        elif "robustel" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = robustel_configure.get_interface_robustel(data)
     except Exception as e:
         print(e)
-        response = []
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  

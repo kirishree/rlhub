@@ -173,7 +173,7 @@ def get_interface_robustel(data):
     return intfc_datas
 
 
-data = {"tunnel_ip":"10.8.0.9",
-       "router_username": "etelriyad",
-        "router_password": "Reachlink@08"}
-print(get_interface_robustel(data))
+#data = {"tunnel_ip":"10.8.0.9",
+#       "router_username": "etelriyad",
+#       "router_password": "Reachlink@08"}
+#print(get_interface_robustel(data))
