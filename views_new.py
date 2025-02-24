@@ -303,36 +303,39 @@ def add_cisco_device(request: HttpRequest):
                     robustelexe = f.read()
                     f.close()
                 files_to_send = {
-                    "ca.crt": f"{cacrt}",
-                    "client.crt": f"{clientcrt}",
-                    "client.key": f"{clientkey}",
-                    "robustel_conf.exe":f"{robustelexe}"
-                    }
+                    "ca.crt": cacrt,
+                    "client.crt": clientcrt,
+                    "client.key": clientkey,
+                    "robustel_conf.exe": robustelexe  # Keep binary
+                }
                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
 
                 # Create a ZIP archive
                 with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     for filename, content in files_to_send.items():
-                        zip_file.writestr(filename, content)
+                        if filename.endswith('.exe'):
+                            zip_file.writestr(filename, content, compress_type=zipfile.ZIP_STORED)
+                        else:
+                            zip_file.writestr(filename, content)
 
                 # Prepare the response
                 buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
-                response = HttpResponse(buffer, content_type='application/zip')
-                response['Content-Disposition'] = 'attachment; filename="reachlink_robustel_conf.zip"'
-                response['X-Message'] = json.dumps(json_response)
+                httpresponse = HttpResponse(buffer, content_type='application/zip')
+                httpresponse['Content-Disposition'] = 'attachment; filename="reachlink_robustel_conf.zip"'
+                httpresponse['X-Message'] = json.dumps(json_response)
                 background_thread = threading.Thread(target=setass, args=(response,))
                 #background_thread.start() 
             else:
-                response1 = HttpResponse(content_type='text/plain')
-                response1['X-Message'] = json.dumps(response)        
+                httpresponse = HttpResponse(content_type='text/plain')
+                httpresponse['X-Message'] = json.dumps(response)        
         except Exception as e:
             print(e)
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
-            response1 = HttpResponse(content_type='text/plain')
-            response1['X-Message'] = json.dumps(response)
-        return response1
+            httpresponse = HttpResponse(content_type='text/plain')
+            httpresponse['X-Message'] = json.dumps(response)
+        return httpresponse
 
     check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
     if not check_hub_configured:
