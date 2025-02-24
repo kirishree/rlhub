@@ -212,6 +212,7 @@ def login_or_register(request):
         return Response({            
             "message": onboard_status
         })
+    
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def login(request: HttpRequest):
@@ -259,6 +260,66 @@ def add_cisco_device(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     print(f"requested ip of add cisco device spoke:{public_ip}") 
+    if data["device"].lower() == "mikrotek":        
+        data["uuid"] = data['branch_location'] + "_robustel.net"
+        print(data)
+        data["username"] = "none"
+        data["password"] = "none" 
+        global newuser
+        try:
+            response, newuser = onboarding.check_user(data, newuser)        
+            if newuser:
+                userStatus = onboarding.authenticate_user(data)
+                print(userStatus)
+                if userStatus:
+                    response, newuser = onboarding.check_user(data, newuser)
+                else:
+                    response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
+            if "spokedevice_name" in response[0]:
+                client_name = response[0]["spokedevice_name"]
+                with open("easy-rsa/pki/ca.crt", "r") as f:
+                    cacrt = f.read()
+                    f.close()
+                with open(f"easy-rsa/pki/issued/{client_name}.crt", "r")as f:
+                    clientcrt = f.read()
+                    f.close()
+                with open(f"easy-rsa/pki/private/{client_name}.key", "r") as f:
+                    clientkey = f.read()
+                    f.close()
+                with open("robustel_conf.exe", "rb") as f:
+                    robustelexe = f.read()
+                    f.close()
+                files_to_send = {
+                    "ca.crt": f"{cacrt}",
+                    "client.crt": f"{clientcrt}",
+                    "client.key": f"{clientkey}",
+                    "robustel_conf.exe":f"{robustelexe}"
+                    }
+                # Create a buffer for the ZIP file
+                buffer = io.BytesIO()
+
+                # Create a ZIP archive
+                with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    for filename, content in files_to_send.items():
+                        zip_file.writestr(filename, content)
+
+                # Prepare the response
+                buffer.seek(0)
+                json_response = [{"message": response[0]["message"]}]
+                response = HttpResponse(buffer, content_type='application/zip')
+                response['Content-Disposition'] = 'attachment; filename="reachlink_robustel_conf.zip"'
+                response['X-Message'] = json.dumps(json_response)
+                background_thread = threading.Thread(target=setass, args=(response,))
+                #background_thread.start() 
+            else:
+                response1 = HttpResponse(content_type='text/plain')
+                response1['X-Message'] = json.dumps(response)        
+        except:
+            response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(response)
+        return response1
+
     check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
     if not check_hub_configured:
         json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]

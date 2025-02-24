@@ -20,7 +20,7 @@ openvpnhubip = "10.8.0.1"
 hub_tunnel_endpoint = "10.200.202.2"
 dummy_expiry_date = ""
 gretunnelnetworkip = "10.200.202."
-
+hub_ip = "185.69.209.251"
 def authenticate_user(data):
     try:
         if "access_token" not in data:
@@ -146,7 +146,7 @@ def get_tunnel_ip(data, spokedevice_name):
                                "router_username": data.get("device_username", "None"),
                                "router_password": data.get("device_password", "None"),
                                "spokedevice_name": spokedevice_name,
-                               "hub_ip": data.get("dialer_ip", "")
+                               "hub_ip": data.get("dialer_ip", hub_ip)
                               })    
     return tunnel_ip          
 

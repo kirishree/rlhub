@@ -1,84 +1,84 @@
-import serial
+import paramiko
 import time
-from serial.tools import list_ports
 import json
 import requests
 import getpass
 import re
 import ipaddress
-def find_com_port(description=None):
-    """
-    Automatically find the COM port to which the Cisco router is connected.
-    :param description: Part of the device description to search for (optional).
-    :return: The COM port if found, else None.
-    """
-    ports = list_ports.comports()
-    for port in ports:
-        if description:
-            if description.lower() in port.description.lower():
-                print(f"Device found on {port.device}: {port.description}")
-                return port.device
-        else:
-            print(f"Available port: {port.device}")
-            return port.device
-    return None
+hub_ip = "185.69.209.251"
 
-def connect_to_router(com_port, baud_rate=9600):
+def send_command(shell, command, wait_time=2):
+    shell.send(command + '\n')
+    time.sleep(wait_time)  # Wait for the command to be processed  
+    return 
+
+def send_command_wo(shell, command, delay=1):
+    shell.send(command + '\n')
+    time.sleep(delay)
+    output = shell.recv(65535).decode('utf-8')
+    return output
+
+def set_openvpn_client():
     """
-    Establish a serial connection to the router.
-    :param com_port: The COM port to connect to.
-    :param baud_rate: The baud rate for the serial connection.
-    :return: The serial connection object.
+    Connects to a Robustel router via SSH and create OpenVPN tunnel in client mode'.
     """
+    router_ip = "172.23.3.21"
+    username = "etelriyad"
+    password = "Reachlink@08"
+
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
     try:
-        ser = serial.Serial(com_port, baud_rate, timeout=1)
-        print(f"Connected to {com_port} at {baud_rate} baud.")
-        return ser
-    except serial.SerialException as e:
-        print(f"Error connecting to {com_port}: {e}")
-        return None
-
-def send_commands(ser, commands):
-    """
-    Send configuration commands to the router.
-    :param ser: The serial connection object.
-    :param commands: A list of commands to send.
-    """
-    for cmd in commands:
-        ser.write((cmd + '\n').encode('utf-8'))
-        time.sleep(2)  # Give the router time to process the command
-        output = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
-        print(f"Router output: {output}")
-
-def send_commands_rsa(ser, commands):
-    """
-    Send configuration commands to the router and handle RSA key generation interactively.
-    :param ser: The serial connection object.
-    :param commands: A list of commands to send (e.g., "crypto key generate rsa").
-    """
-    for cmd in commands:
-        ser.write((cmd + '\n').encode('utf-8'))
-        time.sleep(3)  # Give the router time to process the command
-        
-        # Read output after sending the command
-        output = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
-        print(f"Router output: {output}")
-
-       
-        ser.write("yes\n".encode('utf-8'))
-        time.sleep(3)  # Wait for router to process the response
-        output = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
-        print(f"Router output after 'yes': {output}")
-
-        
-        ser.write("2048\n".encode('utf-8'))
-        time.sleep(3)  # Wait for router to process the response
-        output = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
-        print(f"Router output after key size: {output}")
-
-        # Check for RSA key generation confirmation
-        if "Generating RSA keys" in output:
-            print("RSA key generation in progress...")
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print("No Robustel router found. Please check the connection.")
+            print("Enter a key to exit...")
+            input()
+            return  
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+        config_commands = [
+                            "add openvpn tunnel 1",
+                            "set openvpn tunnel 1 enable true",
+                            "set openvpn tunnel 1 desc reachlink",
+                            "set openvpn tunnel 1 mode client",
+                            "set openvpn tunnel 1 protocol tcp_client",
+                            f"set openvpn tunnel 1 peer_addr {hub_ip}",
+                            "set openvpn tunnel 1 peer_port 1194",
+                            "set openvpn tunnel 1 interface_type tun",
+                            "set openvpn tunnel 1 auth_type x509ca",
+                            "set openvpn tunnel 1 encryption aes_256",
+                            "set openvpn tunnel 2 authentication sha1",
+                            "set openvpn tunnel 2 compress_enable false"
+                            ]
+        for command in config_commands:
+            output = send_command_wo(shell, 'status route')
+            if "OK" in output:
+                print(command, "success")
+            else:
+                print(command, "failed")
+                ssh_client.close()
+                print("Error while configuring pl try again.")
+                print("Enter a key to exit...")
+                input()
+                return
+    except Exception as e:
+        print(e)
+        print("Error while configuring pl try again.")
+        print("Enter a key to exit...")
+        input()
+        return
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    print("Configuration done. Pl upload the configuration files.")
+    print("Enter a key to exit...")
+    input()
+    return
 
 def is_valid_ip(ip):
     """Check if the IP address is valid (IPv4 or IPv6)."""
@@ -102,16 +102,6 @@ def main():
             print("❌ Invalid email format. Please enter a valid email.")
     print(f"Enter the password of {username}:")
     password = getpass.getpass() 
-    print(f"Enter the registered Branch location:")
-    branch_location = input()
-    while True:
-        hubip = input("Enter the HUB IP: ")
-        if is_valid_ip(hubip):
-            break
-        else:
-            print("❌ Invalid IP format. Please enter a valid IP.")
-    bl = branch_location.lower()
-    uuid = bl + "_" + hubip + "_ciscodevice.net"
     urllogin = "https://reachlink.cloudetel.com/auth"
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
@@ -127,7 +117,10 @@ def main():
                 input()
                 return
             else:
+                print(json_authresponse)
                 access_token = json_authresponse["access"]
+                set_openvpn_client() 
+                return
         else:
             print("Error while authenticating data")
             print("Enter a key to exit...")
@@ -137,155 +130,7 @@ def main():
         print("Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
-        return
-    url = "https://reachlink.cloudetel.com/get_ciscospoke_config"
-    # Set the headers to indicate that you are sending JSON data
-    headers = {"Content-Type": "application/json",
-               "Authorization": f"Bearer {access_token}"}
-    userinfo = {"username": username,
-                "password": password,
-                "uuid": uuid} 
-    json_data = json.dumps(userinfo)
-    try:
-        response = requests.post(url, data=json_data, headers=headers)  # Timeout set to 5 seconds
-        response.raise_for_status()
-        if response.status_code == 200:           
-            json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-            json_response = json.loads(json_response)
-            if  "This device is already Registered" not in json_response["message"]:
-                print(json_response["message"])  
-                print("Enter a key to exit...")
-                input()
-                return        
-        else:
-            print("Error while authenticating data")
-            print("Enter a key to exit...")
-            input()
-            return
-    except Exception as e:
-        print("Error while getting configuration: {e}")
-        print("Enter a key to exit...")
-        input()
-        return
-    # Step 1: Identify the COM port
-    target_description = "USB-to-Serial"
-    com_port = find_com_port(target_description)
-    if not com_port:
-        print("No Cisco router found. Please check the connection.")
-        print("Enter a key to exit...")
-        input()
-        return
-
-    # Step 2: Connect to the router
-    ser = connect_to_router(com_port)
-    if not ser:
-        print("Connection failed. Pl try again.")
-        print("Enter a key to exit")
-        input()
-        return
-    # Step 3: Send configuration commands
-    # Example configuration commands
-    config_commands1 = [
-       "add openvpn tunnel 1",
-        "set openvpn tunnel 1 enable true",
-        "set openvpn tunnel 1 desc reachlink",
-        "set openvpn tunnel 1 mode client",
-        "set openvpn tunnel 1 protocol tcp_client",
-        "set openvpn tunnel 1 peer_addr 185.69.209.251",
-        "set openvpn tunnel 1 peer_port 1194",
-        "set openvpn tunnel 1 interface_type tun",
-        "set openvpn tunnel 1 auth_type x509ca",
-        "set openvpn tunnel 1 encryption aes_256",
-        "set openvpn tunnel 2 authentication sha1",
-        "set openvpn tunnel 2 compress_enable false"
-
-    ]
-    send_commands(ser, config_commands1)
-    config_commands_rsa = [        
-        
-        "crypto key generate rsa",            
-    ]
-    send_commands_rsa(ser, config_commands_rsa)
-    config_commands2 = [        
-        
-        "end",           
-    ]
-    send_commands(ser, config_commands2)
-    config_commands = [
-        "enable",
-        "configure terminal",            
-            "interface FastEthernet4",
-                f"ip address {json_response['interface_wan_ip']} {json_response['interface_wan_netmask']}",
-                "duplex auto",
-                "speed auto",
-                "end",
-
-        "configure terminal",
-            f"ip route {json_response['dialerserverip']} 255.255.255.255 {json_response['interface_wan_gateway']}",
-            "end",
-
-        "configure terminal",
-            "vpdn enable",
-            "vpdn-group reachlink",
-                "request-dialin",
-                "protocol pptp",
-                "pool-member 1",
-                f"initiate-to ip {json_response['dialerserverip']}",
-                "end",
-
-        "configure terminal",
-            "interface Dialer1",
-                f"ip address {json_response['dialer_client_ip']} {json_response['dialer_netmask']}",
-                "ip mtu 1412",
-                "encapsulation ppp",
-                "ip tcp adjust-mss 1312",
-                "dialer pool 1",
-                "dialer idle-timeout 0",
-                "dialer string 1",
-                "dialer persistent",
-                "dialer vpdn",
-                "dialer-group 1",
-                "ppp authentication pap callin",
-                f"ppp pap sent-username {json_response['dialer_username']} password {json_response['dialer_password']}",
-                "end",   
-
-        "configure terminal",
-            "access-list 170 permit ip 10.50.50.0 0.0.0.255 any",
-            "end",
-
-        "configure terminal",
-            "line vty 0 4",
-                "transport in ssh",
-                "access-class 170 in",
-                "login local",
-                "end",
-
-        "configure terminal",
-            f"username {json_response['router_username']} privilege 15 password {json_response['router_password']}",
-        "end",
-
-        "configure terminal",
-            f"snmp-server community {json_response['snmpcommunitystring']} RO",
-            f"snmp-server host {json_response['ubuntu_dialerclient_ip']} version 2c {json_response['snmpcommunitystring']}",
-            "snmp-server enable traps snmp authentication linkdown linkup",
-            'snmp-server contact "reachlink@cloudetel.com"',
-            "end",
-        
-        "configure terminal",
-            "ip route 0.0.0.0 0.0.0.0 Dialer1",
-            "ip name-server 8.8.8.8",
-            "end",
-
-        "write memory",
-    ]
-    send_commands(ser, config_commands)
-
-    # Close the connection
-    ser.close()
-    print("Configuration completed and connection closed.")
-    print("Enter a key to exit")
-    input()
+    return
 
 if __name__ == "__main__":
     main()
-
