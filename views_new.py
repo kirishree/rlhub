@@ -257,6 +257,7 @@ def login(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
     data = json.loads(request.body)  
+    global newuser
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     print(f"requested ip of add cisco device spoke:{public_ip}") 
@@ -265,7 +266,7 @@ def add_cisco_device(request: HttpRequest):
         print(data)
         data["username"] = "none"
         data["password"] = "none" 
-        global newuser
+        
         try:
             response, newuser = onboarding.check_user(data, newuser)        
             if newuser:
@@ -331,7 +332,6 @@ def add_cisco_device(request: HttpRequest):
     print(data)
     data["username"] = "none"
     data["password"] = "none" 
-    global newuser
     try:
         response, newuser = onboarding.check_user(data, newuser)
         print(response)
