@@ -279,8 +279,12 @@ def add_cisco_device(request: HttpRequest):
             if "spokedevice_name" in response[0]:
                 client_name = response[0]["spokedevice_name"]
                 # Path configuration
-                os.chdir("/etc/openvpn/server/easy-rsa/")
-                os.system(f"./easyrsa --batch --days=3650 build-client-full {client_name} nopass")
+                output_file = os.path.expanduser(f"~/{client_name}.ovpn")
+                if not os.path.exists(output_file):
+                    print("Generating new client")
+                    new_client(client_name)    
+                else:
+                    print("Client already available")
                 base_path = "/etc/openvpn/server"
                 ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
                 client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
