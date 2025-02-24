@@ -278,13 +278,21 @@ def add_cisco_device(request: HttpRequest):
                     response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
             if "spokedevice_name" in response[0]:
                 client_name = response[0]["spokedevice_name"]
-                with open("easy-rsa/pki/ca.crt", "r") as f:
+                # Path configuration
+                os.chdir("/etc/openvpn/server/easy-rsa/")
+                os.system(f"./easyrsa --batch --days=3650 build-client-full {client_name} nopass")
+                base_path = "/etc/openvpn/server"
+                ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
+                client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
+                client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
+                
+                with open(ca_cert_file, "r") as f:
                     cacrt = f.read()
                     f.close()
-                with open(f"easy-rsa/pki/issued/{client_name}.crt", "r")as f:
+                with open(client_cert_file, "r")as f:
                     clientcrt = f.read()
                     f.close()
-                with open(f"easy-rsa/pki/private/{client_name}.key", "r") as f:
+                with open(client_key_file, "r") as f:
                     clientkey = f.read()
                     f.close()
                 with open("robustel_conf.exe", "rb") as f:
@@ -315,7 +323,7 @@ def add_cisco_device(request: HttpRequest):
             else:
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)        
-        except:
+        except Exception as e:
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
