@@ -328,6 +328,7 @@ def add_cisco_device(request: HttpRequest):
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)        
         except Exception as e:
+            print(e)
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
