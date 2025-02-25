@@ -128,7 +128,7 @@ def new_client(client_name):
     except Exception as e:
         print(e)
 
-def setass(response):    
+def setass(response, devicename):    
     try:
         connected_spoke =[]
         try:
@@ -147,15 +147,23 @@ def setass(response):
                     connected_spoke.append(collection) 
         for spoke in connected_spoke:
             if spoke["spokedevice_name"] == newspokedevicename:
-                newspokeovpnip = spoke["Tunnel_ip"]
-                newspokeconnstatus = True
-                command = f"sudo ip neighbor replace {newspokegreip} lladdr {newspokeovpnip} dev Reach_link1"
-                subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                query = {"spokedevice_name": newspokedevicename }
-                update_data = {"$set": {"public_ip":newspokeovpnip                                                                         
+                if devicename == "microtek":
+                    query = {"spokedevice_name": newspokedevicename }
+                    update_data = {"$set": {"public_ip":spoke["Public_ip"],
+                                            "tunnel_ip": spoke["Tunnel_ip"]                                                                       
                                         }
                                        }
-                coll_tunnel_ip.update_many(query, update_data)
+                    coll_tunnel_ip.update_many(query, update_data)                  
+                else:
+                    newspokeovpnip = spoke["Tunnel_ip"]
+                    newspokeconnstatus = True
+                    command = f"sudo ip neighbor replace {newspokegreip} lladdr {newspokeovpnip} dev Reach_link1"
+                    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+                    query = {"spokedevice_name": newspokedevicename }
+                    update_data = {"$set": {"public_ip":newspokeovpnip                                                                         
+                                        }
+                                       }
+                    coll_tunnel_ip.update_many(query, update_data)
                 os.system("python3 /root/reachlink/reachlink_zabbix.py")
                 os.system("systemctl stop reachlink_test")
                 tunneldata = []
@@ -164,11 +172,10 @@ def setass(response):
                 with open("total_branches.json", "w") as f:
                     json.dump(tunneldata, f)
                     f.close()
-                os.system("systemctl start reachlink_test")
-                 
+                os.system("systemctl start reachlink_test")                 
         if not newspokeconnstatus:
             print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
-            setass(response)
+            setass(response, devicename)
         else:
             print(f"GRE tunnel created successfully for this {newspokedevicename}.")
     except Exception as e:
@@ -242,7 +249,7 @@ def login(request: HttpRequest):
             response1 = HttpResponse(conffile_content, content_type='text/plain')
             response1['Content-Disposition'] = f'attachment; filename="{client_name}.ovpn"'
             response1['X-Message'] = json.dumps(response)
-            background_thread = threading.Thread(target=setass, args=(response,))
+            background_thread = threading.Thread(target=setass, args=(response,"ubuntu",))
             background_thread.start() 
         else:
             response1 = HttpResponse(content_type='text/plain')
@@ -323,9 +330,8 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response,))
-                #background_thread.start() 
-                print("response ready")
+                background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+                background_thread.start() 
             else:
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)    
@@ -585,8 +591,8 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
+#@api_view(['GET'])
+#@permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:
         print(request)
