@@ -9,7 +9,7 @@ def send_command(shell, command, wait_time=2):
     time.sleep(wait_time)  # Wait for the command to be processed  
     return 
 
-def send_command_config(shell, command, delay=3):
+def send_command_config(shell, command, delay=5):
     shell.send(command + '\n')
     time.sleep(delay)
     output = shell.recv(65535).decode('utf-8')
