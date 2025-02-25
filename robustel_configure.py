@@ -13,6 +13,7 @@ def send_command_wo(shell, command, delay=1):
     shell.send(command + '\n')
     time.sleep(delay)
     output = shell.recv(65535).decode('utf-8')
+    print(command, output)
     return output
 
 def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=15):
@@ -214,6 +215,7 @@ def createvlaninterface(data):
             vlan_no = int(vlan_no) + 1
         else:
             vlan_no = 1    
+        print(vlan_no)
         output = send_command_wo(shell, f'add lan vlan {vlan_no}')
         response = [{"message": "Error while creating vlan interface"}]
         if "OK" in output:
