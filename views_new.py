@@ -268,7 +268,7 @@ def add_cisco_device(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     print(f"requested ip of add cisco device spoke:{public_ip}") 
-    if data["device"].lower() == "mikrotek":        
+    if data["device"].lower() == "robustel":        
         data["uuid"] = data['branch_location'] + "_robustel.net"
         print(data)
         data["username"] = "none"
@@ -330,7 +330,7 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+                #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
                 #background_thread.start() 
             else:
                 response1 = HttpResponse(content_type='text/plain')
