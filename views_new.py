@@ -309,13 +309,23 @@ def add_cisco_device(request: HttpRequest):
                     "robustel_conf.exe": robustelexe  # Keep binary
                 }
                 # Create a buffer for the ZIP file
+                #buffer = io.BytesIO()
+
+                # Create a ZIP archive
+                #with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                #    for filename, content in files_to_send.items():
+                #        zip_file.writestr(filename, content)
+
+                # Prepare the response
+                #buffer.seek(0)
+                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
 
                 # Create a ZIP archive
                 with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    for filename, content in files_to_send.items():
-                        zip_file.writestr(filename, content)
-
+                    # Read the EXE file and add it to the ZIP
+                    with open("robustel_conf.exe", "rb") as f:
+                        zip_file.writestr("robustel_conf.exe", f.read())
                 # Prepare the response
                 buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
@@ -324,6 +334,7 @@ def add_cisco_device(request: HttpRequest):
                 httpresponse['X-Message'] = json.dumps(json_response)
                 background_thread = threading.Thread(target=setass, args=(response,))
                 #background_thread.start() 
+                print("response ready")
             else:
                 httpresponse = HttpResponse(content_type='text/plain')
                 httpresponse['X-Message'] = json.dumps(response)        
