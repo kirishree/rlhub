@@ -20,7 +20,6 @@ def send_command_wo(shell, command, delay=1):
     shell.send(command + '\n')
     time.sleep(delay)
     output = shell.recv(65535).decode('utf-8')
-    print(command, output)
     return output
 
 
