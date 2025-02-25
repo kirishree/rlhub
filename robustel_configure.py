@@ -9,12 +9,20 @@ def send_command(shell, command, wait_time=2):
     time.sleep(wait_time)  # Wait for the command to be processed  
     return 
 
+def send_command_config(shell, command, delay=3):
+    shell.send(command + '\n')
+    time.sleep(delay)
+    output = shell.recv(65535).decode('utf-8')
+    print(command, output)
+    return output
+
 def send_command_wo(shell, command, delay=1):
     shell.send(command + '\n')
     time.sleep(delay)
     output = shell.recv(65535).decode('utf-8')
     print(command, output)
     return output
+
 
 def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=15):
     """
@@ -232,7 +240,7 @@ def createvlaninterface(data):
                         if "OK" in output:
                             output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')
                             if "OK" in output:
-                                output = send_command_wo(shell, f'config save_and_apply')
+                                output = send_command_config(shell, f'config save_and_apply')
                                 if "OK" in output:
                                     response = [{"message": "Successfully vlan interface created"}]                         
     except Exception as e:
