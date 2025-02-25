@@ -306,7 +306,7 @@ def add_cisco_device(request: HttpRequest):
                 with open(client_key_file, "r") as f:
                     clientkey = f.read()
                     f.close()
-                with open("robustel_conf.exe", "rb") as f:
+                with open("/root/reachlink/robustel_conf.exe", "rb") as f:
                     robustelexe = f.read()
                     f.close()
                 files_to_send = {
