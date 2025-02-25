@@ -135,9 +135,16 @@ def get_interface_robustel(data):
         status = "up"
         for intfc in interfacedetails:
             intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+            if "network {" in intfc:
+                interfacetype = "ether"
+            if "multi_ip {" in intfc:
+                interfacetype = "multiple_ip"
+            if "vlan {" in intfc:
+                interfacetype = "vlan"
+            if "id =" in intfc:
+                interfaceid = intfc.split(" ")[3]
             if "interface =" in intfc:
                 interface = intfc.split(" ")[3]
-                interfacetype = "ether"
                 vlanid = "None"
             if "vid = " in intfc:
                 vlanid = intfc.split(" ")[3]
@@ -162,7 +169,8 @@ def get_interface_robustel(data):
                                  "addresses":[{"IPv4address" :ipintf.with_prefixlen, "primary": True}], 
                                  "status": status,
                                  "protocol": "static",                                 
-                                 "vlan_link": vlanid
+                                 "vlan_link": vlanid,
+                                 "interfaceid":interfaceid
                                 })
                 status = "up"
     except Exception as e:
@@ -170,8 +178,67 @@ def get_interface_robustel(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
+    intfc_datas.pop(1)
     return intfc_datas
 
+def createvlaninterface(data):
+    """
+    Connects to a Robustel router via SSH and retrieves the output of 'status route'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []    
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+        output = get_command_output(shell, 'show lan all')
+        interfacedetails = output.split("\n")
+        vlanpresent = False
+        for intfc in interfacedetails:
+            intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+            if "vlan {" in intfc:
+                vlanpresent =True
+            if "id =" in intfc:
+                vlan_no = intfc.split(" ")[3]
+        if vlanpresent:
+            vlan_no = int(vlan_no) + 1
+        else:
+            vlan_no = 1    
+        output = send_command_wo(shell, f'add lan vlan {vlan_no}')
+        response = [{"message": "Error while creating vlan interface"}]
+        if "OK" in output:
+            output = send_command_wo(shell, f'set lan vlan {vlan_no} enable true')
+            if "OK" in output:
+                output = send_command_wo(shell, f'set lan vlan {vlan_no} interface lan0')
+                if "OK" in output:
+                    vlan_ip = data["addresses"][0].split("/")[0]
+                    subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+                    netmask = str(subnet.netmask)
+                    output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
+                    if "OK" in output:
+                        output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
+                        if "OK" in output:
+                            output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')
+                            if "OK" in output:
+                                output = send_command_wo(shell, f'config save_and_apply')
+                                if "OK" in output:
+                                    response = [{"message": "Successfully vlan interface created"}]                         
+    except Exception as e:
+        print(e)
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return response
 
 #data = {"tunnel_ip":"10.8.0.9",
 #       "router_username": "etelriyad",

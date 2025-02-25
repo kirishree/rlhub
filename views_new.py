@@ -930,11 +930,15 @@ def create_vlan_interface_spoke(request):
             interface_details = microtek_configure.createvlaninterface(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            print("vlan data", data)
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createvlaninterface(data)         
+            response = router_configure.createvlaninterface(data)   
+        elif "robustel" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = robustel_configure.createvlaninterface(data) 
     except Exception as e:
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
