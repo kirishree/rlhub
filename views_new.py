@@ -330,8 +330,8 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-                background_thread.start() 
+                #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+                #background_thread.start() 
             else:
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)    
