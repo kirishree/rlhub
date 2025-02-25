@@ -309,41 +309,34 @@ def add_cisco_device(request: HttpRequest):
                     "robustel_conf.exe": robustelexe  # Keep binary
                 }
                 # Create a buffer for the ZIP file
-                #buffer = io.BytesIO()
-
-                # Create a ZIP archive
-                #with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                #    for filename, content in files_to_send.items():
-                #        zip_file.writestr(filename, content)
-
-                # Prepare the response
-                #buffer.seek(0)
-                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
 
                 # Create a ZIP archive
                 with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    # Read the EXE file and add it to the ZIP
-                    with open("robustel_conf.exe", "rb") as f:
-                        zip_file.writestr("robustel_conf.exe", f.read())
+                    for filename, content in files_to_send.items():
+                        zip_file.writestr(filename, content)
+
                 # Prepare the response
                 buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
-                httpresponse = HttpResponse(buffer, content_type='application/zip')
-                httpresponse['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
-                httpresponse['X-Message'] = json.dumps(json_response)
-                background_thread = threading.Thread(target=setass, args=(response,))
+                response1 = HttpResponse(buffer, content_type='application/zip')
+                response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                response1['X-Message'] = json.dumps(json_response)
+                response1["Access-Control-Expose-Headers"] = "X-Message"
+                #background_thread = threading.Thread(target=setass, args=(response,))
                 #background_thread.start() 
                 print("response ready")
             else:
-                httpresponse = HttpResponse(content_type='text/plain')
-                httpresponse['X-Message'] = json.dumps(response)        
+                response1 = HttpResponse(content_type='text/plain')
+                response1['X-Message'] = json.dumps(response)    
+                response1["Access-Control-Expose-Headers"] = "X-Message"    
         except Exception as e:
             print(e)
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
-            httpresponse = HttpResponse(content_type='text/plain')
-            httpresponse['X-Message'] = json.dumps(response)
-        return httpresponse
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(response)
+            response1["Access-Control-Expose-Headers"] = "X-Message"
+        return response1
 
     check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
     if not check_hub_configured:
