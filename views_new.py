@@ -314,10 +314,7 @@ def add_cisco_device(request: HttpRequest):
                 # Create a ZIP archive
                 with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     for filename, content in files_to_send.items():
-                        if filename.endswith('.exe'):
-                            zip_file.writestr(filename, content, compress_type=zipfile.ZIP_STORED)
-                        else:
-                            zip_file.writestr(filename, content)
+                        zip_file.writestr(filename, content)
 
                 # Prepare the response
                 buffer.seek(0)
