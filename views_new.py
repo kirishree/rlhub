@@ -591,8 +591,8 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
-#@api_view(['GET'])
-#@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:
         print(request)
