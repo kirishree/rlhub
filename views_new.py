@@ -261,7 +261,7 @@ def add_cisco_device(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     print(f"requested ip of add cisco device spoke:{public_ip}") 
-    if data["device"].lower() == "cisco":        
+    if data["device"].lower() == "mikrotek":        
         data["uuid"] = data['branch_location'] + "_robustel.net"
         print(data)
         data["username"] = "none"
