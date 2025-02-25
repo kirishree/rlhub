@@ -209,7 +209,7 @@ def createvlaninterface(data):
             intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
             if "vlan {" in intfc:
                 vlanpresent =True
-            if "id =" in intfc:
+            if "id =" in intfc and "v" not in intfc:
                 vlan_no = intfc.split(" ")[3]
         if vlanpresent:
             vlan_no = int(vlan_no) + 1
