@@ -301,7 +301,8 @@ def interface_config(data):
                     vlanid = intfc.split(" ")[3]
                     if vlanid == data['intfc_name'].split("Vlan")[1]:
                         break
-            if vlan_no != None:
+            print("vlan_no", vlan_no)
+            if vlan_no != "None":
                 vlan_ip = data["new_addresses"][0]["address"].split("/")[0]
                 subnet = ipaddress.IPv4Network(data["new_addresses"][0]["address"], strict=False)  # Allow non-network addresses
                 netmask = str(subnet.netmask)
@@ -311,10 +312,10 @@ def interface_config(data):
                     output = send_command_wo(shell, f'config save_and_apply')
                     response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
                 else:
-                    response = [{"message": "Error while configuring IP address"}]
-                
+                    response = [{"message": "Error while configuring IP address"}]                
             else:
                 response = [{"message": "Error no such vlan available"}]
+            print(response)
         elif "_IP_Alias" in data['intfc_name']:
             alias_id = []
             multi_ip = False
