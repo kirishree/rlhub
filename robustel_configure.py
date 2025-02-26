@@ -141,22 +141,24 @@ def get_interface_robustel(data):
         interfacedetails = output.split("\n")
         intfc_datas = []
         status = "up"
+        virtualaddresses = []
         for intfc in interfacedetails:
             intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
             if "network {" in intfc:
                 interfacetype = "ether"
             if "multi_ip {" in intfc:
-                interfacetype = "multiple_ip"
+                interfacetype = "multiple"
             if "vlan {" in intfc:
-                interfacetype = "vlan"
+                interfacetype = "VLAN"
             if "id =" in intfc:
                 interfaceid = intfc.split(" ")[3]
             if "interface =" in intfc:
                 interface = intfc.split(" ")[3]
-                vlanid = "None"
+                vlanid = "-"
             if "vid = " in intfc:
                 vlanid = intfc.split(" ")[3]
-                interfacetype = "vlan"
+                interfacetype = "VLAN"
+                interface = "Vlan" + vlanid
             if "ip = " in intfc:
                 ipv4addres = intfc.split(" ")[3]
             if "enable = " in intfc:
@@ -170,7 +172,8 @@ def get_interface_robustel(data):
                 network = f"{ipv4addres}/{netmask}"
                 # Create an IPv4Network object
                 ipintf = ipaddress.IPv4Interface(network)
-                intfc_datas.append({"interface_name": interface,
+                if interfacetype != "multiple":
+                    intfc_datas.append({"interface_name": interface,
                                  "type": interfacetype,
                                  "Gateway": '-',
                                  "mac_address": "-",
@@ -180,7 +183,24 @@ def get_interface_robustel(data):
                                  "vlan_link": vlanid,
                                  "interfaceid":interfaceid
                                 })
+                else:
+                    virtual_intfcname = interface + "_IP_Alias"
+                    virtual_interfacelastid = interfaceid 
+                    virtualaddresses.append({"IPv4address" :ipintf.with_prefixlen,
+                                              "primary": False, 
+                                              "interfaceid":interfaceid})
                 status = "up"
+        if len(virtualaddresses) > 0:
+            intfc_datas.append({"interface_name": virtual_intfcname,
+                                 "type": "Multiple IPs assigned to lan0",
+                                 "Gateway": '-',
+                                 "mac_address": "-",
+                                 "addresses":virtualaddresses, 
+                                 "status": "up",
+                                 "protocol": "static",                                 
+                                 "vlan_link": "-",
+                                 "interfaceid":virtual_interfacelastid
+                                })
     except Exception as e:
         print(e)
     finally:
@@ -240,8 +260,7 @@ def createvlaninterface(data):
                             output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')
                             if "OK" in output:
                                 output = send_command_config(shell, f'config save_and_apply')
-                                if "OK" in output:
-                                    response = [{"message": "Successfully vlan interface created"}]                         
+                                response = [{"message": "Successfully vlan interface created"}]                         
     except Exception as e:
         print(e)
     finally:
@@ -249,6 +268,96 @@ def createvlaninterface(data):
         ssh_client.close()
     return response
 
+def interface_config(data):
+    """
+    Connects to a Robustel router via SSH and retrieves the output of 'status route'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []    
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+
+        output = get_command_output(shell, 'show lan all')
+        interfacedetails = output.split("\n")
+        if "Vlan" in data['intfc_name']:
+            vlan_no = "None"
+            for intfc in interfacedetails:
+                intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+                if "id =" in intfc and "v" not in intfc:
+                    vlan_no = intfc.split(" ")[3]
+                if "vid =" in intfc:
+                    vlanid = intfc.split(" ")[3]
+                    if vlanid == data['intfc_name'].split("Vlan")[1]:
+                        break
+            if vlan_no != None:
+                vlan_ip = data["new_addresses"][0]["address"].split("/")[0]
+                subnet = ipaddress.IPv4Network(data["new_addresses"][0]["address"], strict=False)  # Allow non-network addresses
+                netmask = str(subnet.netmask)
+                output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
+                if "OK" in output:
+                    output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
+                    output = send_command_wo(shell, f'config save_and_apply')
+                    response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+                else:
+                    response = [{"message": "Error while configuring IP address"}]
+                
+            else:
+                response = [{"message": "Error no such vlan available"}]
+        elif "_IP_Alias" in data['intfc_name']:
+            alias_id = []
+            multi_ip = False
+            for intfc in interfacedetails:
+                intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+                if "multi_ip {" in intfc:
+                    multi_ip = True
+                if "id =" in intfc and "v" not in intfc:
+                    if multi_ip:
+                        alias_id.append(intfc.split(" ")[3])
+                        multi_ip = False                       
+            if len(alias_id) > 0:
+                for ipid in alias_id:
+                    output = send_command_wo(shell, f'del lan multi_ip {ipid}')
+            ipid = 1
+            for datas in data["new_addresses"]: 
+                multiple_ip = datas["address"].split("/")[0]
+                subnet = ipaddress.IPv4Network(datas["address"], strict=False)  # Allow non-network addresses
+                netmask = str(subnet.netmask)
+                output = send_command_wo(shell, f'add lan multi_ip {ipid}')
+                if "OK" in output:
+                    output = send_command_wo(shell, f'set lan multi_ip {ipid} ip {multiple_ip}')
+                    if "OK" in output:
+                        output = send_command_wo(shell, f'set lan multi_ip {ipid} netmask {netmask}')    
+                        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]                    
+                    else:
+                        response = [{"message": f"Error while configuring IP address {datas["address"]}"}]   
+                    ipid = ipid + 1
+                else:
+                    response = [{"message": "Error while adding Multiple IP "}]   
+                    break                  
+            output = send_command_wo(shell, f'config save_and_apply')
+    except Exception as e:
+        print(f"Error in interface_config in robutel {e}")
+        # Close the SSH connection
+        ssh_client.close()
+    return response
+                     
+          
+
+
+
+        
 #data = {"tunnel_ip":"10.8.0.9",
 #       "router_username": "etelriyad",
 #       "router_password": "Reachlink@08"}

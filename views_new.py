@@ -1106,6 +1106,13 @@ def interface_config_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = router_configure.interfaceconfig(data)
             print(response)
+        elif "robustel" in data["uuid"]:
+            print(data)
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = robustel_configure.interface_config(data)
+            print(response)
     except Exception as e:
         print(e)
         response = {"message": f"Error: while configuring interface"}
