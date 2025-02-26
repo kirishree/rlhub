@@ -341,7 +341,7 @@ def interface_config(data):
                         output = send_command_wo(shell, f'set lan multi_ip {ipid} netmask {netmask}')    
                         response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]                    
                     else:
-                        response = [{"message": f"Error while configuring IP address {datas["address"]}"}]   
+                        response = [{"message": f"Error while configuring IP address {datas['address']}"}]   
                     ipid = ipid + 1
                 else:
                     response = [{"message": "Error while adding Multiple IP "}]   
