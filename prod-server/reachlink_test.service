@@ -1,0 +1,13 @@
+[Unit]
+Description=checking active links for ReachLink
+After=network.target
+
+[Service]
+User=root
+Group=sudo
+WorkingDirectory=/etc/reach/reachlink/
+ExecStart=/usr/bin/python3 reachlinkst.py
+			
+
+[Install]
+WantedBy=multi-user.target

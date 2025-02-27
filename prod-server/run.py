@@ -7,7 +7,8 @@ client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_hub_info = db_tunnel["hub_info"]
-
+os.system("cp reachlink_test.service /etc/systemd/system/")
+os.system("cp gunicorn_reachlink.service /etc/systemd/system/")
 os.system("cp reachlink_zabbix_hub.py /etc/reach/reachlink/")
 os.system("cp reachlink_zabbix.py /etc/reach/reachlink/")
 os.system("cp router_configure.py /etc/reach/reachlink/")
