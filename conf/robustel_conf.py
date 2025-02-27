@@ -52,20 +52,38 @@ def set_openvpn_client():
                             "set openvpn tunnel 1 interface_type tun",
                             "set openvpn tunnel 1 auth_type x509ca",
                             "set openvpn tunnel 1 encryption aes_256",
-                            "set openvpn tunnel 2 authentication sha1",
-                            "set openvpn tunnel 2 compress_enable false"
+                            "set openvpn tunnel 1 authentication sha1",
+                            "set openvpn tunnel 1 compress_enable false",
+                            "add lan multi_ip 1",
+                            "set lan multi_ip 1 ip 192.168.2.1",
+                            "set lan multi_ip 1 netmask 255.255.255.0",
+                            "add firewall white_list 1",
+                            "set firewall white_list 1 desc localnetwork",
+                            "set firewall white_list 1 src_addr 172.23.3.0/24",
+                            "add firewall white_list 2",
+                            "set firewall white_list 2 desc reachlinkserver",
+                            "set firewall white_list 2 src_addr 185.69.209.251/32",
+                            "add firewall white_list 3",
+                            "set firewall white_list 3 desc reachlinknetwork",
+                            "set firewall white_list 3 src_addr 10.8.0.0/24",
+                            "set firewall remote_telnet_access false",
+                            "set firewall remote_https_access false",
+                            "set firewall remote_ssh_access false",
+                            "set firewall local_ssh_access true",
+                            "set firewall local_telnet_access true"                                                        
                             ]
         for command in config_commands:
-            output = send_command_wo(shell, 'status route')
+            output = send_command_wo(shell, command)
             if "OK" in output:
                 print(command, "success")
             else:
                 print(command, "failed")
-                ssh_client.close()
+                ssh_client.close()                
                 print("Error while configuring pl try again.")
                 print("Enter a key to exit...")
                 input()
                 return
+        output = send_command_wo(shell, "config save_and_apply")
     except Exception as e:
         print(e)
         print("Error while configuring pl try again.")
