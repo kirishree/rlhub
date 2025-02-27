@@ -11,7 +11,7 @@ coll_tunnel_ip = db["tunnel_ip"]
 coll_registered_organization = db["registered_organization"]
 
 # Zabbix API URL
-zabbix_api_url = config('ZABBIX_API_UR')  # Replace with your Zabbix API URL
+zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 
 # Zabbix API credentials
 username = config('ZABBIX_USERNAME')

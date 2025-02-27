@@ -9,8 +9,8 @@ db_tunnel = client["reach_link"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_hub_info = db_tunnel["hub_info"]
 data = []
-os.system("cp reachlink_zabbix_hub.py /etc/reach/reachlink/")
-os.system("python3 /etc/reach/reachlink/reachlink_zabbix_hub.py")
+os.system("cp reachlink_zabbix.py /etc/reach/reachlink/")
+os.system("python3 /etc/reach/reachlink/reachlink_zabbix.py")
 os.system("systemctl stop reachlink_test")
 for device in coll_hub_info.find({},{"_id":0}):
       data.append(device)
