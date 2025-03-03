@@ -403,7 +403,7 @@ def add_cisco_device(request: HttpRequest):
                     for dev in regdevices["registered_devices"]:                    
                         if "cisco_hub_info" in dev:
                             if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
-                                for cispoke in  dev["cisco_spokes_info":]                         
+                                for cispoke in  dev["cisco_spokes_info"]:                         
                                     if data["uuid"] == cispoke["uuid"]:
                                         cispoke["router_username"] = devicename.lower()
                                         cispoke["router_password"] = newdialerinfo["router_password"]
