@@ -168,6 +168,7 @@ def check_user(data, newuser):
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
                     for device in registered_devices_info:                        
                         if "ciscohub" in data["uuid"]:
+                            print(device)
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
                                     response =[{ "message": 'This Cisco HUB is already Registered',
