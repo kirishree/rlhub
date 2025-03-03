@@ -266,9 +266,15 @@ def check_user(data, newuser):
                                 spokedevice_name =  "robustelspoke"+ str(len(devinfo["robustel_spokes_info"])+1)+"-"+details["organization_name"]
                                 new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
-                                                      "spokedevice_name":spokedevice_name
+                                                      "spokedevice_name":spokedevice_name,
+                                                      "router_username":"admin",
+                                                      "router_password": "admin",
+                                                      "hub_ip": hub_ip,
+                                                      "tunnel_ip": "None",
+                                                      "subnet": []
                                                       }
                                 devinfo["robustel_spokes_info"].append(new_spoke_info)
+                                coll_tunnel_ip.insert_one(new_spoke_info)
                     elif "microtek" in data["uuid"]:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:

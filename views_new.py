@@ -147,7 +147,7 @@ def setass(response, devicename):
                     connected_spoke.append(collection) 
         for spoke in connected_spoke:
             if spoke["spokedevice_name"] == newspokedevicename:
-                if devicename == "microtek":
+                if devicename == "robustel":
                     query = {"spokedevice_name": newspokedevicename }
                     update_data = {"$set": {"public_ip":spoke["Public_ip"],
                                             "tunnel_ip": spoke["Tunnel_ip"]                                                                       
