@@ -515,7 +515,7 @@ def add_cisco_hub(request: HttpRequest):
             else:
                 response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
         print(response)
-        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
+        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco HUB is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicename = devicename   
             devicehubinfo = coll_hub_info.find_one({"hub_wan_ip_only":data["hub_ip"].split("/")[0]})            
