@@ -165,6 +165,8 @@ def check_user(data, newuser):
                     registered_devices_info = details["registered_devices"]
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
                     for device in registered_devices_info:
+                        print(device)
+                        print(data)
                         if "ciscohub" in data["uuid"]:
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
@@ -234,6 +236,7 @@ def check_user(data, newuser):
                     if "ciscohub" in data["uuid"]:
                         no_of_hubs = 1
                         for dev in registered_devices_info:
+                            print("dev", dev)
                             if "cisco_hub_info" in dev:
                                 no_of_hubs = no_of_hubs + 1
                         print("number of hubs", no_of_hubs)
