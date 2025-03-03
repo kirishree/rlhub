@@ -367,7 +367,7 @@ def add_cisco_device(request: HttpRequest):
             else:
                 response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
         print(response)
-        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
+        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
             dialer_ip = data.get("dialer_ip", "")
