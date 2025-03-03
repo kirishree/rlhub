@@ -424,14 +424,10 @@ def add_cisco_device(request: HttpRequest):
                                         "registered_devices": regdevices["registered_devices"]                                                                           
                                         }
                                        }
-                    coll_registered_organization.update_many(query, update_data)                                            
-                    query = {"uuid": data["uuid"]}
-                    update_data = {"$set": {"tunnel_ip": newdialerinfo["dialerip"],
-                                    "router_username": devicename.lower(),
-                                    "router_password": newdialerinfo["router_password"]
-                                    } }
-                    coll_tunnel_ip.update_many(query, update_data)
-                    os.system("python3 /root/reachlink/reachlink_zabbix.py")
+                    coll_registered_organization.update_many(query, update_data)                                          
+                    dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
+                    coll_tunnel_ip.insert_one(dialerinfo)
+                    #os.system("python3 /root/reachlink/reachlink_zabbix.py")
                 else:
                     json_response = [{"message": f"Error:while generating dialerip"}]
                     response = HttpResponse(content_type='application/zip')
