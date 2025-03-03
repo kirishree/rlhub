@@ -535,16 +535,16 @@ def add_cisco_hub(request: HttpRequest):
                 for dev in regdevices["registered_devices"]:                    
                     if "cisco_hub_info" in dev:
                         if data["uuid"] == dev["cisco_hub_info"]["uuid"]:
-                            dev["cisco_hub_info"]["router_username"] = devicename.lower(),
-                            dev["cisco_hub_info"]["router_password"] = devicehubinfo["router_password"],
-                            dev["cisco_hub_info"]["hubdevice_name"] = devicename,
-                            dev["cisco_hub_info"]["hub_dialer_ip"] =  devicehubinfo["hub_dialer_ip"],
-                            dev["cisco_hub_info"]["hub_dialer_netmask"] = devicehubinfo["hub_dialer_netmask"],
-                            dev["cisco_hub_info"]["hub_dialer_network"] = devicehubinfo["hub_dialer_network"],
-                            dev["cisco_hub_info"]["hub_ip"] = data["hub_ip"],
-                            dev["cisco_hub_info"]["hub_wan_ip_only"] = devicehubinfo["hub_wan_ip_only"] ,
-                            dev["cisco_hub_info"]["hub_wan_ip_netmask"] = devicehubinfo["hub_wan_ip_netmask"],
-                            dev["cisco_hub_info"]["hub_wan_ip_gateway"] = data["hub_wan_ip_gateway"],                        
+                            dev["cisco_hub_info"]["router_username"] = devicename.lower()
+                            dev["cisco_hub_info"]["router_password"] = devicehubinfo["router_password"]
+                            dev["cisco_hub_info"]["hubdevice_name"] = devicename
+                            dev["cisco_hub_info"]["hub_dialer_ip"] =  devicehubinfo["hub_dialer_ip"]
+                            dev["cisco_hub_info"]["hub_dialer_netmask"] = devicehubinfo["hub_dialer_netmask"]
+                            dev["cisco_hub_info"]["hub_dialer_network"] = devicehubinfo["hub_dialer_network"]
+                            dev["cisco_hub_info"]["hub_ip"] = data["hub_ip"]
+                            dev["cisco_hub_info"]["hub_wan_ip_only"] = devicehubinfo["hub_wan_ip_only"]
+                            dev["cisco_hub_info"]["hub_wan_ip_netmask"] = devicehubinfo["hub_wan_ip_netmask"]
+                            dev["cisco_hub_info"]["hub_wan_ip_gateway"] = data["hub_wan_ip_gateway"]                      
                             dev["cisco_hub_info"]["hub_dialer_ip_cidr"] = data["hub_dialer_ip"]
                 query = {"organization_id": organizationid}
                 update_data = {"$set": {
