@@ -402,22 +402,23 @@ def add_cisco_device(request: HttpRequest):
                     regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
                     for dev in regdevices["registered_devices"]:                    
                         if "cisco_hub_info" in dev:
-                            if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]:                            
-                                if data["uuid"] == dev["cisco_spokes_info"]["uuid"]:
-                                    dev["cisco_spokes_info"]["router_username"] = devicename.lower()
-                                    dev["cisco_spokes_info"]["router_password"] = newdialerinfo["router_password"]
-                                    dev["cisco_spokes_info"]["spokedevice_name"] = devicename
-                                    dev["cisco_spokes_info"]["dialerip"] =  newdialerinfo["dialerip"]
-                                    dev["cisco_spokes_info"]["dialerpassword"] = newdialerinfo["dialerpassword"]
-                                    dev["cisco_spokes_info"]["dialerusername"] = devicename
-                                    dev["cisco_spokes_info"]["dialer_hub_ip"] = dialer_ip
-                                    dev["cisco_spokes_info"]["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
-                                    dev["cisco_spokes_info"]["router_wan_ip_netmask"] = data["router_wan_gateway"]
-                                    dev["cisco_spokes_info"]["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
-                                    dev["cisco_spokes_info"]["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
-                                    dev["cisco_spokes_info"]["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
-                                    dev["cisco_spokes_info"]["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
-                                    dev["cisco_spokes_info"]["branch_location"] = data["branch_location"]
+                            if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
+                                for cispoke in  dev["cisco_spokes_info":]                         
+                                    if data["uuid"] == cispoke["uuid"]:
+                                        cispoke["router_username"] = devicename.lower()
+                                        cispoke["router_password"] = newdialerinfo["router_password"]
+                                        cispoke["spokedevice_name"] = devicename
+                                        cispoke["dialerip"] =  newdialerinfo["dialerip"]
+                                        cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                        cispoke["dialerusername"] = devicename
+                                        cispoke["dialer_hub_ip"] = dialer_ip
+                                        cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                        cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                        cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                        cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                        cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                        cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                        cispoke["branch_location"] = data["branch_location"]
                     query = {"organization_id": organizationid}
                     update_data = {"$set": {
                                         "registered_devices": regdevices["registered_devices"]                                                                           
