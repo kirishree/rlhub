@@ -110,8 +110,10 @@ def get_organization_id(data):
             else:
                 return False
         else:
+            print(user_response)
             return False    
-    except:
+    except Exception as e:
+        print(e)
         return False
 
 def generate_device_name(length,organization_info):
