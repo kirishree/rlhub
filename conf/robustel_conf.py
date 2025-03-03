@@ -23,8 +23,8 @@ def set_openvpn_client():
     Connects to a Robustel router via SSH and create OpenVPN tunnel in client mode'.
     """
     router_ip = "172.23.3.21"
-    username = "etelriyad"
-    password = "Reachlink@08"
+    username = "admin"
+    password = "admin"
 
     # Create an SSH client
     ssh_client = paramiko.SSHClient()

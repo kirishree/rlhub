@@ -22,9 +22,9 @@ def set_openvpn_client():
     """
     Connects to a Robustel router via SSH and create OpenVPN tunnel in client mode'.
     """
-    router_ip = "172.23.3.21"
-    username = "etelriyad"
-    password = "Reachlink@08"
+    router_ip = "192.168.0.1"
+    username = "admin"
+    password = "admin"
 
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
@@ -59,7 +59,7 @@ def set_openvpn_client():
                             "set lan multi_ip 1 netmask 255.255.255.0",
                             "add firewall white_list 1",
                             "set firewall white_list 1 desc localnetwork",
-                            "set firewall white_list 1 src_addr 172.23.3.0/24",
+                            "set firewall white_list 1 src_addr 192.168.0.0/24",
                             "add firewall white_list 2",
                             "set firewall white_list 2 desc reachlinkserver",
                             "set firewall white_list 2 src_addr 185.69.209.245/32",
@@ -120,7 +120,7 @@ def main():
             print("❌ Invalid email format. Please enter a valid email.")
     print(f"Enter the password of {username}:")
     password = getpass.getpass() 
-    urllogin = "http://185.69.209.245:5000/auth"
+    urllogin = "https://reachlink.cloudetel.com/auth"
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
