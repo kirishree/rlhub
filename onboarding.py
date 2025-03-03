@@ -94,7 +94,7 @@ def get_organization_id(data):
                 loginjson_response = login_response.json()
                 access_token = loginjson_response["data"]["access_token"]
             else:
-                return False
+                return False, data
         else:
             access_token = data["access_token"]
         headers = {
@@ -106,15 +106,16 @@ def get_organization_id(data):
             print("user me info", userjson_response)
             user_info = userjson_response["data"]["user"]
             if user_info["status"] == "ACTIVE":
-                return user_info["org_id"]
+                data["username"] = user_info["email"]
+                return user_info["org_id"], data
             else:
-                return False
+                return False, data
         else:
             print(user_response)
-            return False    
+            return False, data 
     except Exception as e:
         print(e)
-        return False
+        return False, data
 
 def generate_device_name(length,organization_info):
     spokedevice_name =  "Spoke"+ str(length)+"-"+organization_info["organization_name"]
@@ -155,9 +156,8 @@ def get_tunnel_ip(data, spokedevice_name):
 
 def check_user(data, newuser):
     current_datetime = datetime.now() 
-    try:
-        print("data in check_user", data)
-        organization_id = get_organization_id(data)
+    try:        
+        organization_id, data = get_organization_id(data)
         print("orgid", organization_id)  
         if organization_id:            
             details = coll_registered_organization.find_one({"organization_id":organization_id})
@@ -166,9 +166,7 @@ def check_user(data, newuser):
                 if details["remaining_users"] > 0 and current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
-                    for device in registered_devices_info:
-                        print(device)
-                        print(data)
+                    for device in registered_devices_info:                        
                         if "ciscohub" in data["uuid"]:
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
@@ -179,9 +177,9 @@ def check_user(data, newuser):
                                                 }]
                                     return response, newuser
                         elif "ciscodevice" in data["uuid"]:
-                            if "cisco_hub_info" in devinfo:
+                            if "cisco_hub_info" in device:
                                 if data["dialer_ip"] == device["cisco_hub_info"]["hub_ip"].split("/")[0]:
-                                    for cispoke in devinfo["cisco_spokes_info"]:
+                                    for cispoke in device["cisco_spokes_info"]:
                                         if data["uuid"] == cispoke["uuid"]:
                                             response =[{ "message": 'This Cisco Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
@@ -190,8 +188,8 @@ def check_user(data, newuser):
                                                 }]
                                             return response, newuser
                         elif "robustel" in data["uuid"]:
-                            if "reachlink_hub_info" in devinfo:
-                                for rospoke in devinfo["rocrotek_spokes_info"]:
+                            if "reachlink_hub_info" in device:
+                                for rospoke in device["rocrotek_spokes_info"]:
                                         if data["uuid"] == rospoke["uuid"]:
                                             response =[{ "message": 'This Robustel Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
@@ -200,8 +198,8 @@ def check_user(data, newuser):
                                                 }]
                                             return response, newuser
                         elif "microtek" in data["uuid"]:
-                            if "reachlink_hub_info" in devinfo:
-                                for mispoke in devinfo["microtek_spokes_info"]:
+                            if "reachlink_hub_info" in device:
+                                for mispoke in device["microtek_spokes_info"]:
                                         if data["uuid"] == mispoke["uuid"]:
                                             response =[{ "message": 'This Microtek Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
@@ -210,8 +208,8 @@ def check_user(data, newuser):
                                                 }]
                                             return response, newuser
                         elif "cisco_ubuntu" in data["uuid"]:
-                            if "reachlink_hub_info" in devinfo:
-                                for cispoke in devinfo["cisco_spokes_info"]:
+                            if "reachlink_hub_info" in device:
+                                for cispoke in device["cisco_spokes_info"]:
                                         if data["uuid"] == cispoke["uuid"]:
                                             response =[{ "message": 'This Cisco Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
@@ -220,8 +218,8 @@ def check_user(data, newuser):
                                                 }]
                                             return response, newuser
                         else:
-                            if "reachlink_hub_info" in devinfo:
-                                for ubspoke in devinfo["ubuntu_spokes_info"]:
+                            if "reachlink_hub_info" in device:
+                                for ubspoke in device["ubuntu_spokes_info"]:
                                         if data["uuid"] == ubspoke["uuid"]:
                                             response =[{ "message": 'This ubuntu Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
