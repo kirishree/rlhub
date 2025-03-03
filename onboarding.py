@@ -167,8 +167,7 @@ def check_user(data, newuser):
                     registered_devices_info = details["registered_devices"]
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
                     for device in registered_devices_info:                        
-                        if "ciscohub" in data["uuid"]:
-                            print(device)
+                        if "ciscohub" in data["uuid"]:                            
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
                                     response =[{ "message": 'This Cisco HUB is already Registered',
@@ -233,7 +232,7 @@ def check_user(data, newuser):
                                             return response, newuser
                     #length = len(registered_devices_info)+1
                     #spokedevice_name =  generate_device_name(length, details)
-                    gretunnel_ip =  get_tunnel_ip(data, spokedevice_name)
+                    gretunnel_ip =  "None"
                     if "ciscohub" in data["uuid"]:
                         no_of_hubs = 1
                         for dev in registered_devices_info:
@@ -292,6 +291,7 @@ def check_user(data, newuser):
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
                                 spokedevice_name =  "ubuntuspoke"+ str(len(devinfo["ubuntu_spokes_info"])+1)+"-"+details["organization_name"]
+                                gretunnel_ip =  get_tunnel_ip(data, spokedevice_name)
                                 new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name,
