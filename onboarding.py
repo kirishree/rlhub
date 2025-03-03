@@ -189,7 +189,7 @@ def check_user(data, newuser):
                                             return response, newuser
                         elif "robustel" in data["uuid"]:
                             if "reachlink_hub_info" in device:
-                                for rospoke in device["rocrotek_spokes_info"]:
+                                for rospoke in device["robustel_spokes_info"]:
                                         if data["uuid"] == rospoke["uuid"]:
                                             response =[{ "message": 'This Robustel Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
