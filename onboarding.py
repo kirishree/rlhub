@@ -106,13 +106,14 @@ def get_organization_id(data):
             print("user me info", userjson_response)
             user_info = userjson_response["data"]["user"]
             if user_info["status"] == "ACTIVE":
-                return user_info["org_id"]
+                data["username"] = user_info["email"]
+                return user_info["org_id"], data
             else:
-                return False
+                return False, data
         else:
-            return False        
+            return False, data     
     except:
-        return False
+        return False, data
 
 def generate_device_name(length,organization_info):
     spokedevice_name =  "Spoke"+ str(length)+"-"+organization_info["organization_name"]
@@ -154,7 +155,7 @@ def get_tunnel_ip(data, spokedevice_name):
 def check_user(data, newuser):
     current_datetime = datetime.now() 
     try:
-        organization_id = get_organization_id(data)
+        organization_id, data = get_organization_id(data)
         print("orgid", organization_id)  
         if organization_id:            
             details = coll_registered_organization.find_one({"organization_id":organization_id})
@@ -234,8 +235,10 @@ def check_user(data, newuser):
                         no_of_hubs = 1
                         for dev in registered_devices_info:
                             if "cisco_hub_info" in dev:
-                                no_of_hubs = no_of_hubs +1
-                        spokedevice_name =  "ciscohub"+ str(no_of_hubs)+"-"+details["organization_name"]                
+                                no_of_hubs = no_of_hubs + 1
+                        print("number of hubs", no_of_hubs)
+                        spokedevice_name =  "ciscohub"+ str(no_of_hubs)+"-"+details["organization_name"]
+                        print("spokedevice_name", spokedevice_name)                
                         new_hub_info = {"cisco_hub_info": {
                                                 "uuid": data["uuid"],
                                                 "spokedevice_name":  spokedevice_name,                                
