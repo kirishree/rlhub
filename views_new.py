@@ -398,16 +398,32 @@ def add_cisco_device(request: HttpRequest):
                                                 "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
                                                 "branch_location": data["branch_location"]
                                                 }) 
-                    orgid = onboarding.get_organization_id(data)
-                    details = coll_registered_organization.find_one({"organization_id":orgid})
-                    registered_devices_info = details["registered_devices"]
-                    for device in registered_devices_info:
-                        if device["uuid"] == data["uuid"]:
-                            device["gretunnel_ip"] = newdialerinfo["dialerip"]
-                    query = {"organization_id": orgid}
-                    update_data = {"$set": {"registered_devices": registered_devices_info } }
-                    coll_registered_organization.update_many(query, update_data)
-            
+                    organizationid = response[0]["organization_id"]
+                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                    for dev in regdevices["registered_devices"]:                    
+                        if "cisco_hub_info" in dev:
+                            if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]:                            
+                                if data["uuid"] == dev["cisco_spokes_info"]["uuid"]:
+                                    dev["cisco_spokes_info"]["router_username"] = devicename.lower()
+                                    dev["cisco_spokes_info"]["router_password"] = newdialerinfo["router_password"]
+                                    dev["cisco_spokes_info"]["spokedevice_name"] = devicename
+                                    dev["cisco_spokes_info"]["dialerip"] =  newdialerinfo["dialerip"]
+                                    dev["cisco_spokes_info"]["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                    dev["cisco_spokes_info"]["dialerusername"] = devicename
+                                    dev["cisco_spokes_info"]["dialer_hub_ip"] = dialer_ip
+                                    dev["cisco_spokes_info"]["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                    dev["cisco_spokes_info"]["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                    dev["cisco_spokes_info"]["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                    dev["cisco_spokes_info"]["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                    dev["cisco_spokes_info"]["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                    dev["cisco_spokes_info"]["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                    dev["cisco_spokes_info"]["branch_location"] = data["branch_location"]
+                    query = {"organization_id": organizationid}
+                    update_data = {"$set": {
+                                        "registered_devices": regdevices["registered_devices"]                                                                           
+                                        }
+                                       }
+                    coll_registered_organization.update_many(query, update_data)                                            
                     query = {"uuid": data["uuid"]}
                     update_data = {"$set": {"tunnel_ip": newdialerinfo["dialerip"],
                                     "router_username": devicename.lower(),
