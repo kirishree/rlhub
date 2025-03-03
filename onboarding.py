@@ -156,6 +156,7 @@ def get_tunnel_ip(data, spokedevice_name):
 def check_user(data, newuser):
     current_datetime = datetime.now() 
     try:
+        print("data in check_user", data)
         organization_id = get_organization_id(data)
         print("orgid", organization_id)  
         if organization_id:            
