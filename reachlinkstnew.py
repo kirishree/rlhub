@@ -354,8 +354,10 @@ def main():
                                          "host_id": device.get("cisco_hub_info", {}).get("host_id", ""),
                                          "hub_dialer_ip_cidr": device["cisco_hub_info"]["hub_dialer_ip_cidr"]
                                          })   
-            final_data.append(org_info)                    
-        print(final_data)
+            final_data.append(org_info) 
+        with open("/root/reachlink/device_info.json", "w") as f:
+            json.dump(final_data, f)
+            f.close()                   
         print("sleep")
         time.sleep(10)    
 if __name__ == "__main__":

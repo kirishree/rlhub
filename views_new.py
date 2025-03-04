@@ -628,7 +628,7 @@ def add_cisco_hub(request: HttpRequest):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def branch_info(request: HttpRequest):
+def branch_infoold(request: HttpRequest):
     try:
         print(request)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -678,10 +678,44 @@ def branch_info(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+############################################
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def branch_info(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of branch info:{public_ip}")
+        response = {}
+        data = []     
+        active_branches = 0
+        inactive_branches = 0
+        total_no_branches = 0
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/device_info.json", "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                response = {    "data":device["branch_info_only"],
+                        "total_branches":device["total_no_active_spokes"] + device["total_no_inactive_spokes"],
+                        "inactive_branches":device["total_no_active_spokes"],
+                        "active_branches": device["total_no_inactive_spokes"],
+                        "organization_id": organization_id
+                    }
+    except Exception as e:
+        print(e)
+        response = {    "data":data,
+                        "total_branches":total_no_branches,
+                        "inactive_branches":inactive_branches,
+                        "active_branches": active_branches,
+                        "organization_id": organization_id
+                    }
+    return JsonResponse(response, safe=False)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def hub_info(request: HttpRequest):
+def hub_infoold(request: HttpRequest):
     try:
         print(request)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -731,6 +765,37 @@ def hub_info(request: HttpRequest):
                         "total_hubs":total_no_hubs,
                         "inactive_hubs":inactive_hubs,
                         "active_hubs": active_hubs,
+                        "organization_id": organization_id
+                    }
+    return JsonResponse(response, safe=False)
+
+#######################################
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def hub_info(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of hub_info:{public_ip}")
+        response = {}
+        data = []        
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/device_info.json", "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                response = {    "data":device["hub_info_only"],
+                        "total_hubs":device["no_of_hubs"],
+                        "inactive_hubs":device["no_inactive_hubs"],
+                        "active_hubs": device["no_active_hubs"],
+                        "organization_id": organization_id
+                    }
+    except Exception as e:
+        response = {    "data":data,
+                        "total_hubs":0,
+                        "inactive_hubs":0,
+                        "active_hubs": 0,
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
