@@ -67,10 +67,7 @@ def get_history(itemid):
             print(f"Failed to get item list: {history_result['error']['data']}")
             return False
         else:
-            return ({"name":itemid["name"],
-                        "value":history_result[0]["value"],
-                        "hostid": itemid["hostid"],
-                        "clock": history_result[0]["clock"]})
+            return history_result[0]["value"]                       
     except Exception as e:
         print(f"Failed to get Host list: {e}")
         return False   
