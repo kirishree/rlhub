@@ -3,6 +3,7 @@ import time
 import json
 import smtplib
 import os
+import pymongo
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -62,7 +63,7 @@ def check_tunnel_connection(Remote_tunnel_ip):
 		
 def main():
     data = []
-    reg_devices = coll_registered_organization.find({},{"_id":0})
+    reg_devices = coll_registered_organization.find({},{"_id":0, "subscription_from":0, "subscription_to":0})
     for reg_device in reg_devices:
         data.append(reg_device)
     with open("/root/reachlink/reg_devices.json", "w") as f:
