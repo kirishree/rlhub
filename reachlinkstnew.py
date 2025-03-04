@@ -120,6 +120,7 @@ def main():
                             midevice["status"] = "active"
                             no_midevice_active += 1
                             active_spokes.append(midevice["branch_location"])
+                        else:
                             midevice["status"] = "inactive"
                             no_midevice_inactive += 1
                             inactive_spokes.append(midevice["branch_location"])
