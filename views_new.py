@@ -643,12 +643,19 @@ def homepage_info(request: HttpRequest):
             if device["organization_id"] == organization_id:
                 total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
                 hub_info = []
+                bandwidth_info = []
                 for hubs in device["hub_info"]:
                     hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
                                                             "no_of_active_branches": len(hubs["active_spokes"]),
                                                             "no_of_inactive_branches": len(hubs["inactive_spokes"]),
                                                             "active_branches": hubs["active_spokes"],
                                                             "inactive_branches": hubs["inactive_spokes"]
+                                                            }
+                                    })
+                    bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": len(hubs["active_spokes"]),
+                                                            "no_of_inactive_branches": len(hubs["inactive_spokes"]),
+                                                            "branch_data": hubs["bandwidth_info"]                                                            
                                                             }
                                     })
                 response = {
@@ -660,7 +667,8 @@ def homepage_info(request: HttpRequest):
                             "active_no_branches": device["total_no_active_spokes"],
                             "inactive_no_branches": device["total_no_inactive_spokes"],
                             "branch_summary": str(device["total_no_active_spokes"]) + "/" + str(total_no_branches),
-                            "hub_info": hub_info,                           
+                            "hub_info": hub_info,  
+                            "bandwidth_info":bandwidth_info,                         
                             "organization_id": organization_id
                             }
     except Exception as e:
