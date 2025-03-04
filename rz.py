@@ -28,7 +28,7 @@ def get_host_list(host_id):
         "jsonrpc": "2.0",
         "method": "item.get",
         "params": {
-            "output": ["itemid"],
+            "output": ["itemid", "name"],
             "hostids": host_id,
             "search": {
                         "name": "Interface Fa4(): Bits"
