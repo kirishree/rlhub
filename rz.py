@@ -45,7 +45,7 @@ def get_item_id(host_id, name):
             print(f"Failed to get item list: {update_result['error']['data']}")
             return False
         else:            
-            print(update_result)
+            return update_result
     except Exception as e:
         print(f"Failed to get Host list: {e}")
         return False   
