@@ -394,7 +394,7 @@ def main():
                             ciscospoke["status"] = "inactive"
                             inactive_ciscospokes.append(ciscospoke["branch_location"])
                             no_inactive_ciscospokes += 1
-                            bandwidth_info.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
+                            bandwidth_info.append({"branch_location": ciscospoke["branch_location"],
                                                    "bits_recieved": 0,
                                                     "bits_sent": 0 })
                         ciscospokes_info.append({  "uuid": ciscospoke["uuid"],
