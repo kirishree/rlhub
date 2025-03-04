@@ -4,7 +4,7 @@ from pymongo.server_api import ServerApi
 import json
 #os.system("cp robustel_configure.py /root/reachlink/")
 #os.system("cp onboarding.py /root/reachlink/")
-#os.system("cp views_new.py /root/reachlink/reach/views.py")
+os.system("cp views_new.py /root/reachlink/reach/views.py")
 os.system("cp reachlinkstnew.py /root/reachlink/reachlinkstnew.py")
 #os.system("cp urls_new.py /root/reachlink/reachlink/urls.py")
 
