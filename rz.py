@@ -456,6 +456,7 @@ def main():
                     else: 
                         if "host_id" in device["reachlink_hub_info"]:                                                
                             item_id = get_item_id(device["reachlink_hub_info"]["host_id"], "Interface enp0s3: Bits")
+                            print("itemid...", item_id)
                             for item in item_id:
                                 if "sent" in item["name"]:
                                     device["reachlink_hub_info"]["itemid_sent"] = item["itemid"] 
