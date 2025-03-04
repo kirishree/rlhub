@@ -23,6 +23,32 @@ auth_token = "de4bc85eca6a76481473f6e4efa71812ee7995c02ace600a62b750bc04841810"
 session = requests.Session()
 reachlink_current_info = []
 
+def get_host_list(host_id):    
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid"],
+            "hostids": host_id,
+            "search": {
+                        "name": "Interface Fa4(): Bits"
+                        },           
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        update_response = session.post(zabbix_api_url, json=get_item)
+        update_result1 = update_response.json()
+        update_result = update_result1.get('result')
+        if 'error' in update_result:
+            print(f"Failed to get item list: {update_result['error']['data']}")
+            return False
+        else:            
+            print(update_result)
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
                      
 def check_usergroup(host_organization):
     get_user_groupid_payload = {
@@ -476,11 +502,8 @@ def main():
                                 }
                 coll_registered_organization.update_many(query, update_data) 
     except Exception as e:
-        print(e)                           
-
-       
-         
-
+        print(e)               
 if __name__ == "__main__":
-    main()
+    #main()
+    get_host_list('10658')
             
