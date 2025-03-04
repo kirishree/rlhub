@@ -645,6 +645,8 @@ def homepage_info(request: HttpRequest):
                 hub_info = []
                 for hubs in device["hub_info"]:
                     hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": len(hubs["active_spokes"]),
+                                                            "no_of_inactive_branches": len(hubs["inactive_spokes"]),
                                                             "active_branches": hubs["active_spokes"],
                                                             "inactive_branches": hubs["inactive_spokes"]
                                                             }
