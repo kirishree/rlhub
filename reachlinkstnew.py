@@ -213,16 +213,16 @@ def main():
                                          "active_spokes": active_spokes,
                                          "inactive_spokes": inactive_spokes,
                                          "spokes_info":{"microtek_spokes": {"spokes_info": microtek_info,
-                                                             "no_active_spokes": no_midevice_inactive,
+                                                             "no_active_spokes": no_midevice_active,
                                                              "no_inactive_spokes": no_midevice_inactive},
                                                         "cisco_spokes": {"spokes_info": cisco_info,
-                                                             "no_active_spokes": no_cidevice_inactive,
+                                                             "no_active_spokes": no_cidevice_active,
                                                              "no_inactive_spokes": no_cidevice_inactive},
                                                         "robustel_spokes": {"spokes_info": robustel_info,
-                                                             "no_active_spokes": no_rodevice_inactive,
+                                                             "no_active_spokes": no_rodevice_active,
                                                              "no_inactive_spokes": no_rodevice_inactive},
                                                         "ubuntu_spokes":{"spokes_info": ubuntu_info,
-                                                             "no_active_spokes": no_ubdevice_inactive,
+                                                             "no_active_spokes": no_ubdevice_active,
                                                              "no_inactive_spokes": no_ubdevice_inactive}
                                                         }
                                         }
