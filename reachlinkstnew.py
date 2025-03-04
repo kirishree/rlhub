@@ -377,6 +377,7 @@ def main():
                     no_inactive_ciscospokes =0
                     active_ciscospokes = []
                     inactive_ciscospokes = []
+                    bandwidth_info_cisco = []
                     ciscospokes_info = []
                     for ciscospoke in device["cisco_spokes_info"]:
                         spoke_ip = ciscospoke["dialerip"].split("/")[0]
@@ -387,14 +388,14 @@ def main():
                             no_active_ciscospokes += 1
                             bits_received = get_history(ciscospoke["branch_location"]["itemid_received"])
                             bits_sent = get_history(ciscospoke["branch_location"]["itemid_sent"])
-                            bandwidth_info.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
+                            bandwidth_info_cisco.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
                         else:
                             ciscospoke["status"] = "inactive"
                             inactive_ciscospokes.append(ciscospoke["branch_location"])
                             no_inactive_ciscospokes += 1
-                            bandwidth_info.append({"branch_location": ciscospoke["branch_location"],
+                            bandwidth_info_cisco.append({"branch_location": ciscospoke["branch_location"],
                                                    "bits_recieved": 0,
                                                     "bits_sent": 0 })
                         ciscospokes_info.append({  "uuid": ciscospoke["uuid"],
@@ -426,7 +427,7 @@ def main():
                                          "hub_host_id": device.get("cisco_hub_info", {}).get("host_id", ""),
                                          "no_active_spoke":no_active_ciscospokes,
                                          "no_inactive_spoke":no_inactive_ciscospokes,
-                                         "bandwidth_info":bandwidth_info,
+                                         "bandwidth_info":bandwidth_info_cisco,
                                          "active_spokes": active_ciscospokes,
                                          "inactive_spokes": inactive_ciscospokes,
                                          "spokes_info": ciscospokes_info
