@@ -94,7 +94,8 @@ def main():
             org_info["inactive_hubs"] = []
             org_info["total_no_active_spokes"] = 0
             org_info["total_no_inactive_spokes"] = 0
-            
+            org_info["hub_info_only"] = []
+            org_info["branch_info_only"] = []
             for device in org["registered_devices"]:
                 if "reachlink_hub_info" in device:
                     org_info["no_of_hubs"] += 1 
@@ -135,6 +136,17 @@ def main():
                                                     "status": midevice.get("status", ""),
                                                     "spokedevice_name": midevice.get("spokedevice_name", "")
                                                   })
+                        org_info["branch_info_only"].append({  "uuid": midevice["uuid"],
+                                                    "tunnel_ip": midevice["tunnel_ip"],
+                                                    "public_ip":midevice["public_ip"],
+                                                    "branch_location": midevice.get("branch_location", ""),
+                                                    "subnet": midevice.get("subnet", []),
+                                                    "vrf": midevice.get("vrf", ""),                                                
+                                                    "hub_ip":midevice.get("hub_ip", ""),
+                                                    "host_id": midevice.get("host_id", ""),
+                                                    "status": midevice.get("status", ""),
+                                                    "spokedevice_name": midevice.get("spokedevice_name", "")
+                                                  })
                     for cidevice in device["cisco_spokes_info"]:
                         spoke_ip = cidevice["dialerip"].split("/")[0]
                         connectedStatus = check_tunnel_connection(spoke_ip)
@@ -147,6 +159,17 @@ def main():
                             inactive_spokes.append(cidevice["branch_location"])
                             no_cidevice_inactive += 1
                         cisco_info.append({  "uuid": cidevice["uuid"],
+                                                    "tunnel_ip": cidevice["dialerip"],
+                                                    "public_ip":cidevice["dialer_hub_ip"],
+                                                    "branch_location": cidevice.get("branch_location", ""),
+                                                    "subnet": cidevice.get("subnet", []),
+                                                    "vrf": cidevice.get("vrf", ""),                                                
+                                                    "hub_ip":cidevice.get("hub_ip", ""),
+                                                    "host_id": cidevice.get("host_id", ""),
+                                                    "status": cidevice.get("status", ""),
+                                                    "spokedevice_name": cidevice.get("spokedevice_name", "")
+                                                  })
+                        org_info["branch_info_only"].append({  "uuid": cidevice["uuid"],
                                                     "tunnel_ip": cidevice["dialerip"],
                                                     "public_ip":cidevice["dialer_hub_ip"],
                                                     "branch_location": cidevice.get("branch_location", ""),
@@ -179,6 +202,17 @@ def main():
                                                     "status": rodevice.get("status", ""),
                                                     "spokedevice_name": rodevice.get("spokedevice_name", "")
                                                   })
+                        org_info["branch_info_only"].append({  "uuid": rodevice["uuid"],
+                                                    "tunnel_ip": rodevice["tunnel_ip"],
+                                                    "public_ip":rodevice.get("public_ip", "None"),
+                                                    "branch_location": rodevice.get("branch_location", ""),
+                                                    "subnet": rodevice.get("subnet", []),
+                                                    "vrf": rodevice.get("vrf", ""),                                                
+                                                    "hub_ip":rodevice.get("hub_ip", ""),
+                                                    "host_id": rodevice.get("host_id", ""),
+                                                    "status": rodevice.get("status", ""),
+                                                    "spokedevice_name": rodevice.get("spokedevice_name", "")
+                                                  })
                     for ubdevice in device["ubuntu_spokes_info"]:
                         spoke_ip = ubdevice["tunnel_ip"].split("/")[0]
                         connectedStatus = check_tunnel_connection(spoke_ip)
@@ -191,6 +225,17 @@ def main():
                             inactive_spokes.append(ubdevice["branch_location"])
                             no_ubdevice_inactive += 1
                         ubuntu_info.append({  "uuid": ubdevice["uuid"],
+                                                    "tunnel_ip": ubdevice["tunnel-ip"],
+                                                    "public_ip":ubdevice.get("public_ip", "None"),
+                                                    "branch_location": ubdevice.get("branch_location", ""),
+                                                    "subnet": ubdevice.get("subnet", []),
+                                                    "vrf": ubdevice.get("vrf", ""),                                                
+                                                    "hub_ip":ubdevice.get("hub_ip", ""),
+                                                    "host_id": ubdevice.get("host_id", ""),
+                                                    "status": ubdevice.get("status", ""),
+                                                    "spokedevice_name": ubdevice.get("spokedevice_name", "")
+                                                  })
+                        org_info["branch_info_only"].append({  "uuid": ubdevice["uuid"],
                                                     "tunnel_ip": ubdevice["tunnel-ip"],
                                                     "public_ip":ubdevice.get("public_ip", "None"),
                                                     "branch_location": ubdevice.get("branch_location", ""),
@@ -229,6 +274,13 @@ def main():
                     org_info["hub_info"].append(reachlinkhub_info)
                     org_info["total_no_active_spokes"] += no_active_spoke
                     org_info["total_no_inactive_spokes"] += no_inactive_spoke
+                    org_info["hub_info_only"].append({"branch_location": "Reachlink_server",
+                                         "hub_ip":hub_ip,
+                                         "hub_status":"active",
+                                         "uuid": device["reachlink_hub_info"]["uuid"],
+                                         "host_id": device["reachlink_hub_info"]["host_id"],
+                                         "hub_dialer_ip_cidr": "10.8.0.1"})               
+
                 if "cisco_hub_info" in device:
                     org_info["no_of_hubs"] += 1 
                     spoke_ip = device["cisco_hub_info"]["hub_ip"].split("/")[0]
@@ -270,6 +322,17 @@ def main():
                                                     "status": ciscospoke.get("status", ""),
                                                     "spokedevice_name": ciscospoke.get("spokedevice_name", "")
                                                   })
+                        org_info["branch_info_only"].append({  "uuid": ciscospoke["uuid"],
+                                                    "tunnel_ip": ciscospoke["dialerip"],
+                                                    "public_ip":ciscospoke["dialer_hub_ip"],
+                                                    "branch_location": ciscospoke.get("branch_location", ""),
+                                                    "subnet": ciscospoke.get("subnet", []),
+                                                    "vrf": ciscospoke.get("vrf", ""),                                                
+                                                    "hub_ip":ciscospoke.get("hub_ip", ""),
+                                                    "host_id": ciscospoke.get("host_id", ""),
+                                                    "status": ciscospoke.get("status", ""),
+                                                    "spokedevice_name": ciscospoke.get("spokedevice_name", "")
+                                                  })
                     ciscohub_info = {"hub_ip": device["cisco_hub_info"]["hub_ip"].split("/")[0],
                                      "hub_location":device["cisco_hub_info"]["branch_location"],
                                          "hub_status":hubstatus,
@@ -284,6 +347,13 @@ def main():
                     org_info["hub_info"].append(ciscohub_info)
                     org_info["total_no_active_spokes"] += no_active_ciscospokes
                     org_info["total_no_inactive_spokes"] += no_inactive_ciscospokes 
+                    org_info["hub_info_only"].append({"branch_location": device["cisco_hub_info"]["branch_location"],
+                                         "hub_ip":device["cisco_hub_info"]["hub_ip"].split("/")[0],
+                                         "hub_status":hubstatus,
+                                         "uuid": device["cisco_hub_info"]["uuid"],
+                                         "host_id": device.get("cisco_hub_info", {}).get("host_id", ""),
+                                         "hub_dialer_ip_cidr": device["cisco_hub_info"]["hub_dialer_ip_cidr"]
+                                         })   
             final_data.append(org_info)                    
         print(final_data)
         print("sleep")
