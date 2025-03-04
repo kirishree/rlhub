@@ -63,8 +63,8 @@ def check_tunnel_connection(Remote_tunnel_ip):
 		
 def main():
     data = []
-    #reg_devices = coll_registered_organization.find({},{"_id":0, "subscription_from":0, "subscription_to":0})
-    for reg_device in coll_registered_organization.find({},{"_id":0, "subscription_from":0, "subscription_to":0}):
+    projection = {"_id": 0, "subscription_from": 0, "subscription_to": 0}
+    for reg_device in coll_registered_organization.find({}, projection):
         data.append(reg_device)
     with open("/root/reachlink/reg_devices.json", "w") as f:
        json.dump(data, f)
