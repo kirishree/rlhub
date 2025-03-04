@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 import ipaddress
 import os
 import subprocess
+import requests
 from decouple import config
 hub_ip = "185.69.209.251"
 mongo_uri = config('DB_CONNECTION_STRING')
@@ -29,6 +30,51 @@ sender_email = 'reachlink@cloudetel.com'  # Your email address
 sender_password = 'Etel@123!@#'  # Your email password
 subject = 'Alert ReachLink Spoke InActive '
 
+# Zabbix API URL
+zabbix_api_url = 'http://185.69.209.251/zabbix/api_jsonrpc.php'  # Replace with your Zabbix API URL
+
+# Zabbix API credentials
+username = 'Admin'
+password = 'zabbix'
+
+# Api key
+auth_token = "de4bc85eca6a76481473f6e4efa71812ee7995c02ace600a62b750bc04841810"
+
+# Create a session
+session = requests.Session()
+reachlink_current_info = []
+
+def get_history(itemid):    
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": itemid,
+            "sortfield": "clock",
+            "sortorder": "DESC",
+            "limit": 1 
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        history_response = session.post(zabbix_api_url, json=get_history)
+        history_result1 = history_response.json()
+        history_result = history_result1.get('result')
+        print(history_result1)
+        if 'error' in history_result:
+            print(f"Failed to get item list: {history_result['error']['data']}")
+            return False
+        else:
+            return ({"name":itemid["name"],
+                        "value":history_result[0]["value"],
+                        "hostid": itemid["hostid"],
+                        "clock": history_result[0]["clock"]})
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
+    
 def post_mail(subject, body_mail):    
     receiver_email = "bavya@cloudetel.com"  # Recipient's email address
     subject = subject
@@ -113,6 +159,7 @@ def main():
                     no_ubdevice_active = 0
                     no_ubdevice_inactive = 0   
                     active_spokes = []  
+                    bandwidth_info = []
                     inactive_spokes = []         
                     for midevice in device["microtek_spokes_info"]:
                         spoke_ip = midevice["tunnel_ip"].split("/")[0]
@@ -120,9 +167,17 @@ def main():
                         if connectedStatus: 
                             midevice["status"] = "active"
                             no_midevice_active += 1
-                            active_spokes.append(midevice["branch_location"])
+                            active_spokes.append(midevice["branch_location"]) 
+                            bits_received = get_history(midevice["itemid_received"])
+                            bits_sent = get_history(midevice["itemid_sent"])
+                            bandwidth_info.append({"branch_location": midevice["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
                         else:
                             midevice["status"] = "inactive"
+                            bandwidth_info.append({"branch_location": midevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                             no_midevice_inactive += 1
                             inactive_spokes.append(midevice["branch_location"])
                         microtek_info.append({  "uuid": midevice["uuid"],
@@ -154,10 +209,18 @@ def main():
                             cidevice["status"] = "active"
                             active_spokes.append(cidevice["branch_location"])
                             no_cidevice_active += 1
+                            bits_received = get_history(cidevice["itemid_received"])
+                            bits_sent = get_history(cidevice["itemid_sent"])
+                            bandwidth_info.append({"branch_location": cidevice["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
                         else:
                             cidevice["status"] = "inactive"
                             inactive_spokes.append(cidevice["branch_location"])
-                            no_cidevice_inactive += 1
+                            no_cidevice_inactive += 1                            
+                            bandwidth_info.append({"branch_location": cidevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                         cisco_info.append({  "uuid": cidevice["uuid"],
                                                     "tunnel_ip": cidevice["dialerip"],
                                                     "public_ip":cidevice["dialer_hub_ip"],
@@ -187,10 +250,19 @@ def main():
                             rodevice["status"] = "active"
                             active_spokes.append(rodevice["branch_location"])
                             no_rodevice_active += 1
+                            bits_received = get_history(rodevice["itemid_received"])
+                            bits_sent = get_history(rodevice["itemid_sent"])
+                            bandwidth_info.append({"branch_location": rodevice["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
                         else:
                             rodevice["status"] = "inactive"
                             inactive_spokes.append(rodevice["branch_location"])
                             no_rodevice_inactive += 1
+                           
+                            bandwidth_info.append({"branch_location": rodevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0})
                         robustel_info.append({  "uuid": rodevice["uuid"],
                                                     "tunnel_ip": rodevice["tunnel_ip"],
                                                     "public_ip":rodevice.get("public_ip", "None"),
@@ -220,10 +292,18 @@ def main():
                             ubdevice["status"] = "active"
                             active_spokes.append(ubdevice["branch_location"])
                             no_ubdevice_active += 1
+                            bits_received = get_history(ubdevice["itemid_received"])
+                            bits_sent = get_history(ubdevice["itemid_sent"])
+                            bandwidth_info.append({"branch_location": ubdevice["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
                         else:
                             ubdevice["status"] = "inactive"
                             inactive_spokes.append(ubdevice["branch_location"])
-                            no_ubdevice_inactive += 1
+                            no_ubdevice_inactive += 1                            
+                            bandwidth_info.append({"branch_location": midevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                         ubuntu_info.append({  "uuid": ubdevice["uuid"],
                                                     "tunnel_ip": ubdevice["tunnel-ip"],
                                                     "public_ip":ubdevice.get("public_ip", "None"),
@@ -256,6 +336,7 @@ def main():
                                          "no_active_spoke":no_active_spoke,
                                          "no_inactive_spoke":no_inactive_spoke,
                                          "active_spokes": active_spokes,
+                                         "bandwidth_info": bandwidth_info,
                                          "inactive_spokes": inactive_spokes,
                                          "spokes_info":{"microtek_spokes": {"spokes_info": microtek_info,
                                                              "no_active_spokes": no_midevice_active,
@@ -307,10 +388,18 @@ def main():
                             ciscospoke["status"] = "active"
                             active_ciscospokes.append(ciscospoke["branch_location"])
                             no_active_ciscospokes += 1
+                            bits_received = get_history(ciscospoke["branch_location"]["itemid_received"])
+                            bits_sent = get_history(ciscospoke["branch_location"]["itemid_sent"])
+                            bandwidth_info.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
                         else:
                             ciscospoke["status"] = "inactive"
                             inactive_ciscospokes.append(ciscospoke["branch_location"])
                             no_inactive_ciscospokes += 1
+                            bandwidth_info.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                         ciscospokes_info.append({  "uuid": ciscospoke["uuid"],
                                                     "tunnel_ip": ciscospoke["dialerip"],
                                                     "public_ip":ciscospoke["dialer_hub_ip"],
@@ -340,6 +429,7 @@ def main():
                                          "hub_host_id": device.get("cisco_hub_info", {}).get("host_id", ""),
                                          "no_active_spoke":no_active_ciscospokes,
                                          "no_inactive_spoke":no_inactive_ciscospokes,
+                                         "bandwidth_info":bandwidth_info,
                                          "active_spokes": active_ciscospokes,
                                          "inactive_spokes": inactive_ciscospokes,
                                          "spokes_info": ciscospokes_info
