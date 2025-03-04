@@ -2,6 +2,7 @@ import requests
 import json
 import pymongo
 import time
+hub_ip = "185.69.209.251"
 client = pymongo.MongoClient("mongodb://cloudetel:Cloudetel0108@185.69.209.251:27017/")
 db = client["reach_link"]
 coll_reachlink_zabbix_info = db["reachlink_zabbix_info"]
@@ -430,7 +431,7 @@ def main():
                         if "host_id" in mispoke:
                             print("Already host_id available")
                         else:  
-                            if mispoke.get("tunnel_ip", "None") != "None"                                                
+                            if mispoke.get("tunnel_ip", "None") != "None":                                                
                                 templateid = "10248"
                                 host_id = create_new_host(mispoke["spokedevice_name"], mispoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 mispoke["host_id"] = host_id
@@ -439,7 +440,7 @@ def main():
                         if "host_id" in rospoke:
                             print("Already host_id available")
                         else:
-                            if rospoke.get("tunnel_ip", "None") != "None"                                                        
+                            if rospoke.get("tunnel_ip", "None") != "None":                                                       
                                 templateid = "10248"
                                 host_id = create_new_host(rospoke["spokedevice_name"], rospoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 rospoke["host_id"] = host_id
@@ -448,7 +449,7 @@ def main():
                         if "host_id" in cispoke:
                             print("Already host_id available")
                         else: 
-                            if cispoke.get("dialerip", "None") != "None"                                                        
+                            if cispoke.get("dialerip", "None") != "None":                                                       
                                 templateid = "10218"
                                 host_id = create_new_host(cispoke["spokedevice_name"], cispoke["dialerip"], reg_org["organization_name"], mailid, templateid)
                                 cispoke["host_id"] = host_id
@@ -457,7 +458,7 @@ def main():
                         if "host_id" in ubspoke:
                             print("Already host_id available")
                         else:     
-                            if ubspoke.get("tunnel_ip", "None") != "None"                                                    
+                            if ubspoke.get("tunnel_ip", "None") != "None":                                                  
                                 templateid = "10248"
                                 host_id = create_new_host(ubspoke["spokedevice_name"], ubspoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 ubspoke["host_id"] = host_id
@@ -465,7 +466,7 @@ def main():
                     if "host_id" in device["cisco_hub_info"]:
                         print("Already host_id available")
                     else:     
-                        if device["cisco_hub_info"]["hub_wan_ip_only"] != "None"                                                    
+                        if device["cisco_hub_info"]["hub_wan_ip_only"] != "None":                                                    
                             templateid = "10218"
                             host_id = create_new_host(device["cisco_hub_info"]["spokedevice_name"], device["cisco_hub_info"]["hub_wan_ip_only"], reg_org["organization_name"], mailid, templateid)
                             device["cisco_hub_info"]["host_id"] = host_id   
