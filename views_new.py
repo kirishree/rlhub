@@ -628,6 +628,57 @@ def add_cisco_hub(request: HttpRequest):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def homepage_info(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of homepage info:{public_ip}")
+        response = {}
+        total_no_branches = 0
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/device_info.json", "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
+                hub_info = []
+                for hubs in device["hub_info"]:
+                    hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "active_branches": hubs["active_spokes"],
+                                                            "inactive_branches": hubs["inactive_spokes"]
+                                                            }
+                                    })
+                response = {
+                            "total_no_hubs": device["no_of_hubs"],
+                            "active_no_hubs": device["no_active_hubs"],
+                            "inactive_no_hubs": device["no_inactive_hubs"],
+                            "hub_summary": str(device["no_active_hubs"]) + "/" + str(device["no_of_hubs"]),
+                            "total_no_branches": total_no_branches,
+                            "active_no_branches": device["total_no_active_spokes"],
+                            "inactive_no_branches": device["total_no_inactive_spokes"],
+                            "branch_summary": str(device["total_no_active_spokes"]) + "/" + str(total_no_branches),
+                            "hub_info": hub_info,                           
+                            "organization_id": organization_id
+                            }
+    except Exception as e:
+        print(e)
+        response = {
+                            "total_no_hubs": 0,
+                            "active_no_hubs": 0,
+                            "inactive_no_hubs": 0,
+                            "hub_summary": 0,
+                            "total_no_branches": 0,
+                            "active_no_branches": 0,
+                            "inactive_no_branches": 0,
+                            "branch_summary": 0,
+                            "hub_info": [],                           
+                            "organization_id": organization_id
+                            }
+    return JsonResponse(response, safe=False)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def branch_infoold(request: HttpRequest):
     try:
         print(request)

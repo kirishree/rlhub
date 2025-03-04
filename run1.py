@@ -5,9 +5,8 @@ import json
 #os.system("cp robustel_configure.py /root/reachlink/")
 #os.system("cp onboarding.py /root/reachlink/")
 os.system("cp views_new.py /root/reachlink/reach/views.py")
-os.system("cp reachlinkstnew.py /root/reachlink/reachlinkstnew.py")
-#os.system("cp urls_new.py /root/reachlink/reachlink/urls.py")
-
+#os.system("cp reachlinkstnew.py /root/reachlink/reachlinkstnew.py")
+os.system("cp urls_new.py /root/reachlink/reachlink/urls.py")
 #os.system("cp conf/dist/robustel_conf.exe /root/reachlink/")
 #os.system("cp conf/dist/reachlink_config.exe /root/reachlink/")
 #os.system("cp conf/dist/reachlink_hub_config.exe /root/reachlink/")
