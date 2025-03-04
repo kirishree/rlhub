@@ -245,7 +245,8 @@ def check_user(data, newuser):
                         new_hub_info = {"cisco_hub_info": {
                                                 "uuid": data["uuid"],
                                                 "spokedevice_name":  spokedevice_name,                                
-                                                "hub_ip": data.get("hub_ip", "")
+                                                "hub_ip": data.get("hub_ip", ""),
+                                                "branch_location": data.get("branch_location", "")
                                                 },
                                             "cisco_spokes_info":[]
                                             }

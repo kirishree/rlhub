@@ -63,8 +63,11 @@ def check_tunnel_connection(Remote_tunnel_ip):
 		
 def main():
     data = []
-    projection = {"_id": 0, "subscription_from": 0, "subscription_to": 0}
-    for reg_device in coll_registered_organization.find({}, projection):
+    for reg_device in coll_registered_organization.find({}, {"_id":0}):
+        reg_device['subscription_from'] = str(reg_device['subscription_from'])
+        reg_device['subscription_to'] = str(reg_device['subscription_to'])
+        if "_id" in reg_device:
+            reg_device['_id'] = str(reg_device['_id'])
         data.append(reg_device)
     with open("/root/reachlink/reg_devices.json", "w") as f:
        json.dump(data, f)
@@ -76,7 +79,7 @@ def main():
         active_branches = []
         inactive_branches = []
         
-        with open("/root/reachlink/reg_devices.json", "w") as f:
+        with open("/root/reachlink/reg_devices.json", "r") as f:
             registered_organization = json.load(f)
             f.close()
         final_data = []
@@ -89,8 +92,9 @@ def main():
             org_info["no_inactive_hubs"] = 0
             org_info["active_hubs"] =[]
             org_info["inactive_hubs"] = []
-            org_info["total_no_active spokes"] = 0
-            org_info["total_no_inactive spokes"] = 0
+            org_info["total_no_active_spokes"] = 0
+            org_info["total_no_inactive_spokes"] = 0
+            
             for device in org["registered_devices"]:
                 if "reachlink_hub_info" in device:
                     org_info["no_of_hubs"] += 1 
@@ -222,7 +226,7 @@ def main():
                                                         }
                                         }
                     org_info["hub_info"].append(reachlinkhub_info)
-                    org_info["total_no_active spokes"] += no_active_spoke
+                    org_info["total_no_active_spokes"] += no_active_spoke
                     org_info["total_no_inactive_spokes"] += no_inactive_spoke
                 if "cisco_hub_info" in device:
                     org_info["no_of_hubs"] += 1 
@@ -269,7 +273,7 @@ def main():
                                      "hub_location":device["cisco_hub_info"]["branch_location"],
                                          "hub_status":hubstatus,
                                          "hub_uuid": device["cisco_hub_info"]["uuid"],
-                                         "hub_host_id": device["cisco_hub_info"]["host_id"],
+                                         "hub_host_id": device.get("cisco_hub_info", {}).get("host_id", ""),
                                          "no_active_spoke":no_active_ciscospokes,
                                          "no_inactive_spoke":no_inactive_ciscospokes,
                                          "active_spokes": active_ciscospokes,
@@ -277,7 +281,7 @@ def main():
                                          "spokes_info": ciscospokes_info
                                     }
                     org_info["hub_info"].append(ciscohub_info)
-                    org_info["total_no_active spokes"] += no_active_ciscospokes
+                    org_info["total_no_active_spokes"] += no_active_ciscospokes
                     org_info["total_no_inactive_spokes"] += no_inactive_ciscospokes 
             final_data.append(org_info)                    
         print(final_data)
