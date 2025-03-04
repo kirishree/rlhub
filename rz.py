@@ -23,7 +23,7 @@ auth_token = "de4bc85eca6a76481473f6e4efa71812ee7995c02ace600a62b750bc04841810"
 session = requests.Session()
 reachlink_current_info = []
 
-def get_host_list(host_id):    
+def get_item_id(host_id, name):    
     get_item = {
         "jsonrpc": "2.0",
         "method": "item.get",
@@ -31,7 +31,7 @@ def get_host_list(host_id):
             "output": ["itemid", "name"],
             "hostids": host_id,
             "search": {
-                        "name": "Interface Fa4(): Bits"
+                        "name": name
                         },           
         },
         'auth': auth_token,
@@ -450,7 +450,17 @@ def main():
                     else:                                                      
                         templateid = "10248"
                         host_id = create_new_host("reachlinkserver", hub_ip, reg_org["organization_name"], mailid, templateid)
-                        device["reachlink_hub_info"]["host_id"] = host_id                        
+                        device["reachlink_hub_info"]["host_id"] = host_id   
+                    if "itemid_sent" in device["reachlink_hub_info"]:
+                        print("Already item_id available")
+                    else: 
+                        if "host_id" in device["reachlink_hub_info"]:                                                
+                            item_id = get_item_id(device["reachlink_hub_info"]["host_id"], "Interface enp0s3: Bits")
+                            for item in item_id:
+                                if "sent" in item["name"]:
+                                    device["reachlink_hub_info"]["itemid_sent"] = item["itemid"] 
+                                if "received" in item["name"]:
+                                    device["reachlink_hub_info"]["itemid_received"] = item["itemid"]                                             
                         
                 if "microtek_spokes_info" in device:
                     for mispoke in device["microtek_spokes_info"]:
@@ -461,6 +471,17 @@ def main():
                                 templateid = "10248"
                                 host_id = create_new_host(mispoke["spokedevice_name"], mispoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 mispoke["host_id"] = host_id
+                        if "itemid_sent" in mispoke:
+                            print("Already item_id available")
+                        else: 
+                            if "host_id" in mispoke:                                                
+                                item_id = get_item_id(mispoke["host_id"], "Interface ether1(): Bits")
+                                for item in item_id:
+                                    if "sent" in item["name"]:
+                                        mispoke["itemid_sent"] = item["itemid"] 
+                                    if "received" in item["name"]:
+                                        mispoke["itemid_received"] = item["itemid"]   
+                        
                 if "robustel_spokes_info" in device:
                     for rospoke in device["robustel_spokes_info"]:
                         if "host_id" in rospoke:
@@ -470,6 +491,16 @@ def main():
                                 templateid = "10248"
                                 host_id = create_new_host(rospoke["spokedevice_name"], rospoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 rospoke["host_id"] = host_id
+                        if "itemid_sent" in rospoke:
+                            print("Already item_id available")
+                        else: 
+                            if "host_id" in rospoke:                                                
+                                item_id = get_item_id(rospoke["host_id"], "Interface eth0: Bits")
+                                for item in item_id:
+                                    if "sent" in item["name"]:
+                                        rospoke["itemid_sent"] = item["itemid"] 
+                                    if "received" in item["name"]:
+                                        rospoke["itemid_received"] = item["itemid"]   
                 if "cisco_spokes_info" in device:
                     for cispoke in device["cisco_spokes_info"]:
                         if "host_id" in cispoke:
@@ -479,6 +510,16 @@ def main():
                                 templateid = "10218"
                                 host_id = create_new_host(cispoke["spokedevice_name"], cispoke["dialerip"], reg_org["organization_name"], mailid, templateid)
                                 cispoke["host_id"] = host_id
+                        if "itemid_sent" in cispoke:
+                            print("Already item_id available")
+                        else: 
+                            if "host_id" in cispoke:                                                
+                                item_id = get_item_id(cispoke["host_id"], "Interface Fa4(): Bits")
+                                for item in item_id:
+                                    if "sent" in item["name"]:
+                                        cispoke["itemid_sent"] = item["itemid"] 
+                                    if "received" in item["name"]:
+                                        cispoke["itemid_received"] = item["itemid"]   
                 if "ubuntu_spokes_info" in device:
                     for ubspoke in device["ubuntu_spokes_info"]:
                         if "host_id" in ubspoke:
@@ -488,6 +529,16 @@ def main():
                                 templateid = "10248"
                                 host_id = create_new_host(ubspoke["spokedevice_name"], ubspoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 ubspoke["host_id"] = host_id
+                        if "itemid_sent" in ubspoke:
+                            print("Already item_id available")
+                        else: 
+                            if "host_id" in ubspoke:                                                
+                                item_id = get_item_id(ubspoke["host_id"], "Interface eth0: Bits")
+                                for item in item_id:
+                                    if "sent" in item["name"]:
+                                        ubspoke["itemid_sent"] = item["itemid"] 
+                                    if "received" in item["name"]:
+                                        ubspoke["itemid_received"] = item["itemid"]   
                 if "cisco_hub_info" in device:
                     if "host_id" in device["cisco_hub_info"]:
                         print("Already host_id available")
@@ -496,6 +547,17 @@ def main():
                             templateid = "10218"
                             host_id = create_new_host(device["cisco_hub_info"]["spokedevice_name"], device["cisco_hub_info"]["hub_wan_ip_only"], reg_org["organization_name"], mailid, templateid)
                             device["cisco_hub_info"]["host_id"] = host_id   
+                    if "itemid_sent" in device["cisco_hub_info"]:
+                        print("Already item_id available")
+                    else: 
+                        if "host_id" in device["cisco_hub_info"]:                                                
+                            item_id = get_item_id(device["cisco_hub_info"]["host_id"], "Interface Fa4(): Bits")
+                            for item in item_id:
+                                if "sent" in item["name"]:
+                                    device["cisco_hub_info"]["itemid_sent"] = item["itemid"] 
+                                if "received" in item["name"]:
+                                    device["cisco_hub_info"]["itemid_received"] = item["itemid"] 
+                    
                 query = {"organization_id": reg_org["organization_id"]}
                 update_data = {"$set": {"registered_devices": devices                                                                            
                                         }
@@ -504,6 +566,5 @@ def main():
     except Exception as e:
         print(e)               
 if __name__ == "__main__":
-    #main()
-    get_host_list('10658')
+    main()    
             
