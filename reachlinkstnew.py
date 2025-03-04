@@ -317,7 +317,7 @@ def main():
                                                     "branch_location": ciscospoke.get("branch_location", ""),
                                                     "subnet": ciscospoke.get("subnet", []),
                                                     "vrf": ciscospoke.get("vrf", ""),                                                
-                                                    "hub_ip":ciscospoke.get("hub_ip", ""),
+                                                    "hub_ip":ciscospoke.get("dialer_hub_ip", ""),
                                                     "host_id": ciscospoke.get("host_id", ""),
                                                     "status": ciscospoke.get("status", ""),
                                                     "spokedevice_name": ciscospoke.get("spokedevice_name", "")
@@ -328,7 +328,7 @@ def main():
                                                     "branch_location": ciscospoke.get("branch_location", ""),
                                                     "subnet": ciscospoke.get("subnet", []),
                                                     "vrf": ciscospoke.get("vrf", ""),                                                
-                                                    "hub_ip":ciscospoke.get("hub_ip", ""),
+                                                    "hub_ip":ciscospoke.get("dialer_hub_ip", ""),
                                                     "host_id": ciscospoke.get("host_id", ""),
                                                     "status": ciscospoke.get("status", ""),
                                                     "spokedevice_name": ciscospoke.get("spokedevice_name", "")
