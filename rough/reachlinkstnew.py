@@ -12,33 +12,29 @@ import os
 import subprocess
 import requests
 from decouple import config
-hub_ip = "185.69.209.251"
+hub_ip = config('HUB_IP')
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
-coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 coll_registered_organization = db_tunnel["registered_organization"]
 tunnel_states = {}
 last_disconnected_time = {}
 
-resource_notify_active = True
-resource_notify_inactive = True
-
-smtp_server = "p3plzcpnl506439.prod.phx3.secureserver.net"  # Your SMTP server address
-smtp_port = 587  # SMTP server port (587 for TLS, 465 for SSL)
-sender_email = 'reachlink@cloudetel.com'  # Your email address
-sender_password = 'Etel@123!@#'  # Your email password
+smtp_server = config('SMTP_SERVER')  # Your SMTP server address
+smtp_port = config('SMTP_PORT')  # SMTP server port (587 for TLS, 465 for SSL)
+sender_email = config('SENDER_MAIL_ID')  # Your email address
+sender_password = config('SENDER_MAIL_PASSWORD')  # Your email password
 subject = 'Alert ReachLink Spoke InActive '
 
 # Zabbix API URL
-zabbix_api_url = 'http://185.69.209.251/zabbix/api_jsonrpc.php'  # Replace with your Zabbix API URL
+zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 
 # Zabbix API credentials
-username = 'Admin'
-password = 'zabbix'
+username = config('ZABBIX_USERNAME')
+password = config('ZABBIX_PASSWORD')
 
 # Api key
-auth_token = "de4bc85eca6a76481473f6e4efa71812ee7995c02ace600a62b750bc04841810"
+auth_token = config('ZABBIX_API_TOKEN')
 
 # Create a session
 session = requests.Session()
@@ -116,12 +112,6 @@ def main():
        json.dump(data, f)
        f.close()
     while(1):
-        global resource_notify_active
-        global resource_notify_inactive
-        total_branches = []
-        active_branches = []
-        inactive_branches = []
-        
         with open("/root/reachlink/reg_devices.json", "r") as f:
             registered_organization = json.load(f)
             f.close()
@@ -447,6 +437,6 @@ def main():
             json.dump(final_data, f)
             f.close()                   
         print("sleep")
-        time.sleep(10)    
+        time.sleep(30)    
 if __name__ == "__main__":
     main()
