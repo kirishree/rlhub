@@ -671,9 +671,10 @@ def homepage_info(request: HttpRequest):
                             "bandwidth_info":bandwidth_info,                         
                             "organization_id": organization_id
                             }
+                return JsonResponse(response, safe=False)
     except Exception as e:
         print(e)
-        response = {
+    response = {
                             "total_no_hubs": 0,
                             "active_no_hubs": 0,
                             "inactive_no_hubs": 0,
@@ -764,9 +765,10 @@ def branch_info(request: HttpRequest):
                         "active_branches": device["total_no_inactive_spokes"],
                         "organization_id": organization_id
                     }
+                return JsonResponse(response, safe=False)
     except Exception as e:
         print(e)
-        response = {    "data":data,
+    response = {    "data":data,
                         "total_branches":total_no_branches,
                         "inactive_branches":inactive_branches,
                         "active_branches": active_branches,
@@ -852,8 +854,10 @@ def hub_info(request: HttpRequest):
                         "active_hubs": device["no_active_hubs"],
                         "organization_id": organization_id
                     }
+                return JsonResponse(response, safe=False)
     except Exception as e:
-        response = {    "data":data,
+        print(e)
+    response = {    "data":data,
                         "total_hubs":0,
                         "inactive_hubs":0,
                         "active_hubs": 0,
