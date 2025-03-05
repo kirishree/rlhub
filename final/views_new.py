@@ -74,7 +74,7 @@ dialernetworkip = config('DIALER_NERWORK_IP')
 dialer_netmask = config('DIALER_NETMASK')
 snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
 ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
-device_info_path = config('HUB_INFO_PATH')
+device_info_path = config('DEVICE_INFO_PATH')
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 
 
