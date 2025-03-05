@@ -568,7 +568,7 @@ def add_cisco_hub(request: HttpRequest):
                 with open(f"/etc/ppp/peers/{devicename.lower()}", "w") as f:
                     f.write(data1)
                     f.close()
-                os.system("python3 /root/reachlink/reachlink_zabbix_hub.py")                
+                os.system("python3 /root/reachlink/reachlink_zabbix.py")                
                 os.system("systemctl restart reachlink_test")  
             
             # Create a buffer for the ZIP file
@@ -856,18 +856,8 @@ def deactivate(request: HttpRequest):
                                    "username": dialerinfo["dialerusername"]
                                    }
                 response = router_configure.removeuser(deactivate_data)
-                if response:
-                    os.system("systemctl stop reachlink_test") 
-                    with open("/root/reachlink/total_branches.json", "r") as f:
-                        totalbranches = json.load(f)
-                        f.close()
-                    for dev in totalbranches:
-                        if dev["uuid"] == data["uuid"]:
-                            dev["status"] = "inactive"
-                    with open("/root/reachlink/total_branches.json", "w") as f:
-                        json.dump(totalbranches, f)
-                        f.close() 
-                    os.system("systemctl start reachlink_test")   
+                if response:                    
+                    os.system("systemctl restart reachlink_test")   
                     coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
                                       "dialer_ip": data["tunnel_ip"],
                                       "uuid":data["uuid"]                                     

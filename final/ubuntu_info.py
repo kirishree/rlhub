@@ -127,17 +127,7 @@ def deactivate(data):
                 command = f"sudo ip neighbor del {tunnel_ip} lladdr {data['public_ip']} dev Reach_link1"
                 print(command)
                 subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                os.system("systemctl stop reachlink_test") 
-                with open("/root/reachlink/total_branches.json", "r") as f:
-                    totalbranches = json.load(f)
-                    f.close()
-                for dev in totalbranches:
-                    if dev["uuid"] == data["uuid"]:
-                        dev["status"] = "inactive"
-                with open("/root/reachlink/total_branches.json", "w") as f:
-                    json.dump(totalbranches, f)
-                    f.close() 
-                os.system("systemctl start reachlink_test")               
+                os.system("systemctl restart reachlink_test")               
                 for i in data["subnet"]:
                    try:
                         command = f"sudo ip route del {i} via {tunnel_ip}"
@@ -168,17 +158,7 @@ def activate(data):
                 try:
                     command = f"sudo ip neighbor replace {tunnel_ip} lladdr {data['public_ip']} dev Reach_link1"
                     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                    os.system("systemctl stop reachlink_test") 
-                    with open("/root/reachlink/total_branches.json", "r") as f:
-                        totalbranches = json.load(f)
-                        f.close()
-                    for dev in totalbranches:
-                        if dev["uuid"] == data["uuid"]:
-                            dev["status"] = "active"
-                    with open("/root/reachlink/total_branches.json", "w") as f:
-                        json.dump(totalbranches, f)
-                        f.close()
-                    os.system("systemctl start reachlink_test") 
+                    os.system("systemctl restart reachlink_test") 
                     for i in data["subnet"]:
                         try:
                             command = f"sudo ip route replace {i} via {tunnel_ip}"
@@ -265,17 +245,7 @@ def delsubnet(data):
                                     }
                           }
         coll_tunnel_ip.update_many(query, update_data) 
-        os.system("systemctl stop reachlink_test") 
-        with open("/root/reachlink/total_branches.json", "r") as f:
-            totalbranches = json.load(f)
-            f.close()
-        for dev in totalbranches:
-            if dev["uuid"] == data["uuid"]:
-                dev["subnet"] = past_subnets
-        with open("/root/reachlink/total_branches.json", "w") as f:
-            json.dump(totalbranches, f)
-            f.close() 
-        os.system("systemctl start reachlink_test")        
+        os.system("systemctl restart reachlink_test")        
         background_thread = threading.Thread(target=background_deletesubnet, args=(data,))
         background_thread.start()       
        
@@ -614,18 +584,8 @@ def addsubnet(data):
         update_data = {"$set": {"subnet":past_subnets 
                                     }
                           }
-        coll_tunnel_ip.update_many(query, update_data)
-        os.system("systemctl stop reachlink_test") 
-        with open("/root/reachlink/total_branches.json", "r") as f:
-            totalbranches = json.load(f)
-            f.close()
-        for dev in totalbranches:
-            if dev["uuid"] == data["uuid"]:
-                dev["subnet"] = past_subnets
-        with open("/root/reachlink/total_branches.json", "w") as f:
-            json.dump(totalbranches, f)
-            f.close() 
-        os.system("systemctl start reachlink_test")        
+        coll_tunnel_ip.update_many(query, update_data)       
+        os.system("systemctl restart reachlink_test")        
         past_subnets = list(set(past_subnets))
         background_thread = threading.Thread(target=background_addsubnet, args=(data,))
         background_thread.start() 
