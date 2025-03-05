@@ -39,7 +39,8 @@ auth_token = config('ZABBIX_API_TOKEN')
 # Create a session
 session = requests.Session()
 reachlink_current_info = []
-
+regdevice_path = config('REG_DEVICE_PATH')
+deviceinfo_path = config('DEVICE_INFO_PATH')
 def get_history(itemid):    
     get_history = {
         "jsonrpc": "2.0",
@@ -108,11 +109,11 @@ def main():
         if "_id" in reg_device:
             reg_device['_id'] = str(reg_device['_id'])
         data.append(reg_device)
-    with open("/root/reachlink/reg_devices.json", "w") as f:
+    with open(regdevice_path, "w") as f:
        json.dump(data, f)
        f.close()
     while(1):
-        with open("/root/reachlink/reg_devices.json", "r") as f:
+        with open(regdevice_path, "r") as f:
             registered_organization = json.load(f)
             f.close()
         final_data = []
@@ -433,7 +434,7 @@ def main():
                                          "hub_dialer_ip_cidr": device["cisco_hub_info"]["hub_dialer_ip_cidr"]
                                          })   
             final_data.append(org_info) 
-        with open("/root/reachlink/device_info.json", "w") as f:
+        with open(deviceinfo_path, "w") as f:
             json.dump(final_data, f)
             f.close()                   
         print("sleep")

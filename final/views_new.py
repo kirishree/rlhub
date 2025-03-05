@@ -74,6 +74,9 @@ dialernetworkip = config('DIALER_NERWORK_IP')
 dialer_netmask = config('DIALER_NETMASK')
 snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
 ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
+device_info_path = config('HUB_INFO_PATH')
+reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
+
 
 def new_client(client_name):
     try:
@@ -158,7 +161,7 @@ def setass(response, devicename):
                                         }
                                        }
                     coll_tunnel_ip.update_many(query, update_data)
-                os.system("python3 /root/reachlink/reachlink_zabbix.py")
+                os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")                           
         if not newspokeconnstatus:
             print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
@@ -293,7 +296,7 @@ def add_cisco_device(request: HttpRequest):
                 with open(client_key_file, "r") as f:
                     clientkey = f.read()
                     f.close()
-                with open("/root/reachlink/robustel_conf.exe", "rb") as f:
+                with open("robustel_conf.exe", "rb") as f:
                     robustelexe = f.read()
                     f.close()
                 files_to_send = {
@@ -440,7 +443,7 @@ def add_cisco_device(request: HttpRequest):
             #Currently registered device to show via frontend
             registered_data = coll_tunnel_ip.find_one({"uuid": data["uuid"]})
             print("regdata",registered_data)             
-            os.system("python3 /root/reachlink/reachlink_zabbix.py")
+            os.system(f"python3 {reachlink_zabbix_path}")
             os.system("systemctl restart reachlink_test")            
             return response
         else:
@@ -568,7 +571,7 @@ def add_cisco_hub(request: HttpRequest):
                 with open(f"/etc/ppp/peers/{devicename.lower()}", "w") as f:
                     f.write(data1)
                     f.close()
-                os.system("python3 /root/reachlink/reachlink_zabbix.py")                
+                os.system(f"python3 {reachlink_zabbix_path}")                
                 os.system("systemctl restart reachlink_test")  
             
             # Create a buffer for the ZIP file
@@ -608,7 +611,7 @@ def homepage_info(request: HttpRequest):
         response = {}
         total_no_branches = 0
         organization_id = str(request.GET.get('organization_id'))
-        with open("/root/reachlink/device_info.json", "r") as f:
+        with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
         for device in total_devices:
@@ -663,59 +666,6 @@ def homepage_info(request: HttpRequest):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def branch_infoold(request: HttpRequest):
-    try:
-        print(request)
-        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        print(f"requested ip of branch info:{public_ip}")
-        response = {}
-        data = []     
-        active_branches = 0
-        inactive_branches = 0
-        total_no_branches = 0
-        organization_id = str(request.GET.get('organization_id'))
-        with open("/root/reachlink/total_branches.json", "r") as f:
-            total_branches = json.load(f)
-            f.close()
-        reg_devices = coll_registered_organization.find_one({"organization_id":organization_id})
-        for device in reg_devices["registered_devices"]:
-            for branch in total_branches:
-                if device["uuid"] == branch["uuid"]:
-                    branch["spokedevice_name"] = device.get("spokedevice_name", "None")
-                    data.append({   "public_ip": branch.get("public_ip", ""),
-                                    "tunnel_ip": branch.get("tunnel_ip", ""),
-                                    "branch_location": branch.get("branch_location", ""),
-                                    "subnet": branch.get("subnet", []),
-                                    "vrf": branch.get("vrf", ""),
-                                    "uuid": branch.get("uuid", ""),
-                                    "hub_ip":branch.get("hub_ip", ""),
-                                    "host_id": branch.get("host_id", ""),
-                                    "status": branch.get("status", ""),
-                                    "spokedevice_name": branch.get("spokedevice_name", "")
-                                    })
-                    if branch.get("status", "") == "active":
-                        active_branches = active_branches + 1
-                    else:
-                        inactive_branches = inactive_branches + 1
-                    total_no_branches = total_no_branches + 1
-        response = {    "data":data,
-                        "total_branches":total_no_branches,
-                        "inactive_branches":inactive_branches,
-                        "active_branches": active_branches,
-                        "organization_id": organization_id
-                    }
-    except Exception as e:
-        print(e)
-        response = {    "data":data,
-                        "total_branches":total_no_branches,
-                        "inactive_branches":inactive_branches,
-                        "active_branches": active_branches,
-                        "organization_id": organization_id
-                    }
-    return JsonResponse(response, safe=False)
-############################################
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:
         print(request)
@@ -727,7 +677,7 @@ def branch_info(request: HttpRequest):
         inactive_branches = 0
         total_no_branches = 0
         organization_id = str(request.GET.get('organization_id'))
-        with open("/root/reachlink/device_info.json", "r") as f:
+        with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
         for device in total_devices:
@@ -751,63 +701,6 @@ def branch_info(request: HttpRequest):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def hub_infoold(request: HttpRequest):
-    try:
-        print(request)
-        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        print(f"requested ip of hub_info:{public_ip}")
-        response = {}
-        data = []
-        data.append({"hub_ip":hub_ip,
-                            "branch_location": hub_location,
-                            "hub_dialer_ip_cidr": hub_tunnel_endpoint,
-                            "hub_status": "active",
-                            "uuid": hub_uuid,
-                            "host_id": hub_hostid
-                            })     
-        active_hubs = 1
-        inactive_hubs = 0
-        total_no_hubs = 1
-        organization_id = str(request.GET.get('organization_id'))
-        with open("/root/reachlink/total_hubs.json", "r") as f:
-            total_branches = json.load(f)
-            f.close()
-        reg_devices = coll_registered_organization.find_one({"organization_id":organization_id})
-        for device in reg_devices["registered_devices"]:
-            for branch in total_branches:
-                if device["uuid"] == branch["uuid"]:
-                    branch["spokedevice_name"] = device.get("spokedevice_name", "None")
-                    data.append({"hub_ip":branch["hub_wan_ip_only"],
-                            "branch_location": branch["branch_location"],
-                            "hub_dialer_ip_cidr": branch["hub_dialer_ip_cidr"],
-                            "hub_status": branch.get("status", "inactive"),
-                            "uuid": branch["uuid"],
-                            "host_id": branch.get("host_id", "")
-                            })
-                    if branch.get("status", "") == "active":
-                        active_hubs = active_hubs + 1
-                    else:
-                        inactive_hubs = inactive_hubs + 1
-                    total_no_hubs = total_no_hubs + 1
-        
-        response = {    "data":data,
-                        "total_hubs":total_no_hubs,
-                        "inactive_hubs":inactive_hubs,
-                        "active_hubs": active_hubs,
-                        "organization_id": organization_id
-                    }
-    except Exception as e:
-        response = {    "data":data,
-                        "total_hubs":total_no_hubs,
-                        "inactive_hubs":inactive_hubs,
-                        "active_hubs": active_hubs,
-                        "organization_id": organization_id
-                    }
-    return JsonResponse(response, safe=False)
-
-#######################################
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def hub_info(request: HttpRequest):
     try:
         print(request)
@@ -816,7 +709,7 @@ def hub_info(request: HttpRequest):
         response = {}
         data = []        
         organization_id = str(request.GET.get('organization_id'))
-        with open("/root/reachlink/device_info.json", "r") as f:
+        with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
         for device in total_devices:
