@@ -10,7 +10,7 @@ db = client["reach_link"]
 coll_reachlink_zabbix_info = db["reachlink_zabbix_info"]
 coll_tunnel_ip = db["tunnel_ip"]
 coll_registered_organization = db["registered_organization"]
-
+rlserver_wan_intfc = config('RLSERVER_WAN_INTFC')
 # Zabbix API URL
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 
@@ -457,7 +457,7 @@ def main():
                         print("Already item_id available")
                     else: 
                         if "host_id" in device["reachlink_hub_info"]:                                                
-                            item_id = get_item_id(device["reachlink_hub_info"]["host_id"], "Interface enp0s3: Bits")
+                            item_id = get_item_id(device["reachlink_hub_info"]["host_id"], f"Interface {rlserver_wan_intfc}: Bits")
                             print("itemid...", item_id)
                             for item in item_id:
                                 if "sent" in item["name"]:
