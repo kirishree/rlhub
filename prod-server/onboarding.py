@@ -14,7 +14,6 @@ db_tunnel = client["reach_link"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 coll_registered_organization = db_tunnel["registered_organization"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
-
 url = config('ONBOARDING_API_URL')
 openvpnhubip = config('HUB_OPENVPN_ENDPOINT')
 hub_tunnel_endpoint = config('HUB_GRE_END_POINT')
@@ -94,7 +93,7 @@ def get_organization_id(data):
                 loginjson_response = login_response.json()
                 access_token = loginjson_response["data"]["access_token"]
             else:
-                return False
+                return False, data
         else:
             access_token = data["access_token"]
         headers = {
@@ -103,15 +102,19 @@ def get_organization_id(data):
         user_response = requests.get(url+"users/me", headers=headers)
         if user_response.status_code == 200:
             userjson_response = user_response.json()
+            print("user me info", userjson_response)
             user_info = userjson_response["data"]["user"]
             if user_info["status"] == "ACTIVE":
-                return user_info["org_id"]
+                data["username"] = user_info["email"]
+                return user_info["org_id"], data
             else:
-                return False
+                return False, data
         else:
-            return False        
-    except:
-        return False
+            print(user_response)
+            return False, data 
+    except Exception as e:
+        print(e)
+        return False, data
 
 def generate_device_name(length,organization_info):
     spokedevice_name =  "Spoke"+ str(length)+"-"+organization_info["organization_name"]
@@ -152,8 +155,8 @@ def get_tunnel_ip(data, spokedevice_name):
 
 def check_user(data, newuser):
     current_datetime = datetime.now() 
-    try:
-        organization_id = get_organization_id(data)
+    try:        
+        organization_id, data = get_organization_id(data)
         print("orgid", organization_id)  
         if organization_id:            
             details = coll_registered_organization.find_one({"organization_id":organization_id})
@@ -162,29 +165,145 @@ def check_user(data, newuser):
                 if details["remaining_users"] > 0 and current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
-                    for device in registered_devices_info:
-                        if device['uuid'] == data["uuid"]:                            
-                            response =[{ "message": 'This device is already Registered',
-                                         "expiry_date": expiry_date_original, 
-                                         "spokedevice_name":device["spokedevice_name"],
-                                         "gretunnel_ip":device["gretunnel_ip"],
-                                         "remote_ip":openvpnhubip, 
-                                         "hub_gretunnel_endpoint":hub_tunnel_endpoint,
-                                         "organization_id":organization_id
-                                         }]
-                            return response, newuser
-                    length = len(registered_devices_info)+1
-                    spokedevice_name =  generate_device_name(length, details)    
-                    gretunnel_ip =  get_tunnel_ip(data, spokedevice_name)               
-                    new_device_info = {
-                                    
-                                    "uuid": data["uuid"],
-                                    "spokedevice_name":  spokedevice_name,
-                                    "gretunnel_ip": gretunnel_ip,
-                                    "hub_ip": data.get("dialer_ip", "")
-
-                                   }
-                    registered_devices_info.append(new_device_info)  
+                    for device in registered_devices_info:                        
+                        if "ciscohub" in data["uuid"]:                            
+                            if "cisco_hub_info" in device:
+                                if data["uuid"] == device["cisco_hub_info"]["uuid"]:
+                                    response =[{ "message": 'This Cisco HUB is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":device["cisco_hub_info"]["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                    return response, newuser
+                        elif "ciscodevice" in data["uuid"]:
+                            if "cisco_hub_info" in device:
+                                if data["dialer_ip"] == device["cisco_hub_info"]["hub_ip"].split("/")[0]:
+                                    for cispoke in device["cisco_spokes_info"]:
+                                        if data["uuid"] == cispoke["uuid"]:
+                                            response =[{ "message": 'This Cisco Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":cispoke["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                            return response, newuser
+                        elif "robustel" in data["uuid"]:
+                            if "reachlink_hub_info" in device:
+                                for rospoke in device["robustel_spokes_info"]:
+                                        if data["uuid"] == rospoke["uuid"]:
+                                            response =[{ "message": 'This Robustel Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":rospoke["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                            return response, newuser
+                        elif "microtek" in data["uuid"]:
+                            if "reachlink_hub_info" in device:
+                                for mispoke in device["microtek_spokes_info"]:
+                                        if data["uuid"] == mispoke["uuid"]:
+                                            response =[{ "message": 'This Microtek Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":mispoke["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                            return response, newuser
+                        elif "cisco_ubuntu" in data["uuid"]:
+                            if "reachlink_hub_info" in device:
+                                for cispoke in device["cisco_spokes_info"]:
+                                        if data["uuid"] == cispoke["uuid"]:
+                                            response =[{ "message": 'This Cisco Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":cispoke["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                            return response, newuser
+                        else:
+                            if "reachlink_hub_info" in device:
+                                for ubspoke in device["ubuntu_spokes_info"]:
+                                        if data["uuid"] == ubspoke["uuid"]:
+                                            response =[{ "message": 'This ubuntu Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":ubspoke["spokedevice_name"],
+                                                "organization_id":organization_id,
+                                                "gretunnel_ip":ubspoke["gretunnel_ip"], 
+                                                "remote_ip":openvpnhubip, 
+                                                "hub_gretunnel_endpoint":hub_tunnel_endpoint,
+                                                }]
+                                            return response, newuser
+                    #length = len(registered_devices_info)+1
+                    #spokedevice_name =  generate_device_name(length, details)
+                    gretunnel_ip =  "None"
+                    if "ciscohub" in data["uuid"]:
+                        no_of_hubs = 1
+                        for dev in registered_devices_info:
+                            print("dev", dev)
+                            if "cisco_hub_info" in dev:
+                                no_of_hubs = no_of_hubs + 1
+                        print("number of hubs", no_of_hubs)
+                        spokedevice_name =  "ciscohub"+ str(no_of_hubs)+"-"+details["organization_name"]
+                        print("spokedevice_name", spokedevice_name)                
+                        new_hub_info = {"cisco_hub_info": {
+                                                "uuid": data["uuid"],
+                                                "spokedevice_name":  spokedevice_name,                                
+                                                "hub_ip": data.get("hub_ip", ""),
+                                                "branch_location": data.get("branch_location", "")
+                                                },
+                                            "cisco_spokes_info":[]
+                                            }
+                        registered_devices_info.append(new_hub_info) 
+                    elif "ciscodevice" in data["uuid"]:
+                        for devinfo in registered_devices_info:
+                            if "cisco_hub_info" in devinfo:
+                                if data["dialer_ip"] == devinfo["cisco_hub_info"]["hub_ip"].split("/")[0]:
+                                    spokedevice_name =  "ciscospoke"+ str(len(devinfo["cisco_spokes_info"])+1)+"-"+details["organization_name"]
+                                    new_spoke_info = {"uuid": data["uuid"],
+                                                      "branch_location":data["branch_location"],
+                                                      "spokedevice_name":spokedevice_name
+                                                      }
+                                    devinfo["cisco_spokes_info"].append(new_spoke_info)
+                    elif "robustel" in data["uuid"]:
+                        for devinfo in registered_devices_info:
+                            if "reachlink_hub_info" in devinfo:
+                                spokedevice_name =  "robustelspoke"+ str(len(devinfo["robustel_spokes_info"])+1)+"-"+details["organization_name"]
+                                new_spoke_info = {"uuid": data["uuid"],
+                                                      "branch_location":data["branch_location"],
+                                                      "spokedevice_name":spokedevice_name,
+                                                      "router_username":"admin",
+                                                      "router_password": "admin",
+                                                      "hub_ip": hub_ip,
+                                                      "tunnel_ip": "None",
+                                                      "subnet": []
+                                                      }
+                                devinfo["robustel_spokes_info"].append(new_spoke_info)
+                                coll_tunnel_ip.insert_one(new_spoke_info)
+                    elif "microtek" in data["uuid"]:
+                        for devinfo in registered_devices_info:
+                            if "reachlink_hub_info" in devinfo:
+                                spokedevice_name =  "microtekspoke"+ str(len(devinfo["microtek_spokes_info"])+1)+"-"+details["organization_name"]
+                                new_spoke_info = {"uuid": data["uuid"],
+                                                      "branch_location":data["branch_location"],
+                                                      "spokedevice_name":spokedevice_name
+                                                      }
+                                devinfo["microtek_spokes_info"].append(new_spoke_info)
+                    elif "cisco_ubuntu" in data["uuid"]:
+                        for devinfo in registered_devices_info:
+                            if "reachlink_hub_info" in devinfo:
+                                spokedevice_name =  "ciscoubuntuspoke"+ str(len(devinfo["cisco_spokes_info"])+1)+"-"+details["organization_name"]
+                                new_spoke_info = {"uuid": data["uuid"],
+                                                      "branch_location":data["branch_location"],
+                                                      "spokedevice_name":spokedevice_name
+                                                      }
+                                devinfo["cisco_spokes_info"].append(new_spoke_info)
+                    else:
+                        for devinfo in registered_devices_info:
+                            if "reachlink_hub_info" in devinfo:
+                                spokedevice_name =  "ubuntuspoke"+ str(len(devinfo["ubuntu_spokes_info"])+1)+"-"+details["organization_name"]
+                                gretunnel_ip =  get_tunnel_ip(data, spokedevice_name)
+                                new_spoke_info = {"uuid": data["uuid"],
+                                                      "branch_location":data["branch_location"],
+                                                      "spokedevice_name":spokedevice_name,
+                                                      "gretunnel_ip":gretunnel_ip, 
+                                                      }
+                                devinfo["ubuntu_spokes_info"].append(new_spoke_info)                     
                     registered_users = details["regusers"]
                     user_available = False
                     for users in registered_users:
@@ -382,4 +501,3 @@ def check_onboarding(username, password):
                 return 'Not Subscribed for any services'
     except:
         return 'Internal Server Error'
-

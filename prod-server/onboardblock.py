@@ -9,7 +9,7 @@ import os
 import subprocess
 import threading
 from decouple import config
-vrf1_ip = '10.200.202.0/24'
+vrf1_ip = config('GRE_NETWORK')
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]

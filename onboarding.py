@@ -14,13 +14,12 @@ db_tunnel = client["reach_link"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 coll_registered_organization = db_tunnel["registered_organization"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
-
-url = "https://dev-api.cloudetel.com/api/v1/"
-openvpnhubip = "10.8.0.1"
-hub_tunnel_endpoint = "10.200.202.2"
+url = config('ONBOARDING_API_URL')
+openvpnhubip = config('HUB_OPENVPN_ENDPOINT')
+hub_tunnel_endpoint = config('HUB_GRE_END_POINT')
 dummy_expiry_date = ""
-gretunnelnetworkip = "10.200.202."
-hub_ip = "185.69.209.251"
+gretunnelnetworkip = config('HUB_GRE_NETWORKIP')
+hub_ip = config('HUB_IP')
 def authenticate_user(data):
     try:
         if "access_token" not in data:

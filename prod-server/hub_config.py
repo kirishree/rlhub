@@ -15,7 +15,7 @@ coll_hub_info = db_tunnel["hub_info"]
 coll_dialer_ip = db_tunnel["dialer_ip"]
 
 dialernetworkip = config('DIALER_NERWORK_IP')
-snmpcommunitystring = "reachlink"
+snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
 hub_ip = config('HUB_IP')
 
 def get_ciscohub_config(data):  

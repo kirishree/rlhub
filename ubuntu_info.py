@@ -22,8 +22,7 @@ coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_spoke_active = db_tunnel["spoke_active"]
 coll_spoke_inactive = db_tunnel["spoke_inactive"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
-vrf1_ip = '10.200.202.0/24'
-
+vrf1_ip = config('VRF_IP')
 routes_protocol_map = {
     -1: '',
     196:'static',

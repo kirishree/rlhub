@@ -71,8 +71,9 @@ gretunnelnetworkip = config('HUB_GRE_NETWORKIP')
 hub_tunnel_endpoint = config('HUB_GRE_END_POINT')
 openvpnhubip = config('HUB_OPENVPN_ENDPOINT')
 dialernetworkip = config('DIALER_NERWORK_IP')
+cisco_dialer_hub_ip = config('DIALER_HUB_IP')
 dialer_netmask = config('DIALER_NETMASK')
-snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
+snmpcommunitystring = "reachlink"
 ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
 
 def new_client(client_name):
@@ -678,7 +679,7 @@ def homepage_info(request: HttpRequest):
                             "inactive_no_branches": 0,
                             "branch_summary": 0,
                             "hub_info": [], 
-                            "bandwidth_info":[],                             
+                            "bandwidth_info":bandwidth_info,                             
                             "organization_id": organization_id
                             }
     return JsonResponse(response, safe=False)

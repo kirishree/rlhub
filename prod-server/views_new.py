@@ -50,8 +50,6 @@ import ubuntu_info
 import onboardblock
 import robustel_configure
 from decouple import config
-resource_active = True
-resource_inactive = True
 newuser = False
 dummy_expiry_date = ""
 mongo_uri = config('DB_CONNECTION_STRING')
@@ -73,11 +71,9 @@ gretunnelnetworkip = config('HUB_GRE_NETWORKIP')
 hub_tunnel_endpoint = config('HUB_GRE_END_POINT')
 openvpnhubip = config('HUB_OPENVPN_ENDPOINT')
 dialernetworkip = config('DIALER_NERWORK_IP')
-cisco_dialer_hub_ip = config('DIALER_HUB_IP')
 dialer_netmask = config('DIALER_NETMASK')
-snmpcommunitystring = "reachlink"
+snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
 ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
-
 
 def new_client(client_name):
     try:
@@ -145,7 +141,7 @@ def setass(response, devicename):
                     connected_spoke.append(collection) 
         for spoke in connected_spoke:
             if spoke["spokedevice_name"] == newspokedevicename:
-                if devicename == "microtek":
+                if devicename == "robustel":
                     query = {"spokedevice_name": newspokedevicename }
                     update_data = {"$set": {"public_ip":spoke["Public_ip"],
                                             "tunnel_ip": spoke["Tunnel_ip"]                                                                       
@@ -162,7 +158,7 @@ def setass(response, devicename):
                                         }
                                        }
                     coll_tunnel_ip.update_many(query, update_data)
-                os.system("python3 /etc/reach/reachlink/reachlink_zabbix.py")
+                os.system("python3 /root/reachlink/reachlink_zabbix.py")
                 os.system("systemctl stop reachlink_test")
                 tunneldata = []
                 for device in coll_tunnel_ip.find({},{"_id":0}):
@@ -304,7 +300,7 @@ def add_cisco_device(request: HttpRequest):
                 with open(client_key_file, "r") as f:
                     clientkey = f.read()
                     f.close()
-                with open("/etc/reach/reachlink/robustel_conf.exe", "rb") as f:
+                with open("/root/reachlink/robustel_conf.exe", "rb") as f:
                     robustelexe = f.read()
                     f.close()
                 files_to_send = {
@@ -365,7 +361,7 @@ def add_cisco_device(request: HttpRequest):
             else:
                 response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
         print(response)
-        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
+        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
             dialer_ip = data.get("dialer_ip", "")
@@ -396,23 +392,36 @@ def add_cisco_device(request: HttpRequest):
                                                 "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
                                                 "branch_location": data["branch_location"]
                                                 }) 
-                    orgid = onboarding.get_organization_id(data)
-                    details = coll_registered_organization.find_one({"organization_id":orgid})
-                    registered_devices_info = details["registered_devices"]
-                    for device in registered_devices_info:
-                        if device["uuid"] == data["uuid"]:
-                            device["gretunnel_ip"] = newdialerinfo["dialerip"]
-                    query = {"organization_id": orgid}
-                    update_data = {"$set": {"registered_devices": registered_devices_info } }
-                    coll_registered_organization.update_many(query, update_data)
-            
-                    query = {"uuid": data["uuid"]}
-                    update_data = {"$set": {"tunnel_ip": newdialerinfo["dialerip"],
-                                    "router_username": devicename.lower(),
-                                    "router_password": newdialerinfo["router_password"]
-                                    } }
-                    coll_tunnel_ip.update_many(query, update_data)
-                    os.system("python3 /etc/reach/reachlink/reachlink_zabbix.py")
+                    organizationid = response[0]["organization_id"]
+                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                    for dev in regdevices["registered_devices"]:                    
+                        if "cisco_hub_info" in dev:
+                            if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
+                                for cispoke in  dev["cisco_spokes_info"]:                         
+                                    if data["uuid"] == cispoke["uuid"]:
+                                        cispoke["router_username"] = devicename.lower()
+                                        cispoke["router_password"] = newdialerinfo["router_password"]
+                                        cispoke["spokedevice_name"] = devicename
+                                        cispoke["dialerip"] =  newdialerinfo["dialerip"]
+                                        cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                        cispoke["dialerusername"] = devicename
+                                        cispoke["dialer_hub_ip"] = dialer_ip
+                                        cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                        cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                        cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                        cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                        cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                        cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                        cispoke["branch_location"] = data["branch_location"]
+                    query = {"organization_id": organizationid}
+                    update_data = {"$set": {
+                                        "registered_devices": regdevices["registered_devices"]                                                                           
+                                        }
+                                       }
+                    coll_registered_organization.update_many(query, update_data)                                          
+                    dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
+                    coll_tunnel_ip.insert_one(dialerinfo)
+                    #os.system("python3 /root/reachlink/reachlink_zabbix.py")
                 else:
                     json_response = [{"message": f"Error:while generating dialerip"}]
                     response = HttpResponse(content_type='application/zip')
@@ -440,11 +449,11 @@ def add_cisco_device(request: HttpRequest):
             registered_data = coll_tunnel_ip.find_one({"uuid": data["uuid"]})
             print("regdata",registered_data)
             os.system("systemctl stop reachlink_test") 
-            os.system("python3 /etc/reach/reachlink/reachlink_zabbix.py")
+            os.system("python3 /root/reachlink/reachlink_zabbix.py")
             spokedata = []
             for device in coll_tunnel_ip.find({},{"_id":0}):
                 spokedata.append(device)
-            with open("/etc/reach/reachlink/total_branches.json", "w") as f:
+            with open("/root/reachlink/total_branches.json", "w") as f:
                 json.dump(spokedata, f)
                 f.close()
             os.system("systemctl start reachlink_test") 
@@ -497,7 +506,7 @@ def add_cisco_hub(request: HttpRequest):
             else:
                 response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
         print(response)
-        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This device is already Registered":
+        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco HUB is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicename = devicename   
             devicehubinfo = coll_hub_info.find_one({"hub_wan_ip_only":data["hub_ip"].split("/")[0]})            
@@ -527,7 +536,29 @@ def add_cisco_hub(request: HttpRequest):
                                                 "hub_wan_ip_gateway": data["hub_wan_ip_gateway"],
                                                 'branch_location': data["branch_location"],
                                                 "hub_dialer_ip_cidr": data["hub_dialer_ip"]
-                                                })  
+                                                }) 
+                organizationid = response[0]["organization_id"]
+                regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                for dev in regdevices["registered_devices"]:                    
+                    if "cisco_hub_info" in dev:
+                        if data["uuid"] == dev["cisco_hub_info"]["uuid"]:
+                            dev["cisco_hub_info"]["router_username"] = devicename.lower()
+                            dev["cisco_hub_info"]["router_password"] = devicehubinfo["router_password"]
+                            dev["cisco_hub_info"]["hubdevice_name"] = devicename
+                            dev["cisco_hub_info"]["hub_dialer_ip"] =  devicehubinfo["hub_dialer_ip"]
+                            dev["cisco_hub_info"]["hub_dialer_netmask"] = devicehubinfo["hub_dialer_netmask"]
+                            dev["cisco_hub_info"]["hub_dialer_network"] = devicehubinfo["hub_dialer_network"]
+                            dev["cisco_hub_info"]["hub_ip"] = data["hub_ip"]
+                            dev["cisco_hub_info"]["hub_wan_ip_only"] = devicehubinfo["hub_wan_ip_only"]
+                            dev["cisco_hub_info"]["hub_wan_ip_netmask"] = devicehubinfo["hub_wan_ip_netmask"]
+                            dev["cisco_hub_info"]["hub_wan_ip_gateway"] = data["hub_wan_ip_gateway"]                      
+                            dev["cisco_hub_info"]["hub_dialer_ip_cidr"] = data["hub_dialer_ip"]
+                query = {"organization_id": organizationid}
+                update_data = {"$set": {
+                                        "registered_devices": regdevices["registered_devices"]                                                                           
+                                        }
+                                       }
+                coll_registered_organization.update_many(query, update_data)
                 network = ipaddress.ip_network(data["hub_dialer_ip"], strict=False)
                 first_ip = list(network.hosts())[0]
                 if str(first_ip) == devicehubinfo["hub_dialer_ip"]:
@@ -552,12 +583,12 @@ def add_cisco_hub(request: HttpRequest):
                 with open(f"/etc/ppp/peers/{devicename.lower()}", "w") as f:
                     f.write(data1)
                     f.close()
-                os.system("python3 /etc/reach/reachlink/reachlink_zabbix_hub.py")
+                os.system("python3 /root/reachlink/reachlink_zabbix_hub.py")
                 os.system("systemctl stop reachlink_test")
                 hubdata = []
                 for device in coll_hub_info.find({},{"_id":0}):
                     hubdata.append(device)
-                with open("/etc/reach/reachlink/total_hubs.json", "w") as f:
+                with open("/root/reachlink/total_hubs.json", "w") as f:
                     json.dump(hubdata, f)
                     f.close()   
                 os.system("systemctl restart reachlink_test")  
@@ -591,7 +622,70 @@ def add_cisco_hub(request: HttpRequest):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def branch_info(request: HttpRequest):
+def homepage_info(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of homepage info:{public_ip}")
+        response = {}
+        total_no_branches = 0
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/device_info.json", "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
+                hub_info = []
+                bandwidth_info = []
+                for hubs in device["hub_info"]:
+                    hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": len(hubs["active_spokes"]),
+                                                            "no_of_inactive_branches": len(hubs["inactive_spokes"]),
+                                                            "active_branches": hubs["active_spokes"],
+                                                            "inactive_branches": hubs["inactive_spokes"]
+                                                            }
+                                    })
+                    bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": len(hubs["active_spokes"]),
+                                                            "no_of_inactive_branches": len(hubs["inactive_spokes"]),
+                                                            "branch_data": hubs["bandwidth_info"]                                                            
+                                                            }
+                                    })
+                response = {
+                            "total_no_hubs": device["no_of_hubs"],
+                            "active_no_hubs": device["no_active_hubs"],
+                            "inactive_no_hubs": device["no_inactive_hubs"],
+                            "hub_summary": str(device["no_active_hubs"]) + "/" + str(device["no_of_hubs"]),
+                            "total_no_branches": total_no_branches,
+                            "active_no_branches": device["total_no_active_spokes"],
+                            "inactive_no_branches": device["total_no_inactive_spokes"],
+                            "branch_summary": str(device["total_no_active_spokes"]) + "/" + str(total_no_branches),
+                            "hub_info": hub_info,  
+                            "bandwidth_info":bandwidth_info,                         
+                            "organization_id": organization_id
+                            }
+                return JsonResponse(response, safe=False)
+    except Exception as e:
+        print(e)
+    response = {
+                            "total_no_hubs": 0,
+                            "active_no_hubs": 0,
+                            "inactive_no_hubs": 0,
+                            "hub_summary": 0,
+                            "total_no_branches": 0,
+                            "active_no_branches": 0,
+                            "inactive_no_branches": 0,
+                            "branch_summary": 0,
+                            "hub_info": [], 
+                            "bandwidth_info":[],                             
+                            "organization_id": organization_id
+                            }
+    return JsonResponse(response, safe=False)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def branch_infoold(request: HttpRequest):
     try:
         print(request)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -602,7 +696,7 @@ def branch_info(request: HttpRequest):
         inactive_branches = 0
         total_no_branches = 0
         organization_id = str(request.GET.get('organization_id'))
-        with open("/etc/reach/reachlink/total_branches.json", "r") as f:
+        with open("/root/reachlink/total_branches.json", "r") as f:
             total_branches = json.load(f)
             f.close()
         reg_devices = coll_registered_organization.find_one({"organization_id":organization_id})
@@ -641,10 +735,45 @@ def branch_info(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+############################################
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def branch_info(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of branch info:{public_ip}")
+        response = {}
+        data = []     
+        active_branches = 0
+        inactive_branches = 0
+        total_no_branches = 0
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/device_info.json", "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                response = {    "data":device["branch_info_only"],
+                        "total_branches":device["total_no_active_spokes"] + device["total_no_inactive_spokes"],
+                        "inactive_branches":device["total_no_active_spokes"],
+                        "active_branches": device["total_no_inactive_spokes"],
+                        "organization_id": organization_id
+                    }
+                return JsonResponse(response, safe=False)
+    except Exception as e:
+        print(e)
+    response = {    "data":data,
+                        "total_branches":total_no_branches,
+                        "inactive_branches":inactive_branches,
+                        "active_branches": active_branches,
+                        "organization_id": organization_id
+                    }
+    return JsonResponse(response, safe=False)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def hub_info(request: HttpRequest):
+def hub_infoold(request: HttpRequest):
     try:
         print(request)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -662,7 +791,7 @@ def hub_info(request: HttpRequest):
         inactive_hubs = 0
         total_no_hubs = 1
         organization_id = str(request.GET.get('organization_id'))
-        with open("/etc/reach/reachlink/total_hubs.json", "r") as f:
+        with open("/root/reachlink/total_hubs.json", "r") as f:
             total_branches = json.load(f)
             f.close()
         reg_devices = coll_registered_organization.find_one({"organization_id":organization_id})
@@ -697,6 +826,39 @@ def hub_info(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+
+#######################################
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def hub_info(request: HttpRequest):
+    try:
+        print(request)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        print(f"requested ip of hub_info:{public_ip}")
+        response = {}
+        data = []        
+        organization_id = str(request.GET.get('organization_id'))
+        with open("/root/reachlink/device_info.json", "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                response = {    "data":device["hub_info_only"],
+                        "total_hubs":device["no_of_hubs"],
+                        "inactive_hubs":device["no_inactive_hubs"],
+                        "active_hubs": device["no_active_hubs"],
+                        "organization_id": organization_id
+                    }
+                return JsonResponse(response, safe=False)
+    except Exception as e:
+        print(e)
+    response = {    "data":data,
+                        "total_hubs":0,
+                        "inactive_hubs":0,
+                        "active_hubs": 0,
+                        "organization_id": organization_id
+                    }
+    return JsonResponse(response, safe=False)
 ###########SPOKE####################
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -718,13 +880,13 @@ def deactivate(request: HttpRequest):
                 response = router_configure.removeuser(deactivate_data)
                 if response:
                     os.system("systemctl stop reachlink_test") 
-                    with open("/etc/reach/reachlink/total_branches.json", "r") as f:
+                    with open("/root/reachlink/total_branches.json", "r") as f:
                         totalbranches = json.load(f)
                         f.close()
                     for dev in totalbranches:
                         if dev["uuid"] == data["uuid"]:
                             dev["status"] = "inactive"
-                    with open("/etc/reach/reachlink/total_branches.json", "w") as f:
+                    with open("/root/reachlink/total_branches.json", "w") as f:
                         json.dump(totalbranches, f)
                         f.close() 
                     os.system("systemctl start reachlink_test")   
