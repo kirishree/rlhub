@@ -364,7 +364,7 @@ def add_cisco_device(request: HttpRequest):
                 ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
                 client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
                 client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
-                with open(f"~/{client_name}.ovpn", "r") as f:
+                with open(output_file, "r") as f:
                     ovpnfile = f.read()
                     f.close()
                 with open(ca_cert_file, "r") as f:

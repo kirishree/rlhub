@@ -281,7 +281,12 @@ def check_user(data, newuser):
                                 spokedevice_name =  "microtekspoke"+ str(len(devinfo["microtek_spokes_info"])+1)+"-"+details["organization_name"]
                                 new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
-                                                      "spokedevice_name":spokedevice_name
+                                                      "spokedevice_name":spokedevice_name,
+                                                      "hub_ip": hub_ip,
+                                                      "tunnel_ip": "None",
+                                                      "public_ip": "None",
+                                                      "router_username":"admin",
+                                                      "router_password": "admin",
                                                       }
                                 devinfo["microtek_spokes_info"].append(new_spoke_info)
                     elif "cisco_ubuntu" in data["uuid"]:
@@ -290,7 +295,12 @@ def check_user(data, newuser):
                                 spokedevice_name =  "ciscoubuntuspoke"+ str(len(devinfo["cisco_spokes_info"])+1)+"-"+details["organization_name"]
                                 new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
-                                                      "spokedevice_name":spokedevice_name
+                                                      "spokedevice_name":spokedevice_name,
+                                                      "hub_ip": hub_ip,
+                                                      "tunnel_ip": "None",
+                                                      "public_ip": "None",
+                                                      "router_username":"admin",
+                                                      "router_password": "admin"
                                                       }
                                 devinfo["cisco_spokes_info"].append(new_spoke_info)
                     else:
