@@ -144,7 +144,7 @@ def setass(response, devicename):
                     connected_spoke.append(collection) 
         for spoke in connected_spoke:
             if spoke["spokedevice_name"] == newspokedevicename:
-                if devicename == "robustel":
+                if devicename == "robustel" or devicename == "microtek":
                     query = {"spokedevice_name": newspokedevicename }
                     update_data = {"$set": {"public_ip":spoke["Public_ip"],
                                             "tunnel_ip": spoke["Tunnel_ip"]                                                                       
@@ -322,6 +322,8 @@ def add_cisco_device(request: HttpRequest):
                 response1["Access-Control-Expose-Headers"] = "X-Message"
                 #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
                 #background_thread.start() 
+                os.system(f"python3 {reachlink_zabbix_path}")
+                os.system("systemctl restart reachlink_test") 
             else:
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)    
@@ -334,7 +336,7 @@ def add_cisco_device(request: HttpRequest):
             response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1
     
-    if data["device"].lower() == "microtek":        
+    if data["device"].lower() == "mikrotek":        
         data["uuid"] = data['branch_location'] + "_microtek.net"
         print(data)
         data["username"] = "none"
@@ -399,8 +401,10 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
+                #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
                 #background_thread.start() 
+                os.system(f"python3 {reachlink_zabbix_path}")
+                os.system("systemctl restart reachlink_test")   
             else:
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)    
