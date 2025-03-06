@@ -630,7 +630,8 @@ def homepage_info(request: HttpRequest):
                     bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
                                                             "no_of_active_branches": len(hubs["active_spokes"]),
                                                             "no_of_inactive_branches": len(hubs["inactive_spokes"]),
-                                                            "branch_data": hubs["bandwidth_info"]                                                            
+                                                            "branch_data": hubs["bandwidth_info"],
+                                                            "hub_data": hubs["bandwidth_info_hub"]                                                     
                                                             }
                                     })
                 response = {

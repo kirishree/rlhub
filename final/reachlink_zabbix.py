@@ -14,10 +14,6 @@ rlserver_wan_intfc = config('RLSERVER_WAN_INTFC')
 # Zabbix API URL
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 
-# Zabbix API credentials
-username = config('ZABBIX_USERNAME')
-password = config('ZABBIX_PASSWORD')
-
 # Api key
 auth_token = config('ZABBIX_API_TOKEN')
 

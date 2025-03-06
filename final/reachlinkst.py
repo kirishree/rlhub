@@ -29,10 +29,6 @@ subject = 'Alert ReachLink Spoke InActive '
 # Zabbix API URL
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 
-# Zabbix API credentials
-username = config('ZABBIX_USERNAME')
-password = config('ZABBIX_PASSWORD')
-
 # Api key
 auth_token = config('ZABBIX_API_TOKEN')
 
@@ -155,12 +151,18 @@ def main():
                         if connectedStatus: 
                             midevice["status"] = "active"
                             no_midevice_active += 1
-                            active_spokes.append(midevice["branch_location"])                             
-                            bits_received = get_history(midevice["itemid_received"])
-                            bits_sent = get_history(midevice["itemid_sent"])
-                            bandwidth_info.append({"branch_location": midevice["branch_location"],
+                            active_spokes.append(midevice["branch_location"])       
+                            if "itemid_received" in midevice:                     
+                                bits_received = get_history(midevice["itemid_received"])
+                                bits_sent = get_history(midevice["itemid_sent"])
+                                bandwidth_info.append({"branch_location": midevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
+                            else:
+                                os.system("python3 reachlink_zabbix.py")
+                                bandwidth_info.append({"branch_location": midevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                         else:
                             midevice["status"] = "inactive"
                             bandwidth_info.append({"branch_location": midevice["branch_location"],
@@ -197,11 +199,18 @@ def main():
                             cidevice["status"] = "active"
                             active_spokes.append(cidevice["branch_location"])
                             no_cidevice_active += 1
-                            bits_received = get_history(cidevice["itemid_received"])
-                            bits_sent = get_history(cidevice["itemid_sent"])
-                            bandwidth_info.append({"branch_location": cidevice["branch_location"],
+                            if "itemid_received" in cidevice:
+                                bits_received = get_history(cidevice["itemid_received"])
+                                bits_sent = get_history(cidevice["itemid_sent"])
+                                bandwidth_info.append({"branch_location": cidevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
+                            else:
+                                os.system("python3 reachlink_zabbix.py")
+                                bandwidth_info.append({"branch_location": cidevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
+
                         else:
                             cidevice["status"] = "inactive"
                             inactive_spokes.append(cidevice["branch_location"])
@@ -238,16 +247,21 @@ def main():
                             rodevice["status"] = "active"
                             active_spokes.append(rodevice["branch_location"])
                             no_rodevice_active += 1
-                            bits_received = get_history(rodevice["itemid_received"])
-                            bits_sent = get_history(rodevice["itemid_sent"])
-                            bandwidth_info.append({"branch_location": rodevice["branch_location"],
+                            if "itemid_received" in rodevice:
+                                bits_received = get_history(rodevice["itemid_received"])
+                                bits_sent = get_history(rodevice["itemid_sent"])
+                                bandwidth_info.append({"branch_location": rodevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
+                            else:
+                                os.system("python3 reachlink_zabbix.py")
+                                bandwidth_info.append({"branch_location": rodevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0}) 
                         else:
                             rodevice["status"] = "inactive"
                             inactive_spokes.append(rodevice["branch_location"])
-                            no_rodevice_inactive += 1
-                           
+                            no_rodevice_inactive += 1                           
                             bandwidth_info.append({"branch_location": rodevice["branch_location"],
                                                    "bits_recieved": 0,
                                                     "bits_sent": 0})
@@ -280,11 +294,17 @@ def main():
                             ubdevice["status"] = "active"
                             active_spokes.append(ubdevice["branch_location"])
                             no_ubdevice_active += 1
-                            bits_received = get_history(ubdevice["itemid_received"])
-                            bits_sent = get_history(ubdevice["itemid_sent"])
-                            bandwidth_info.append({"branch_location": ubdevice["branch_location"],
+                            if "itemid_received" in ubdevice:
+                                bits_received = get_history(ubdevice["itemid_received"])
+                                bits_sent = get_history(ubdevice["itemid_sent"])
+                                bandwidth_info.append({"branch_location": ubdevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
+                            else:
+                                os.system("python3 reachlink_zabbix.py")
+                                bandwidth_info.append({"branch_location": midevice["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                         else:
                             ubdevice["status"] = "inactive"
                             inactive_spokes.append(ubdevice["branch_location"])
@@ -316,6 +336,18 @@ def main():
                                                   })
                     no_active_spoke = no_cidevice_active + no_midevice_active +no_rodevice_active + no_ubdevice_active
                     no_inactive_spoke = no_cidevice_inactive + no_midevice_inactive + no_rodevice_inactive + no_ubdevice_inactive
+                    bandwidth_info_reachlinkhub = []
+                    if "itemid_sent" in device["reachlink_hub_info"]:
+                        bits_received = get_history(device["reachlink_hub_info"]["itemid_received"])
+                        bits_sent = get_history(device["reachlink_hub_info"]["itemid_sent"])
+                        bandwidth_info_reachlinkhub.append({"branch_location": device["reachlink_hub_info"]["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
+                    else:
+                        os.system("python3 reachlink_zabbix.py")
+                        bandwidth_info_reachlinkhub.append({"branch_location": device["reachlink_hub_info"]["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                     reachlinkhub_info = {"hub_location": "Reachlink_server",
                                          "hub_ip":hub_ip,
                                          "hub_status":"active",
@@ -325,6 +357,7 @@ def main():
                                          "no_inactive_spoke":no_inactive_spoke,
                                          "active_spokes": active_spokes,
                                          "bandwidth_info": bandwidth_info,
+                                         "bandwidth_info_hub": bandwidth_info_reachlinkhub,
                                          "inactive_spokes": inactive_spokes,
                                          "spokes_info":{"microtek_spokes": {"spokes_info": microtek_info,
                                                              "no_active_spokes": no_midevice_active,
@@ -354,21 +387,36 @@ def main():
                     org_info["no_of_hubs"] += 1 
                     spoke_ip = device["cisco_hub_info"]["hub_ip"].split("/")[0]
                     connectedStatus = check_tunnel_connection(spoke_ip)
+                    bandwidth_info_ciscohub = []
                     if connectedStatus: 
                         device["status"] = "active"
                         hubstatus = "active"
                         org_info["active_hubs"].append(device["cisco_hub_info"]["branch_location"])
                         org_info["no_active_hubs"] += 1
+                        if "itemid_sent" in device["cisco_hub_info"]:
+                                bits_received = get_history(device["cisco_hub_info"]["itemid_received"])
+                                bits_sent = get_history(device["cisco_hub_info"]["itemid_sent"])
+                                bandwidth_info_ciscohub.append({"branch_location": device["cisco_hub_info"]["branch_location"],
+                                                   "bits_recieved": bits_received,
+                                                    "bits_sent": bits_sent })
+                        else:
+                            os.system("python3 reachlink_zabbix.py")
+                            bandwidth_info_ciscohub.append({"branch_location": device["cisco_hub_info"]["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                     else:
                         device["status"] = "inactive"
                         hubstatus ="inactive"
                         org_info["inactive_hubs"].append(device["cisco_hub_info"]["branch_location"])
                         org_info["no_inactive_hubs"] += 1
+                        bandwidth_info_ciscohub.append({"branch_location": device["cisco_hub_info"]["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                     no_active_ciscospokes = 0
                     no_inactive_ciscospokes =0
                     active_ciscospokes = []
                     inactive_ciscospokes = []
-                    bandwidth_info_cisco = []
+                    bandwidth_info_cisco = []                   
                     ciscospokes_info = []
                     for ciscospoke in device["cisco_spokes_info"]:
                         spoke_ip = ciscospoke["dialerip"].split("/")[0]
@@ -377,11 +425,17 @@ def main():
                             ciscospoke["status"] = "active"
                             active_ciscospokes.append(ciscospoke["branch_location"])
                             no_active_ciscospokes += 1
-                            bits_received = get_history(ciscospoke["branch_location"]["itemid_received"])
-                            bits_sent = get_history(ciscospoke["branch_location"]["itemid_sent"])
-                            bandwidth_info_cisco.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
+                            if "itemid_sent" in ciscospoke["branch_location"]:
+                                bits_received = get_history(ciscospoke["branch_location"]["itemid_received"])
+                                bits_sent = get_history(ciscospoke["branch_location"]["itemid_sent"])
+                                bandwidth_info_cisco.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
+                            else:
+                                os.system("python3 reachlink_zabbix.py")
+                                bandwidth_info_cisco.append({"branch_location": ciscospoke["branch_location"],
+                                                   "bits_recieved": 0,
+                                                    "bits_sent": 0 })
                         else:
                             ciscospoke["status"] = "inactive"
                             inactive_ciscospokes.append(ciscospoke["branch_location"])
@@ -421,7 +475,8 @@ def main():
                                          "bandwidth_info":bandwidth_info_cisco,
                                          "active_spokes": active_ciscospokes,
                                          "inactive_spokes": inactive_ciscospokes,
-                                         "spokes_info": ciscospokes_info
+                                         "spokes_info": ciscospokes_info,
+                                         "bandwidth_info_hub": bandwidth_info_ciscohub
                                     }
                     org_info["hub_info"].append(ciscohub_info)
                     org_info["total_no_active_spokes"] += no_active_ciscospokes
