@@ -5,7 +5,7 @@ import requests
 import getpass
 import re
 import ipaddress
-hub_ip = "185.69.209.251"
+hub_ip = "185.69.209.245"
 
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
@@ -22,7 +22,7 @@ def set_openvpn_client():
     """
     Connects to a Robustel router via SSH and create OpenVPN tunnel in client mode'.
     """
-    router_ip = "172.23.3.21"
+    router_ip = "192.168.0.1"
     username = "admin"
     password = "admin"
 
@@ -59,10 +59,10 @@ def set_openvpn_client():
                             "set lan multi_ip 1 netmask 255.255.255.0",
                             "add firewall white_list 1",
                             "set firewall white_list 1 desc localnetwork",
-                            "set firewall white_list 1 src_addr 172.23.3.0/24",
+                            "set firewall white_list 1 src_addr 192.168.0.0/24",
                             "add firewall white_list 2",
                             "set firewall white_list 2 desc reachlinkserver",
-                            "set firewall white_list 2 src_addr 185.69.209.251/32",
+                            "set firewall white_list 2 src_addr 185.69.209.245/32",
                             "add firewall white_list 3",
                             "set firewall white_list 3 desc reachlinknetwork",
                             "set firewall white_list 3 src_addr 10.8.0.0/24",
