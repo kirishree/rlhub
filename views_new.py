@@ -76,7 +76,7 @@ snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
 ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
 device_info_path = config('DEVICE_INFO_PATH')
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
-
+robustel_exe_path = config('ROBUSTEL_EXE_PATH')
 
 def new_client(client_name):
     try:
@@ -296,7 +296,7 @@ def add_cisco_device(request: HttpRequest):
                 with open(client_key_file, "r") as f:
                     clientkey = f.read()
                     f.close()
-                with open("robustel_conf.exe", "rb") as f:
+                with open(robustel_exe_path, "rb") as f:
                     robustelexe = f.read()
                     f.close()
                 files_to_send = {

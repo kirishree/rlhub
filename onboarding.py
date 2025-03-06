@@ -271,7 +271,7 @@ def check_user(data, newuser):
                                                       "router_password": "admin",
                                                       "hub_ip": hub_ip,
                                                       "tunnel_ip": "None",
-                                                      "subnet": []
+                                                      
                                                       }
                                 devinfo["robustel_spokes_info"].append(new_spoke_info)
                                 coll_tunnel_ip.insert_one(new_spoke_info)
