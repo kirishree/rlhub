@@ -1446,7 +1446,8 @@ def get_pbr_info_spoke(request):
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated]) 
 def diagnostics(request: HttpRequest):
-    data = json.loads(request.body)      
+    data = json.loads(request.body)     
+    print("ping hub data", data) 
     response = ubuntu_info.diagnostics(data)
     return JsonResponse(response, safe=False)  
 
@@ -1455,6 +1456,7 @@ def diagnostics(request: HttpRequest):
 def ping_spoke(request: HttpRequest):  
     try: 
         data = json.loads(request.body) 
+        print("ping spoke data", data) 
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         print(f"requested ip of ping spoke:{public_ip}")
@@ -1515,6 +1517,7 @@ def ping_spoke(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def traceroute_spoke(request):
     data = json.loads(request.body)
+    print("trace spoke data", data) 
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     print(f"requested ip of traceroute spoke:{public_ip}")
@@ -1570,6 +1573,7 @@ def traceroute_spoke(request):
 @permission_classes([IsAuthenticated])
 def traceroute_hub(request):
     data = json.loads(request.body)
+    print("trace hub data", data) 
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     print(f"requested ip of traceroute hub:{public_ip}")
