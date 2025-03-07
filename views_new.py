@@ -1525,7 +1525,15 @@ def traceroute_spoke(request):
         data["router_password"] = router_info["router_password"]
         trace_result = microtek_configure.traceroute(data)   
         response_msg = {"message": trace_result}            
-        return JsonResponse(response_msg,safe=False)   
+        return JsonResponse(response_msg,safe=False) 
+    if "ciscodevice" in data["uuid"]:
+        router_info = coll_hub_info.find_one({"uuid":data["uuid"]})
+        data["router_username"] = router_info["router_username"]
+        data["router_password"] = router_info["router_password"]
+        trace_result = router_configure.traceroute(data)   
+        response_msg = {"message": trace_result}  
+        print("traceroute device",response_msg)          
+        return JsonResponse(response_msg,safe=False)     
     if host_ip:
         tunnel_ip = data["tunnel_ip"].split("/")[0] 
         url = "http://" + tunnel_ip + ":5000/"
@@ -1562,7 +1570,15 @@ def traceroute_hub(request):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     print(f"requested ip of traceroute hub:{public_ip}")
     host_ip = data.get('trace_ip', None)
-    if host_ip:           
+    if "ciscohub" in data["uuid"]:
+        router_info = coll_hub_info.find_one({"uuid":data["uuid"]})
+        data["router_username"] = router_info["router_username"]
+        data["router_password"] = router_info["router_password"]
+        trace_result = router_configure.traceroute(data)   
+        response_msg = {"message": trace_result}   
+        print("traceroute hub",response_msg)            
+        return JsonResponse(response_msg,safe=False)   
+    if "reachlinkserver" in data["uuid"]:           
             result1 = subprocess.run(['traceroute', '-d', host_ip], capture_output=True, text=True)
             response = {"message":result1.stdout}
             return JsonResponse(response, safe=False)

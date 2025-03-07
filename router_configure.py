@@ -208,6 +208,38 @@ def pingspoke(data):
     ssh_client.close()
     return status
 
+def traceroute(data):    
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data['router_password']
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+    except Exception as e:
+        print(f"SSH Connection Error: {e}")
+        return False
+
+    # Open an interactive shell session
+    shell = ssh_client.invoke_shell()
+
+    # Add a delay to allow the shell to be ready
+    time.sleep(1)
+    # Enter enable mode
+    output = send_command_wo(shell, 'enable')
+    if "Password" in output:  # Prompt for enable password
+        send_command_wo(shell, password)
+    host_ip = data.get('trace_ip', None) 
+    status = send_command_ping(shell, f'trace ip {host_ip}', wait_time=5)
+    # Close the SSH connection
+    ssh_client.close()
+    return status
+
+
 def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=15):
     """
     Sends a command to the shell and retrieves the output, handling paging (`--More--`).
