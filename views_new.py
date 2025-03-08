@@ -23,7 +23,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('reachlink')
 import os
 import subprocess
 import json
