@@ -215,6 +215,8 @@ def login_or_register(request):
 def login(request: HttpRequest):
     data = json.loads(request.body)
     print(data)
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     global newuser
     try:
         response, newuser = onboarding.check_user(data, newuser)        
@@ -244,7 +246,8 @@ def login(request: HttpRequest):
         else:
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)        
-    except:
+    except Exception as e:
+        logger.error(f"Error: Login request: {e}")
         response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(response)
@@ -262,8 +265,7 @@ def add_cisco_device(request: HttpRequest):
         data["uuid"] = data['branch_location'] + "_robustel.net"
         print(data)
         data["username"] = "none"
-        data["password"] = "none" 
-        
+        data["password"] = "none"        
         try:
             response, newuser = onboarding.check_user(data, newuser)        
             if newuser:
@@ -329,7 +331,7 @@ def add_cisco_device(request: HttpRequest):
                 response1['X-Message'] = json.dumps(response)    
                 response1["Access-Control-Expose-Headers"] = "X-Message"    
         except Exception as e:
-            print(e)
+            logger.error(f"Error: Configure Robustel Spoke: {e}")
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
@@ -340,8 +342,7 @@ def add_cisco_device(request: HttpRequest):
         data["uuid"] = data['branch_location'] + "_microtek.net"
         print(data)
         data["username"] = "none"
-        data["password"] = "none" 
-        
+        data["password"] = "none"        
         try:
             response, newuser = onboarding.check_user(data, newuser)        
             if newuser:
@@ -393,7 +394,6 @@ def add_cisco_device(request: HttpRequest):
                 with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     for filename, content in files_to_send.items():
                         zip_file.writestr(filename, content)
-
                 # Prepare the response
                 buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
@@ -410,14 +410,12 @@ def add_cisco_device(request: HttpRequest):
                 response1['X-Message'] = json.dumps(response)    
                 response1["Access-Control-Expose-Headers"] = "X-Message"    
         except Exception as e:
-            print(e)
+            logger.error("Error: Configure Microtek Spoke:") {e}
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1
-
-
     check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
     if not check_hub_configured:
         json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
@@ -534,6 +532,7 @@ def add_cisco_device(request: HttpRequest):
             json_response = [{"message": f"Error:{response[0]['message']}"}]
     except Exception as e:
         print("device add exception", e)
+        logger.error(f"Error: Configure cisco spoke:{e}")
         json_response = [{"message": f"Error:Internal Server Error"}]
     print(json_response)
     response = HttpResponse(content_type='application/zip')
@@ -678,6 +677,7 @@ def add_cisco_hub(request: HttpRequest):
             json_response = [{"message": f"Error:{response[0]['message']}"}]
     except Exception as e:
         print(e)
+        logger.error(f"Error: Configure cisco HUB:{e}")
         json_response = [{"message": f"Error:Internal Server Error"}]
     print(json_response)
     response = HttpResponse(content_type='application/zip')
@@ -1448,7 +1448,7 @@ def get_pbr_info_spoke(request):
 def diagnostics(request: HttpRequest):
     data = json.loads(request.body)     
     print("ping hub data", data) 
-    if "ciscohub" in data["uuid"]:
+    if "cisco" in data["uuid"]:
         hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
         if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
@@ -1599,7 +1599,7 @@ def traceroute_hub(request):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     print(f"requested ip of traceroute hub:{public_ip}")
     host_ip = data.get('trace_ip', None)
-    if "ciscohub" in data["uuid"]:
+    if "cisco" in data["uuid"]:
         hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
         if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
