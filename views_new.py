@@ -2045,7 +2045,7 @@ def onboard_block(request: HttpRequest):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for onboard block: {request.method} {request.path} Requested ip: {public_ip}'))
+    logger.debug(f'Received request for onboard block: {request.method} {request.path} Requested ip: {public_ip}')
     response = onboardblock.onboard_block(data)
     logger.debug(f'Received request: {request.method} {request.path}')
     return HttpResponse(response)
