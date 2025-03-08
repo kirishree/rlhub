@@ -1468,7 +1468,7 @@ def diagnostics(request: HttpRequest):
                     response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}
         else:
             response = {"message":f"Error: Hub info not found"}        
-    elif "reachlink" in data["uuid"]:
+    else:
         response = ubuntu_info.diagnostics(data)
     return JsonResponse(response, safe=False)  
 
