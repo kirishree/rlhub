@@ -410,7 +410,7 @@ def add_cisco_device(request: HttpRequest):
                 response1['X-Message'] = json.dumps(response)    
                 response1["Access-Control-Expose-Headers"] = "X-Message"    
         except Exception as e:
-            logger.error("Error: Configure Microtek Spoke:") {e}
+            logger.error("Error: Configure Microtek Spoke:{e}")
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
