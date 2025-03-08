@@ -1448,7 +1448,28 @@ def get_pbr_info_spoke(request):
 def diagnostics(request: HttpRequest):
     data = json.loads(request.body)     
     print("ping hub data", data) 
-    response = ubuntu_info.diagnostics(data)
+    if "ciscohub" in data["uuid"]:
+        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]     
+                ping_result = router_configure.pingspoke(data)
+                re = ping_result.split("\n")
+                last_line = re[-2]
+                print(last_line)
+                out = last_line.split(" ")[3]            
+                print(out)
+                if out == "0":
+                    response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
+                else:
+                    rtt = last_line.split(" ")[9].split("/")[1]
+                    print(rtt)
+                    response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}
+        else:
+            response = {"message":f"Error: Hub info not found"}        
+    elif "reachlink" in data["uuid"]:
+        response = ubuntu_info.diagnostics(data)
     return JsonResponse(response, safe=False)  
 
 @api_view(['POST'])  
@@ -1489,7 +1510,7 @@ def ping_spoke(request: HttpRequest):
             if ping_result == "0":
                 response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
             else:                
-                response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}ms"}
+                response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}"}
         elif "cisco" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
