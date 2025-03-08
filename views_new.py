@@ -1606,16 +1606,13 @@ def traceroute_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]        
                 trace_result = router_configure.traceroute(data)   
-                response_msg = {"message": trace_result}   
-                print("traceroute hub",response_msg)    
+                response = {"message": trace_result}   
+                print("traceroute hub",response)    
         else:
-            response_msg = {"message": "Error in connecting HUB"} 
-        return JsonResponse(response_msg,safe=False)   
-    if "reachlinkserver" in data["uuid"]:           
+            response = {"message": "Error in connecting HUB"}        
+    else:           
             result1 = subprocess.run(['traceroute', '-d', host_ip], capture_output=True, text=True)
             response = {"message":result1.stdout}
-            return JsonResponse(response, safe=False)
-    response = {"message":"Invalid trace ip"}
     return JsonResponse(response,safe=False)
 
 @api_view(['POST'])  
