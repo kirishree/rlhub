@@ -796,4 +796,74 @@ def delstaticroute_ubuntu(data):
     except Exception as e:
         response = {"message": "Error while deleting route"}
     return response
-        
+
+def generate_dialerip(dialerips):
+    random_no = random.randint(3,250)
+    newdialerip = dialernetworkip + str(random_no)
+    for dialerip in dialerips:
+        if dialerip == newdialerip:
+            return generate_dialerip(dialerips)
+    return newdialerip
+
+def generate_dialer_password():
+    # Define character pools
+    char_pool = ""
+    char_pool += string.ascii_lowercase
+    char_pool += string.digits
+    if not char_pool:
+        raise ValueError("At least one character type must be selected.")
+
+    # Ensure the password contains at least one character of each selected type
+    password = []
+    password.append(random.choice(string.ascii_lowercase))
+    password.append(random.choice(string.digits))
+    password.append('@')
+    # Fill the rest of the password length with random choices
+    remaining_length = 8 - len(password)
+    password.extend(random.choices(char_pool, k=remaining_length))
+    
+    # Shuffle the password to avoid predictable patterns
+    random.shuffle(password)    
+    return ''.join(password)
+
+def get_dialer_ip(devicename):
+    try:
+        with open("/etc/ppp/chap-secrets", "r") as f:
+            chapsecret = f.read()
+            f.close()
+        usernames = []
+        dialer_ips = []
+        newdialerip = False
+        newdialerpassword = False
+        chapsecrets = chapsecret.split("\n")
+        for sec in chapsecrets:
+            if "#" not in sec:
+                username = sec.strip().split(" ")[0]
+                usernames.append(username)
+                if username == devicename:
+                    print("User Already available")
+                    dialerip = sec.strip().split(" ")[-1]
+                    dialerpassword= sec.strip().split(" ")[2]
+                    return ({"dialerip":dialerip,
+                             "dialerpassword": dialerpassword,
+                             "dialerusername": devicename,
+                             "message": "olduser"})                    
+                dialer_ips.append(sec.strip().split(" ")[-1])
+        newdialerip = generate_dialerip(dialer_ips)
+        newdialerpassword = generate_dialer_password()
+        with open("/etc/ppp/chap-secrets", "a") as f:
+            f.write(f'\n{devicename}   *   {newdialerpassword}    {newdialerip}\n')
+            f.close()
+        #os.system("systemctl restart pptpd")
+        return ({"dialerip":newdialerip,
+                "dialerpassword": newdialerpassword,
+                "dialerusername": devicename,
+                "message": "newuser"})        
+    except Exception as e:
+        print(e)
+    return ({"dialerip":newdialerip,
+                "dialerpassword": newdialerpassword,
+                "dialerusername": devicename,
+                "message": "error"})    
+
+                 

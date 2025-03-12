@@ -259,7 +259,7 @@ def check_user(data, newuser):
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name
                                                       }
-                                    devinfo["cisco_spokes_info"].append(new_spoke_info)
+                                    devinfo["cisco_spokes_info"].append(new_spoke_info)                                    
                     elif "robustel" in data["uuid"]:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
@@ -289,6 +289,7 @@ def check_user(data, newuser):
                                                       "router_password": "admin",
                                                       }
                                 devinfo["microtek_spokes_info"].append(new_spoke_info)
+                                coll_tunnel_ip.insert_one(new_spoke_info)
                     elif "cisco_ubuntu" in data["uuid"]:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
@@ -303,6 +304,7 @@ def check_user(data, newuser):
                                                       "router_password": "admin"
                                                       }
                                 devinfo["cisco_spokes_info"].append(new_spoke_info)
+                                coll_tunnel_ip.insert_one(new_spoke_info)
                     else:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
@@ -313,7 +315,8 @@ def check_user(data, newuser):
                                                       "spokedevice_name":spokedevice_name,
                                                       "gretunnel_ip":gretunnel_ip, 
                                                       }
-                                devinfo["ubuntu_spokes_info"].append(new_spoke_info)                     
+                                devinfo["ubuntu_spokes_info"].append(new_spoke_info)    
+                                coll_tunnel_ip.insert_one(new_spoke_info)                 
                     registered_users = details["regusers"]
                     user_available = False
                     for users in registered_users:

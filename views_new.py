@@ -416,6 +416,9 @@ def add_cisco_device(request: HttpRequest):
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1
+    #if data["device"].lower() == "cisco":     
+    #    if  data.get("dialer_ip", "") == hub_ip:
+            
     check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
     if not check_hub_configured:
         json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
@@ -2028,7 +2031,7 @@ def get_ciscohub_config(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Cisco HUB Config: {request.method} {request.path} Requested ip: {public_ip}')
     response = hub_config.get_ciscohub_config(data)
-    return JsonResponse(response)
+    return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
@@ -2037,7 +2040,17 @@ def get_ciscospoke_config(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Configure Cisco spoke: {request.method} {request.path} Requested ip: {public_ip}')
     response = hub_config.get_ciscospoke_config(data)
-    return JsonResponse(response)
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_microtekspoke_config(request: HttpRequest):
+    global newuser
+    data = json.loads(request.body) 
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
+    response, newuser = onboarding.check_user(data, newuser)
+    return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
