@@ -1846,14 +1846,11 @@ def get_interface_details_hub(request):
                 response = router_configure.get_interface_cisco(data)
             else:
                 response = []
-        elif data["hub_wan_ip"] == hub_ip:
-            print("hiii")
-            response = ubuntu_info.get_interface_details_ubuntu(data)
-            print(response)
+        elif data["hub_wan_ip"] == hub_ip:            
+            response = ubuntu_info.get_interface_details_ubuntu(data)            
     except Exception as e:
         logger.error("Error: Get Interface_details of HUB:{e}")
-        response = []
-    print("hub interface details")
+        response = []    
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  

@@ -14,6 +14,8 @@ from decouple import config
 import onboarding
 import pymongo
 import yaml
+import random
+import string
 ipr = IPRoute()
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
@@ -799,7 +801,7 @@ def delstaticroute_ubuntu(data):
 
 def generate_dialerip(dialerips):
     random_no = random.randint(3,250)
-    newdialerip = dialernetworkip + str(random_no)
+    newdialerip = "10.50.50" + str(random_no)
     for dialerip in dialerips:
         if dialerip == newdialerip:
             return generate_dialerip(dialerips)
