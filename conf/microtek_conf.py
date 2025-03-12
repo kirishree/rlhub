@@ -117,7 +117,7 @@ def main():
         if response.status_code == 200:           
             json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_response = json.loads(json_response)
-            if  "This Microtek Spoke is already Registered" not in json_response["message"]:
+            if  "This Microtek Spoke is already Registered" not in json_response[0]["message"]:
                 print(json_response["message"])  
                 print("Enter a key to exit...")
                 input()
@@ -128,11 +128,11 @@ def main():
             input()
             return
     except Exception as e:
-        print("Error while getting configuration: {e}")
+        print(f"Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
         return
-    set_openvpn_client(json_response["spokedevice_name"])
+    set_openvpn_client(json_response[0]["spokedevice_name"])
 
 if __name__ == "__main__":
     main()

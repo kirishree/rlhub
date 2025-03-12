@@ -1847,7 +1847,9 @@ def get_interface_details_hub(request):
             else:
                 response = []
         elif data["hub_wan_ip"] == hub_ip:
+            print("hiii")
             response = ubuntu_info.get_interface_details_ubuntu(data)
+            print(response)
     except Exception as e:
         logger.error("Error: Get Interface_details of HUB:{e}")
         response = []
