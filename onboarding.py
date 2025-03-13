@@ -270,7 +270,7 @@ def check_user(data, newuser):
                                                       "router_username":"admin",
                                                       "router_password": "admin",
                                                       "hub_ip": hub_ip,
-                                                      "tunnel_ip": "None",
+                                                      "tunnel_ip": "None"
                                                       
                                                       }
                                 devinfo["robustel_spokes_info"].append(new_spoke_info)
@@ -286,7 +286,7 @@ def check_user(data, newuser):
                                                       "tunnel_ip": "None",
                                                       "public_ip": "None",
                                                       "router_username":"admin",
-                                                      "router_password": "admin",
+                                                      "router_password": "admin"
                                                       }
                                 devinfo["microtek_spokes_info"].append(new_spoke_info)
                                 coll_tunnel_ip.insert_one(new_spoke_info)
