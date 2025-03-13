@@ -61,7 +61,8 @@ def main():
             json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_authresponse = json.loads(json_authresponse)
             if "access" not in json_authresponse:
-                print(json_authresponse["message"])  
+
+                print(json_authresponse)  
                 print("Enter a key to exit...")
                 input()
                 return
@@ -157,16 +158,7 @@ def main():
             print("RSA key generation in progress...")
     send_command(shell, "end")
     config_commands = [
-        "configure terminal",            
-            "interface FastEthernet4",
-                f"ip address {json_response['interface_wan_ip']} {json_response['interface_wan_netmask']}",
-                "duplex auto",
-                "speed auto",
-                "end",
-
-        "configure terminal",
-            f"ip route {json_response['dialerserverip']} 255.255.255.255 {json_response['interface_wan_gateway']}",
-            "end",
+       
 
         "configure terminal",
             "vpdn enable",
@@ -192,34 +184,18 @@ def main():
                 "ppp authentication chap callin",
                 f"ppp chap hostname {json_response['dialer_username']}",
                 f"ppp chap password {json_response['dialer_password']}",                
-                "end",   
-
-        "configure terminal",
-            f"access-list 170 permit ip {json_response['hub_dialer_network']} {json_response['hub_dialer_wildcardmask']} any",
-            "end",
-
-        "configure terminal",
-            "line vty 0 4",
-                "transport in ssh",
-                "access-class 170 in",
-                "login local",
-                "end",
+                "end",       
 
         "configure terminal",
             f"username {json_response['router_username']} privilege 15 password {json_response['router_password']}",
         "end",
 
         "configure terminal",
-            f"snmp-server community {json_response['snmpcommunitystring']} RO",
-            f"snmp-server host {json_response['ubuntu_dialerclient_ip']} version 2c {json_response['snmpcommunitystring']}",
+            f"snmp-server community {json_response['snmpcommunitystring']} RO",            
             "snmp-server enable traps snmp authentication linkdown linkup",
             'snmp-server contact "reachlink@cloudetel.com"',
-            "end",
+            "end", 
         
-        "configure terminal",
-            "ip route 0.0.0.0 0.0.0.0 Dialer1",
-            "ip name-server 8.8.8.8",
-            "end",
 
         "write memory",
     ]
