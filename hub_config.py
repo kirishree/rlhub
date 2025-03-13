@@ -219,6 +219,8 @@ def get_dialer_ip_fromciscohub(devicename, dialerip):
         print(e)
     return False
 
+
+
 def generate_router_password_cisco():
     # Define character pools
     char_pool = ""

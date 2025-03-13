@@ -25,6 +25,8 @@ coll_spoke_active = db_tunnel["spoke_active"]
 coll_spoke_inactive = db_tunnel["spoke_inactive"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 vrf1_ip = config('VRF_IP')
+ubuntu_dialer_network = "10.17.17.0"
+ubuntu_dialer_netmask = "255.255.255.0"
 routes_protocol_map = {
     -1: '',
     196:'static',
@@ -807,6 +809,17 @@ def generate_dialerip(dialerips):
             return generate_dialerip(dialerips)
     return newdialerip
 
+
+
+def generate_dialerip_cisco(networkip, netmaskip, dialerips):
+    network = ipaddress.IPv4Network(f"{networkip}/{netmaskip}", strict=False)
+    dialerips = set(dialerips)
+    while True:
+        newdialerip = str(random.choice(list(network.hosts())[1:]))
+        if newdialerip not in dialerips:
+            break
+    return newdialerip
+
 def generate_dialer_password():
     # Define character pools
     char_pool = ""
@@ -851,21 +864,24 @@ def get_dialer_ip(devicename):
                              "dialerusername": devicename,
                              "message": "olduser"})                    
                 dialer_ips.append(sec.strip().split(" ")[-1])
-        newdialerip = generate_dialerip(dialer_ips)
+        #newdialerip = generate_dialerip(dialer_ips)
+        newdialerip = generate_dialerip_cisco(ubuntu_dialer_network, ubuntu_dialer_netmask, dialer_ips)
         newdialerpassword = generate_dialer_password()
         with open("/etc/ppp/chap-secrets", "a") as f:
             f.write(f'\n{devicename}   *   {newdialerpassword}    {newdialerip}\n')
             f.close()
-        #os.system("systemctl restart pptpd")
+        os.system("systemctl restart pptpd")
         return ({"dialerip":newdialerip,
                 "dialerpassword": newdialerpassword,
                 "dialerusername": devicename,
-                "message": "newuser"})        
+                "message": "newuser",
+                "hub_dialer_network":ubuntu_dialer_network,
+                "hub_dialer_netmask":ubuntu_dialer_netmask})        
     except Exception as e:
         print(e)
     return ({"dialerip":newdialerip,
                 "dialerpassword": newdialerpassword,
                 "dialerusername": devicename,
-                "message": "error"})    
-
-                 
+                "message": "error",
+                "hub_dialer_network":ubuntu_dialer_network,
+                "hub_dialer_netmask":ubuntu_dialer_netmask})                   

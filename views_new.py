@@ -352,8 +352,7 @@ def add_cisco_device(request: HttpRequest):
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
-        return response1
-    
+        return response1    
     if data["device"].lower() == "mikrotek":        
         data["uuid"] = data['branch_location'] + "_microtek.net"
         print(data)
@@ -420,48 +419,50 @@ def add_cisco_device(request: HttpRequest):
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1
-    #if data["device"].lower() == "cisco":     
-    #    if  data.get("dialer_ip", "") == hub_ip:
-            
-    check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
-    if not check_hub_configured:
-        json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
-        response = HttpResponse(content_type='application/zip')
-        response['X-Message'] = json.dumps(json_response)
-        response["Access-Control-Expose-Headers"] = "X-Message"
-        return response
-    data["uuid"] = data['branch_location'] + "_" + data["dialer_ip"] + "_ciscodevice.net"
-    print(data)
-    data["username"] = "none"
-    data["password"] = "none" 
-    try:
-        response, newuser = onboarding.check_user(data, newuser)
-        print(response)
-        print(newuser)
-        if newuser:
-            userStatus = onboarding.authenticate_user(data)
-            print(userStatus)
-            if userStatus:
-                response, newuser = onboarding.check_user(data, newuser)
-            else:
-                response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
-        print(response)
-        if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
-            devicename = response[0]["spokedevice_name"]
-            devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
-            dialer_ip = data.get("dialer_ip", "")
-            if not devicedialerinfo:
-                newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
-                if newdialerinfo:
-                    newdialerinfo["router_username"] = devicename.lower()
-                    newdialerinfo["router_password"] = hub_config.generate_router_password_cisco()
-                    newdialerinfo["spokedevice_name"] = devicename
-                    newdialerinfo["uuid"] = data["uuid"]
-                    newdialerinfo["hub_dialer_wildcardmask"] = ".".join(str(255 - int(octet)) for octet in newdialerinfo["hub_dialer_netmask"].split("."))
-                    newdialerinfo["router_wan_ip_only"] = data["router_wan_ip"].split("/")[0]
-                    subnet = ipaddress.IPv4Network(data["router_wan_ip"], strict=False)  # Allow non-network addresses
-                    newdialerinfo["router_wan_ip_netmask"] = str(subnet.netmask) 
-                    coll_dialer_ip.insert_one({"uuid": data["uuid"],
+    if data["device"].lower() == "cisco":     
+        if  data.get("dialer_ip", "") != hub_ip:
+            check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
+            if not check_hub_configured:
+                json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
+                response = HttpResponse(content_type='application/zip')
+                response['X-Message'] = json.dumps(json_response)
+                response["Access-Control-Expose-Headers"] = "X-Message"
+                return response
+            data["uuid"] = data['branch_location'] + "_" + data["dialer_ip"] + "_ciscodevice.net"
+        else:
+            data["uuid"] = data['branch_location'] + "_" + data["dialer_ip"] + "_cisco_ubuntu.net"
+        print(data)
+        data["username"] = "none"
+        data["password"] = "none" 
+        try:
+            response, newuser = onboarding.check_user(data, newuser)
+            if newuser:
+                userStatus = onboarding.authenticate_user(data)            
+                if userStatus:
+                    response, newuser = onboarding.check_user(data, newuser)
+                else:
+                    response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
+            print(response)
+            if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
+                devicename = response[0]["spokedevice_name"]
+                devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
+                dialer_ip = data.get("dialer_ip", "")
+                if not devicedialerinfo:
+                    if data.get("dialer_ip", "") != hub_ip:
+                        newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                    else:
+                        newdialerinfo = ubuntu_info.get_dialer_ip(devicename)
+                    routerpassword = hub_config.generate_router_password_cisco()
+                    if newdialerinfo:
+                        newdialerinfo["router_username"] = devicename.lower()
+                        newdialerinfo["router_password"] = routerpassword
+                        newdialerinfo["spokedevice_name"] = devicename
+                        newdialerinfo["uuid"] = data["uuid"]
+                        newdialerinfo["hub_dialer_wildcardmask"] = ".".join(str(255 - int(octet)) for octet in newdialerinfo["hub_dialer_netmask"].split("."))
+                        newdialerinfo["router_wan_ip_only"] = data["router_wan_ip"].split("/")[0]
+                        subnet = ipaddress.IPv4Network(data["router_wan_ip"], strict=False)  # Allow non-network addresses
+                        newdialerinfo["router_wan_ip_netmask"] = str(subnet.netmask) 
+                        coll_dialer_ip.insert_one({"uuid": data["uuid"],
                                                 "router_username": devicename.lower(),
                                                 "router_password": newdialerinfo["router_password"],
                                                 "spokedevice_name": devicename,
@@ -477,75 +478,96 @@ def add_cisco_device(request: HttpRequest):
                                                 "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
                                                 "branch_location": data["branch_location"]
                                                 }) 
-                    organizationid = response[0]["organization_id"]
-                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
-                    for dev in regdevices["registered_devices"]:                    
-                        if "cisco_hub_info" in dev:
-                            if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
-                                for cispoke in  dev["cisco_spokes_info"]:                         
-                                    if data["uuid"] == cispoke["uuid"]:
-                                        cispoke["router_username"] = devicename.lower()
-                                        cispoke["router_password"] = newdialerinfo["router_password"]
-                                        cispoke["spokedevice_name"] = devicename
-                                        cispoke["dialerip"] =  newdialerinfo["dialerip"]
-                                        cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
-                                        cispoke["dialerusername"] = devicename
-                                        cispoke["dialer_hub_ip"] = dialer_ip
-                                        cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
-                                        cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
-                                        cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
-                                        cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
-                                        cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
-                                        cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
-                                        cispoke["branch_location"] = data["branch_location"]
-                    query = {"organization_id": organizationid}
-                    update_data = {"$set": {
+                        organizationid = response[0]["organization_id"]
+                        regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                        if data.get("dialer_ip", "") != hub_ip:
+                            for dev in regdevices["registered_devices"]:                    
+                                if "cisco_hub_info" in dev:
+                                    if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
+                                        for cispoke in  dev["cisco_spokes_info"]:                         
+                                            if data["uuid"] == cispoke["uuid"]:
+                                                cispoke["router_username"] = devicename.lower()
+                                                cispoke["router_password"] = newdialerinfo["router_password"]
+                                                cispoke["spokedevice_name"] = devicename
+                                                cispoke["dialerip"] =  newdialerinfo["dialerip"]
+                                                cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                                cispoke["dialerusername"] = devicename
+                                                cispoke["dialer_hub_ip"] = dialer_ip
+                                                cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                                cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                                cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                                cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                                cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                                cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                                cispoke["branch_location"] = data["branch_location"]
+                        else:
+                            for dev in regdevices["registered_devices"]:                    
+                                if "reachlink_hub_info" in dev:
+                                    if data["dialer_ip"] == dev["reachlink_hub_info"]["hub_ip"]: 
+                                        for cispoke in  dev["cisco_spokes_info"]:                         
+                                            if data["uuid"] == cispoke["uuid"]:
+                                                cispoke["router_username"] = devicename.lower()
+                                                cispoke["router_password"] = newdialerinfo["router_password"]
+                                                cispoke["spokedevice_name"] = devicename
+                                                cispoke["dialerip"] =  newdialerinfo["dialerip"]
+                                                cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                                cispoke["dialerusername"] = devicename
+                                                cispoke["dialer_hub_ip"] = dialer_ip
+                                                cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                                cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                                cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                                cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                                cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                                cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                                cispoke["branch_location"] = data["branch_location"]
+                        query = {"organization_id": organizationid}
+                        update_data = {"$set": {
                                         "registered_devices": regdevices["registered_devices"]                                                                           
                                         }
                                        }
-                    coll_registered_organization.update_many(query, update_data)                                          
-                    dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
-                    coll_tunnel_ip.insert_one(dialerinfo)                    
+                        coll_registered_organization.update_many(query, update_data)                                          
+                        dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
+                        coll_tunnel_ip.insert_one(dialerinfo)                    
+                    else:
+                        json_response = [{"message": f"Error:while generating dialerip"}]
+                        response = HttpResponse(content_type='application/zip')
+                        response['X-Message'] = json.dumps(json_response)
+                        response["Access-Control-Expose-Headers"] = "X-Message"
+                        return response
                 else:
-                    json_response = [{"message": f"Error:while generating dialerip"}]
-                    response = HttpResponse(content_type='application/zip')
-                    response['X-Message'] = json.dumps(json_response)
-                    response["Access-Control-Expose-Headers"] = "X-Message"
-                    return response
-            else:
-                newdialerinfo = devicedialerinfo                 
-            # Create a buffer for the ZIP file
-            buffer = io.BytesIO()
+                    newdialerinfo = devicedialerinfo                 
+                # Create a buffer for the ZIP file
+                buffer = io.BytesIO()
 
-            # Create a ZIP archive
-            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                # Read the EXE file and add it to the ZIP
-                with open("reachlink_config.exe", "rb") as f:
-                    zip_file.writestr("reachlink_config.exe", f.read())
-            # Prepare the response
-            buffer.seek(0)
-            json_response = [{"message": response[0]["message"]}]
-            response = HttpResponse(buffer, content_type='application/zip')
-            response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
-            response['X-Message'] = json.dumps(json_response)
-            response["Access-Control-Expose-Headers"] = "X-Message"
-            #Currently registered device to show via frontend
-            registered_data = coll_tunnel_ip.find_one({"uuid": data["uuid"]})
-            print("regdata",registered_data)             
-            os.system(f"python3 {reachlink_zabbix_path}")
-            os.system("systemctl restart reachlink_test")            
-            return response
-        else:
-            json_response = [{"message": f"Error:{response[0]['message']}"}]
-    except Exception as e:
-        print("device add exception", e)
-        logger.error(f"Error: Configure cisco spoke:{e}")
-        json_response = [{"message": f"Error:Internal Server Error"}]
-    print(json_response)
-    response = HttpResponse(content_type='application/zip')
-    response['X-Message'] = json.dumps(json_response)
-    response["Access-Control-Expose-Headers"] = "X-Message"
-    return response
+                # Create a ZIP archive
+                with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    # Read the EXE file and add it to the ZIP
+                    with open("reachlink_config.exe", "rb") as f:
+                        zip_file.writestr("reachlink_config.exe", f.read())
+                # Prepare the response
+                buffer.seek(0)
+                json_response = [{"message": response[0]["message"]}]
+                response = HttpResponse(buffer, content_type='application/zip')
+                response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                response['X-Message'] = json.dumps(json_response)
+                response["Access-Control-Expose-Headers"] = "X-Message"
+                #Currently registered device to show via frontend
+                registered_data = coll_tunnel_ip.find_one({"uuid": data["uuid"]})
+                print("regdata",registered_data)             
+                os.system(f"python3 {reachlink_zabbix_path}")
+                os.system("systemctl restart reachlink_test")            
+                return response
+            else:
+                json_response = [{"message": f"Error:{response[0]['message']}"}]
+        except Exception as e:
+            print("device add exception", e)
+            logger.error(f"Error: Configure cisco spoke:{e}")
+            json_response = [{"message": f"Error:Internal Server Error"}]
+        print(json_response)
+        response = HttpResponse(content_type='application/zip')
+        response['X-Message'] = json.dumps(json_response)
+        response["Access-Control-Expose-Headers"] = "X-Message"
+        return response
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
