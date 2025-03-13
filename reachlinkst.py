@@ -12,6 +12,8 @@ import os
 import subprocess
 import requests
 from decouple import config
+from bson import json_util
+
 hub_ip = config('HUB_IP')
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
@@ -99,15 +101,21 @@ def check_tunnel_connection(Remote_tunnel_ip):
 		
 def main():
     data = []
-    for reg_device in coll_registered_organization.find({}, {"_id":0}):
-        reg_device['subscription_from'] = str(reg_device['subscription_from'])
-        reg_device['subscription_to'] = str(reg_device['subscription_to'])
-        if "_id" in reg_device:
-            reg_device['_id'] = str(reg_device['_id'])
-        data.append(reg_device)
+    data = list(coll_registered_organization.find({}, {"_id": 0}))
+
+    # Save JSON with automatic BSON conversion
     with open(regdevice_path, "w") as f:
-       json.dump(data, f)
-       f.close()
+        json.dump(data, f, default=json_util.default, indent=4)
+        f.close()
+    #for reg_device in coll_registered_organization.find({}, {"_id":0}):
+    #    reg_device['subscription_from'] = str(reg_device['subscription_from'])
+    #    reg_device['subscription_to'] = str(reg_device['subscription_to'])
+    #    if "_id" in reg_device:
+    #        reg_device['_id'] = str(reg_device['_id'])
+    #    data.append(reg_device)
+    #with open(regdevice_path, "w") as f:
+    #   json.dump(data, f)
+    #   f.close()
     while(1):
         with open(regdevice_path, "r") as f:
             registered_organization = json.load(f)
@@ -152,12 +160,14 @@ def main():
                             midevice["status"] = "active"
                             no_midevice_active += 1
                             active_spokes.append(midevice["branch_location"])       
-                            if "itemid_received" in midevice:                     
+                            if "itemid_received" in midevice:    
+                                print(midevice["itemid_received"])
                                 bits_received = get_history(midevice["itemid_received"])
                                 bits_sent = get_history(midevice["itemid_sent"])
                                 bandwidth_info.append({"branch_location": midevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
+                                print(bandwidth_info)
                             else:
                                 os.system("python3 reachlink_zabbix.py")
                                 bandwidth_info.append({"branch_location": midevice["branch_location"],
