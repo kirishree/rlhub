@@ -129,7 +129,7 @@ def setass(response, devicename):
     try:
         connected_spoke =[]
         try:
-            time.sleep(1)   
+            time.sleep(40)   
         except Exception as e:
             print(e)
         newspokedevicename = response[0]["spokedevice_name"]
@@ -150,7 +150,22 @@ def setass(response, devicename):
                                             "tunnel_ip": spoke["Tunnel_ip"]                                                                       
                                         }
                                        }
-                    coll_tunnel_ip.update_many(query, update_data)                  
+                    coll_tunnel_ip.update_many(query, update_data) 
+                    organizationid = response[0]["organization_id"]
+                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                    for dev in regdevices["registered_devices"]:                    
+                        if "microtek_spokes_info" in dev:                             
+                                for mispoke in  dev["microtek_spokes_info"]:                         
+                                    if newspokedevicename == mispoke["spokedevice_name"]:
+                                        mispoke["tunnel_ip"] = spoke["Tunnel_ip"] 
+                                        mispoke["public_ip"] = spoke["Public_ip"]                                 
+                                        
+                    query = {"organization_id": organizationid}
+                    update_data = {"$set": {
+                                        "registered_devices": regdevices["registered_devices"]                                                                           
+                                        }
+                                       }
+                    coll_registered_organization.update_many(query, update_data)                  
                 else:
                     newspokeovpnip = spoke["Tunnel_ip"]
                     newspokeconnstatus = True
@@ -367,24 +382,12 @@ def add_cisco_device(request: HttpRequest):
                 client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
                 with open(output_file, "r") as f:
                     ovpnfile = f.read()
-                    f.close()
-                with open(ca_cert_file, "r") as f:
-                    cacrt = f.read()
-                    f.close()
-                with open(client_cert_file, "r")as f:
-                    clientcrt = f.read()
-                    f.close()
-                with open(client_key_file, "r") as f:
-                    clientkey = f.read()
-                    f.close()
+                    f.close()                
                 #with open("microtek_conf.exe", "rb") as f:
                 #    microtekexe = f.read()
                 #    f.close()
-                files_to_send = {
-                    "ca.crt": cacrt,
-                    "client.crt": clientcrt,
-                    "client.key": clientkey,
-                    "client.ovpn": ovpnfile
+                files_to_send = {                    
+                    f"{client_name}.ovpn": ovpnfile
                     #"microtek_conf.exe": microtekexe  # Keep binary
                 }
                 # Create a buffer for the ZIP file
@@ -401,8 +404,8 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-                #background_thread.start() 
+                background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+                background_thread.start() 
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")   
             else:

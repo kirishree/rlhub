@@ -112,7 +112,7 @@ def main():
             print("❌ Invalid IP format. Please enter a valid IP.")
     bl = branch_location.lower()
     uuid = bl + "_" + hubip + "_ciscodevice.net"
-    urllogin = "http://185.69.209.245:5000/auth"
+    urllogin = "http://185.69.209.251:5000/auth"
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -138,7 +138,7 @@ def main():
         print("Enter a key to exit...")
         input()
         return
-    url = "http://185.69.209.245:5000/get_ciscospoke_config"
+    url = "http://185.69.209.251:5000/get_ciscospoke_config"
     # Set the headers to indicate that you are sending JSON data
     headers = {"Content-Type": "application/json",
                "Authorization": f"Bearer {access_token}"}
@@ -238,8 +238,9 @@ def main():
                 "dialer persistent",
                 "dialer vpdn",
                 "dialer-group 1",
-                "ppp authentication pap callin",
-                f"ppp pap sent-username {json_response['dialer_username']} password {json_response['dialer_password']}",
+                "ppp authentication chap callin",
+                f"ppp chap hostname {json_response['dialer_username']}",
+                f"ppp chap password {json_response['dialer_password']}",                
                 "end",   
 
         "configure terminal",

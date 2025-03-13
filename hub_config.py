@@ -82,6 +82,8 @@ def get_ciscospoke_config(data):
                                             "dialer_password": spokeinfo["dialerpassword"],
                                             "router_username": spokeinfo["router_username"],
                                             "router_password": spokeinfo["router_password"],
+                                            "hub_dialer_network": spokeinfo["hub_dialer_network"],
+                                            "hub_dialer_wildcardmask": spokeinfo["hub_dialer_wildcardmask"],
                                             "ubuntu_dialerclient_ip": spokeinfo["ubuntu_dialerclient_ip"],
                                             "snmpcommunitystring": snmpcommunitystring,
                                             }
