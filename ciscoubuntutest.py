@@ -60,9 +60,7 @@ def main():
         if authresponse.status_code == 200:           
             json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_authresponse = json.loads(json_authresponse)
-            if "access" not in json_authresponse:
-
-                print(json_authresponse)  
+            if "access" not in json_authresponse: 
                 print("Enter a key to exit...")
                 input()
                 return

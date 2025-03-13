@@ -67,11 +67,13 @@ def get_ciscospoke_config(data):
             if details:                                                   
                 if current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]                  
-                    for device in registered_devices_info:
-                        if device['uuid'] == data["uuid"]:  
-                            spokeinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]})
-                            if spokeinfo:
-                                response ={ "message": 'This device is already Registered',
+                    for device1 in registered_devices_info:
+                        if "cisco_spokes_info" in device1:
+                            for device in device1["cisco_spokes_info"]:
+                                if device['uuid'] == data["uuid"]:  
+                                    spokeinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]})
+                                    if spokeinfo:
+                                        response ={ "message": 'This device is already Registered',
                                             "interface_wan_ip": spokeinfo["router_wan_ip_only"],
                                             "interface_wan_netmask":spokeinfo["router_wan_ip_netmask"],
                                             "dialerserverip":spokeinfo["dialer_hub_ip"],
@@ -87,7 +89,7 @@ def get_ciscospoke_config(data):
                                             "ubuntu_dialerclient_ip": spokeinfo["ubuntu_dialerclient_ip"],
                                             "snmpcommunitystring": snmpcommunitystring,
                                             }
-                                return response
+                                        return response
                     response = {"message": "This Branch location was not configuared yet."}
                 else:
                     response = {"message": "Your subscription was expired. Kindly renew it"} 
