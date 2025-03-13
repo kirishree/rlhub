@@ -150,6 +150,7 @@ def setass(response, devicename):
                                             "tunnel_ip": spoke["Tunnel_ip"]                                                                       
                                         }
                                        }
+                    newspokeconnstatus = True    
                     coll_tunnel_ip.update_many(query, update_data) 
                     organizationid = response[0]["organization_id"]
                     regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
@@ -165,7 +166,7 @@ def setass(response, devicename):
                                         "registered_devices": regdevices["registered_devices"]                                                                           
                                         }
                                        }
-                    coll_registered_organization.update_many(query, update_data)                  
+                    coll_registered_organization.update_many(query, update_data)                               
                 else:
                     newspokeovpnip = spoke["Tunnel_ip"]
                     newspokeconnstatus = True

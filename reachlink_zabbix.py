@@ -465,7 +465,8 @@ def main():
                     for mispoke in device["microtek_spokes_info"]:
                         if "host_id" in mispoke:
                             print("Already host_id available")
-                        else:  
+                        else: 
+                            print(mispoke) 
                             if mispoke.get("tunnel_ip", "None") != "None":                                                
                                 templateid = "10248"
                                 host_id = create_new_host(mispoke["spokedevice_name"], mispoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
