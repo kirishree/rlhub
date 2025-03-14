@@ -1021,7 +1021,7 @@ def get_interface_details_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            print(router_info)
+            print(data)
             response = router_configure.get_interface_cisco(data)
         elif "robustel" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
