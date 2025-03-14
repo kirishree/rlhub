@@ -303,8 +303,7 @@ def check_user(data, newuser):
                                                       "router_username":"admin",
                                                       "router_password": "admin"
                                                       }
-                                devinfo["cisco_spokes_info"].append(new_spoke_info)
-                                coll_tunnel_ip.insert_one(new_spoke_info)
+                                devinfo["cisco_spokes_info"].append(new_spoke_info)                                
                     else:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:

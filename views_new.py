@@ -404,8 +404,8 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-                background_thread.start() 
+                #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+                #background_thread.start() 
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")   
             else:
@@ -1021,7 +1021,6 @@ def get_interface_details_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            print(data)
             response = router_configure.get_interface_cisco(data)
         elif "robustel" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
@@ -2076,6 +2075,8 @@ def get_microtekspoke_config(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
     response, newuser = onboarding.check_user(data, newuser)
+    background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+    background_thread.start() 
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  

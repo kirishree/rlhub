@@ -9,7 +9,7 @@ import json
 #os.system("cp reachlinkst.py /root/reachlink/reachlinkst.py")
 #os.system("cp urls_new.py /root/reachlink/reachlink/urls.py")
 #os.system("cp conf/dist/robustel_conf.exe /root/reachlink/")
-#os.system("cp reachlink_zabbix.py /root/reachlink/")
+os.system("cp reachlink_zabbix.py /root/reachlink/")
 #os.system("cp conf/dist/reachlink_hub_config.exe /root/reachlink/")
 #os.system("cp reachlinkst.py /root/reachlink/")
 #os.system("systemctl restart reachlink_test")

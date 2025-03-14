@@ -88,6 +88,8 @@ def get_ciscospoke_config(data):
                                             "hub_dialer_wildcardmask": spokeinfo["hub_dialer_wildcardmask"],
                                             "ubuntu_dialerclient_ip": spokeinfo.get("ubuntu_dialerclient_ip", ""),
                                             "snmpcommunitystring": snmpcommunitystring,
+                                            "spokedevice_name": spokeinfo["spokedevice_name"],
+                                            "uuid": spokeinfo["uuid"]
                                             }
                                         return response
                     response = {"message": "This Branch location was not configuared yet."}
