@@ -28,11 +28,12 @@ def get_ciscohub_config(data):
             if details:                                                   
                 if current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]                  
-                    for device in registered_devices_info:
-                        if device['uuid'] == data["uuid"]:  
-                            hubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})
-                            if hubinfo:
-                                response ={ "message": 'This device is already Registered',
+                    for device1 in registered_devices_info:
+                        if "cisco_hub_info" in device1:
+                            if device1["cisco_hub_info"]['uuid'] == data["uuid"]:  
+                                hubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})
+                                if hubinfo:
+                                    response ={ "message": 'This device is already Registered',
                                             "interface_wan_ip":hubinfo["hub_wan_ip_only"],
                                             "interface_wan_netmask":hubinfo["hub_wan_ip_netmask"],
                                             "interface_wan_gateway":hubinfo["hub_wan_ip_gateway"],
@@ -44,7 +45,7 @@ def get_ciscohub_config(data):
                                             "router_password": hubinfo["router_password"],
                                             "snmpcommunitystring": snmpcommunitystring,
                                             }
-                                return response
+                                    return response
                     response = {"message": "This HUB location was not configuared yet."}
                 else:
                     response = {"message": "Your subscription was expired. Kindly renew it"} 
