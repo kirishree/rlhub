@@ -7,6 +7,7 @@ import json
 import ipaddress
 import os
 import subprocess
+import hub_config
 from decouple import config
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
@@ -279,14 +280,15 @@ def check_user(data, newuser):
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
                                 spokedevice_name =  "microtekspoke"+ str(len(devinfo["microtek_spokes_info"])+1)+"-"+details["organization_name"]
+                                routerpassword = hub_config.generate_router_password_cisco()
                                 new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name,
                                                       "hub_ip": hub_ip,
                                                       "tunnel_ip": "None",
                                                       "public_ip": "None",
-                                                      "router_username":"admin",
-                                                      "router_password": "admin"
+                                                      "router_username":spokedevice_name.lower(),
+                                                      "router_password": routerpassword
                                                       }
                                 devinfo["microtek_spokes_info"].append(new_spoke_info)
                                 coll_tunnel_ip.insert_one(new_spoke_info)

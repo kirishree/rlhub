@@ -375,7 +375,7 @@ def add_cisco_device(request: HttpRequest):
                     print("Generating new client")
                     new_client(client_name)    
                 else:
-                    print("Client already available")
+                    print("Client already available")                
                 base_path = "/etc/openvpn/server"
                 ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
                 client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
@@ -538,14 +538,22 @@ def add_cisco_device(request: HttpRequest):
                     newdialerinfo = devicedialerinfo                 
                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
-
-                # Create a ZIP archive
-                with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    # Read the EXE file and add it to the ZIP
-                    with open("reachlink_config.exe", "rb") as f:
-                        zip_file.writestr("reachlink_config.exe", f.read())
-                # Prepare the response
-                buffer.seek(0)
+                if data.get("dialer_ip", "") != hub_ip:
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        # Read the EXE file and add it to the ZIP
+                        with open("reachlink_config.exe", "rb") as f:
+                            zip_file.writestr("reachlink_config.exe", f.read())
+                    # Prepare the response
+                    buffer.seek(0)
+                else:
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        # Read the EXE file and add it to the ZIP
+                        with open("reachlink_cisco_config.exe", "rb") as f:
+                            zip_file.writestr("reachlink_config.exe", f.read())
+                    # Prepare the response
+                    buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
                 response = HttpResponse(buffer, content_type='application/zip')
                 response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
@@ -2075,9 +2083,22 @@ def get_microtekspoke_config(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
     response, newuser = onboarding.check_user(data, newuser)
-    background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-    background_thread.start() 
-    return JsonResponse(response, safe=False)
+    if "This Microtek Spoke is already Registered" in response[0]["message"]:
+        spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        if spokeinfo:
+            spokedetails = {"spokedevice_name": spokeinfo["spokedevice_name"],
+                        "router_username": spokeinfo["router_username"],
+                        "message": response[0]["message"],
+                        "snmpcommunitystring": snmpcommunitystring
+                        }
+            background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+            background_thread.start() 
+        else:
+            spokedetails= {"message": "Spokeinfo not available. Pl register again"}
+    else:
+        spokedetails= {"message": response[0]["message"]}
+    
+    return JsonResponse(spokedetails, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])

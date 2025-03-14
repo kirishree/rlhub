@@ -18,7 +18,7 @@ def send_command_wo(shell, command, delay=1):
     output = shell.recv(65535).decode('utf-8')
     return output
 
-def set_openvpn_client(clientname):   
+def set_openvpn_client(spokeinfo):   
 # Define the router details
     router_ip = "192.168.200.1"
     username = "admin"
@@ -32,8 +32,12 @@ def set_openvpn_client(clientname):
         # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the ping command
+        clientname = spokeinfo["spokedevice_name"]
         certname = clientname + "_1"
         stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=test4 max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=yes')
+        stdin, stdout, stderr = ssh_client.exec_command(f'user add name={spokeinfo["router_username"]} password={spokeinfo["router_password"]} group=full')
+        stdin, stdout, stderr = ssh_client.exec_command(f'snmp community add addresses=0.0.0.0/0 name={spokeinfo["snmpcommunitystring"]} read-access=yes comment=reachlinkserver')
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 comment=enable-ssh')
         print("command sent")
     except Exception as e:
         print(e)
@@ -116,9 +120,9 @@ def main():
         response.raise_for_status()
         if response.status_code == 200:           
             json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-            json_response = json.loads(json_response)
-            if  "This Microtek Spoke is already Registered" not in json_response[0]["message"]:
-                print(json_response["message"])  
+            spokeinfo = json.loads(json_response)
+            if  "This Microtek Spoke is already Registered" not in spokeinfo["message"]:
+                print(spokeinfo)  
                 print("Enter a key to exit...")
                 input()
                 return            
@@ -132,7 +136,7 @@ def main():
         print("Enter a key to exit...")
         input()
         return
-    set_openvpn_client(json_response[0]["spokedevice_name"])
+    set_openvpn_client(spokeinfo)
 
 if __name__ == "__main__":
     main()
