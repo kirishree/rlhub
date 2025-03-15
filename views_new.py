@@ -2092,9 +2092,7 @@ def get_microtekspoke_config(request: HttpRequest):
                         "snmpcommunitystring": snmpcommunitystring
                         }
         background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-        background_thread.start() 
-        else:
-            spokedetails= {"message": "Spokeinfo not available. Pl register again"}
+        background_thread.start()
     else:
         spokedetails= {"message": response[0]["message"]}
     
