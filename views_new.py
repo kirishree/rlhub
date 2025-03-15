@@ -383,7 +383,7 @@ def add_cisco_device(request: HttpRequest):
                 with open(output_file, "r") as f:
                     ovpnfile = f.read()
                     f.close()                
-                with open("reachlink_microtek_config.exe", "rb") as f:
+                with open("/root/reachlink/reachlink_microtek_config.exe", "rb") as f:
                     microtekexe = f.read()
                     f.close()
                 files_to_send = {                    
@@ -413,7 +413,8 @@ def add_cisco_device(request: HttpRequest):
                 response1['X-Message'] = json.dumps(response)    
                 response1["Access-Control-Expose-Headers"] = "X-Message"    
         except Exception as e:
-            logger.error("Error: Configure Microtek Spoke:{e}")
+            print(f"Error: Configure Microtek Spoke:{e}")
+            logger.error(f"Error: Configure Microtek Spoke:{e}")
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)

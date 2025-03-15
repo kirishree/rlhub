@@ -15,5 +15,5 @@ import json
 #os.system("systemctl restart reachlink_test")
 #os.system("cp router_configure.py /root/reachlink/")
 #os.system("cp conf/dist/reachlink_cisco_config.exe /root/reachlink/")
-os.system("cp conf/dist/reachlink_microtek_config.exe /root/reachlink/")
+#os.system("cp conf/dist/reachlink_microtek_config.exe /root/reachlink/")
 os.system("cp views_new.py /root/reachlink/reach/views.py")
