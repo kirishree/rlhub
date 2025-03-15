@@ -2084,16 +2084,15 @@ def get_microtekspoke_config(request: HttpRequest):
     logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
     response, newuser = onboarding.check_user(data, newuser)
     if "This Microtek Spoke is already Registered" in response[0]["message"]:
-        spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-        if spokeinfo:
-            spokedetails = {"spokedevice_name": spokeinfo["spokedevice_name"],
-                        "router_username": spokeinfo["router_username"],
-                        "router_password": spokeinfo["router_password"],
+        #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
+        spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],
+                        "router_username": response[0]["router_username"],
+                        "router_password": response[0]["router_password"],
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
                         }
-            background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-            background_thread.start() 
+        background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+        background_thread.start() 
         else:
             spokedetails= {"message": "Spokeinfo not available. Pl register again"}
     else:

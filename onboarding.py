@@ -204,7 +204,9 @@ def check_user(data, newuser):
                                             response =[{ "message": 'This Microtek Spoke is already Registered',
                                                 "expiry_date": expiry_date_original, 
                                                 "spokedevice_name":mispoke["spokedevice_name"],
-                                                "organization_id":organization_id
+                                                "organization_id":organization_id,
+                                                "router_username": mispoke["router_username"],
+                                                "router_password": mispoke["router_password"]
                                                 }]
                                             return response, newuser
                         elif "cisco_ubuntu" in data["uuid"]:
