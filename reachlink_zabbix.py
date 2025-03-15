@@ -474,7 +474,7 @@ def main():
                         if "itemid_sent" in mispoke:
                             print("Already item_id available")
                         else: 
-                            if "host_id" in mispoke:                                                
+                            if "host_id" in mispoke:
                                 item_id = get_item_id(mispoke["host_id"], "Interface ether1(): Bits")
                                 for item in item_id:
                                     if "sent" in item["name"]:

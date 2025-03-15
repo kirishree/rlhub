@@ -20,9 +20,9 @@ def send_command_wo(shell, command, delay=1):
 
 def set_openvpn_client(spokeinfo):   
 # Define the router details
-    router_ip = "192.168.200.1"
+    router_ip = "192.168.88.1"
     username = "admin"
-    password = "123@abc.com"
+    password = ""
 
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
@@ -30,14 +30,16 @@ def set_openvpn_client(spokeinfo):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         # Execute the ping command
-        clientname = spokeinfo["spokedevice_name"]
+        clientname = "reachlink"
         certname = clientname + "_1"
-        stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=test4 max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=yes')
+        stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=reachlink max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=yes')
+        stdin, stdout, stderr = ssh_client.exec_command(f'snmp set enabled=yes')
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input protocol=udp src-address=10.8.0.0/24 dst-port=161 action=accept place-before=0 comment=enable-snmpaccess')
         stdin, stdout, stderr = ssh_client.exec_command(f'user add name={spokeinfo["router_username"]} password={spokeinfo["router_password"]} group=full')
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp community add addresses=0.0.0.0/0 name={spokeinfo["snmpcommunitystring"]} read-access=yes comment=reachlinkserver')
-        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 place-before=0 comment=enable-ssh')
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 comment=enable-ssh place-before=0')
         stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=8291 place-before=0 comment=enable-winboxaccess')
         print("command sent")
     except Exception as e:
