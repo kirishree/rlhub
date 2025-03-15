@@ -735,8 +735,10 @@ def homepage_info(request: HttpRequest):
         with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
+        organization_registered = False
         for device in total_devices:
             if device["organization_id"] == organization_id:
+                organization_registered = True
                 total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
                 hub_info = []
                 bandwidth_info = []
@@ -770,18 +772,37 @@ def homepage_info(request: HttpRequest):
                             }
                 return JsonResponse(response, safe=False)
     except Exception as e:
-        logger.error(f"Error: Home Page info:{e}")        
-    response = {
-                            "total_no_hubs": 0,
-                            "active_no_hubs": 0,
+        logger.error(f"Error: Home Page info:{e}")   
+    for device in total_devices:
+        hub_info = []
+        bandwidth_info = []
+        for hubs in device["hub_info"]:
+            if hubs["hub_location"] == "Reachlink_server":
+                hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": 0,
+                                                            "no_of_inactive_branches": 0,
+                                                            "active_branches": [],
+                                                            "inactive_branches": []
+                                                            }
+                                    })
+                bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": 0,
+                                                            "no_of_inactive_branches": 0,
+                                                            "branch_data": [],
+                                                            "hub_data": hubs["bandwidth_info_hub"]                                                     
+                                                            }
+                                    })
+                response = {
+                            "total_no_hubs": 1,
+                            "active_no_hubs": 1,
                             "inactive_no_hubs": 0,
-                            "hub_summary": 0,
+                            "hub_summary": 1/1,
                             "total_no_branches": 0,
                             "active_no_branches": 0,
                             "inactive_no_branches": 0,
-                            "branch_summary": 0,
-                            "hub_info": [], 
-                            "bandwidth_info":[],                             
+                            "branch_summary": 0/0,
+                            "hub_info": hub_info, 
+                            "bandwidth_info": bandwidth_info,                             
                             "organization_id": organization_id
                             }
     return JsonResponse(response, safe=False)
@@ -843,10 +864,17 @@ def hub_info(request: HttpRequest):
                 return JsonResponse(response, safe=False)
     except Exception as e:
         logger.error("Error: Configure Microtek Spoke:{e}")
+    data.append({"branch_location": "Reachlink_server",
+                                         "hub_ip":hub_ip,
+                                         "hub_status":"Active",
+                                         "uuid": "reachlinkserver.net",
+                                         "host_id": hub_hostid,
+                                         "hub_dialer_ip_cidr": "10.8.0.1"
+                                         })   
     response = {    "data":data,
-                        "total_hubs":0,
+                        "total_hubs":1,
                         "inactive_hubs":0,
-                        "active_hubs": 0,
+                        "active_hubs": 1,
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
