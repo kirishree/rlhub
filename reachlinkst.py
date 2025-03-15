@@ -193,11 +193,11 @@ def main():
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         midevice["itemid_sent"] = item["itemid"] 
+                                        bits_sent = get_history(midevice["itemid_sent"])
                                     if "received" in item["name"]:
                                         midevice["itemid_received"] = item["itemid"] 
-                                    bits_received = get_history(midevice["itemid_received"])
-                                    bits_sent = get_history(midevice["itemid_sent"])
-                                    reachlink_restart = True                                    
+                                        bits_received = get_history(midevice["itemid_received"])                                    
+                                        reachlink_restart = True                                    
                                 bandwidth_info.append({"branch_location": midevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
@@ -250,11 +250,11 @@ def main():
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         cidevice["itemid_sent"] = item["itemid"] 
+                                        bits_sent = get_history(cidevice["itemid_sent"])
+                                        reachlink_restart = True                     
                                     if "received" in item["name"]:
                                         cidevice["itemid_received"] = item["itemid"] 
-                                    bits_received = get_history(cidevice["itemid_received"])
-                                    bits_sent = get_history(cidevice["itemid_sent"])
-                                    reachlink_restart = True                                    
+                                        bits_received = get_history(cidevice["itemid_received"])                                                   
                                 bandwidth_info.append({"branch_location": cidevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
@@ -306,12 +306,12 @@ def main():
                                 bits_sent = 0                                
                                 for item in item_id:
                                     if "sent" in item["name"]:
-                                        rodevice["itemid_sent"] = item["itemid"] 
+                                        rodevice["itemid_sent"] = item["itemid"]
+                                        bits_sent = get_history(rodevice["itemid_sent"])
+                                        reachlink_restart = True  
                                     if "received" in item["name"]:
                                         rodevice["itemid_received"] = item["itemid"] 
-                                    bits_received = get_history(rodevice["itemid_received"])
-                                    bits_sent = get_history(rodevice["itemid_sent"])
-                                    reachlink_restart = True                                    
+                                        bits_received = get_history(rodevice["itemid_received"])                                                                       
                                 bandwidth_info.append({"branch_location": rodevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
@@ -364,11 +364,11 @@ def main():
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         ubdevice["itemid_sent"] = item["itemid"] 
+                                        bits_sent = get_history(ubdevice["itemid_sent"])
+                                        reachlink_restart = True 
                                     if "received" in item["name"]:
                                         ubdevice["itemid_received"] = item["itemid"] 
-                                    bits_received = get_history(ubdevice["itemid_received"])
-                                    bits_sent = get_history(ubdevice["itemid_sent"])
-                                    reachlink_restart = True                                    
+                                        bits_received = get_history(ubdevice["itemid_received"])                                                                       
                                 bandwidth_info.append({"branch_location": ubdevice["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
@@ -417,11 +417,11 @@ def main():
                         for item in item_id:
                             if "sent" in item["name"]:
                                 device["reachlink_hub_info"]["itemid_sent"] = item["itemid"] 
+                                bits_sent = get_history(device["reachlink_hub_info"]["itemid_sent"])
+                                reachlink_restart = True  
                             if "received" in item["name"]:
                                 device["reachlink_hub_info"]["itemid_received"] = item["itemid"] 
-                            bits_received = get_history(device["reachlink_hub_info"]["itemid_received"])
-                            bits_sent = get_history(device["reachlink_hub_info"]["itemid_sent"])
-                            reachlink_restart = True                                    
+                                bits_received = get_history(device["reachlink_hub_info"]["itemid_received"])                                                              
                             bandwidth_info_reachlinkhub.append({"branch_location": device["reachlink_hub_info"]["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
@@ -482,12 +482,12 @@ def main():
                             bits_sent = 0                                
                             for item in item_id:
                                 if "sent" in item["name"]:
-                                    device["cisco_hub_info"]["itemid_sent"] = item["itemid"] 
+                                    device["cisco_hub_info"]["itemid_sent"] = item["itemid"]
+                                    bits_sent = get_history(device["cisco_hub_info"]["itemid_sent"])
+                                    reachlink_restart = True     
                                 if "received" in item["name"]:
                                     device["cisco_hub_info"]["itemid_received"] = item["itemid"] 
-                                bits_received = get_history(device["cisco_hub_info"]["itemid_received"])
-                                bits_sent = get_history(device["cisco_hub_info"]["itemid_sent"])
-                                reachlink_restart = True                                    
+                                    bits_received = get_history(device["cisco_hub_info"]["itemid_received"])                                                                
                                 bandwidth_info_ciscohub.append({"branch_location": device["cisco_hub_info"]["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
@@ -525,11 +525,11 @@ def main():
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         ciscospoke["itemid_sent"] = item["itemid"] 
+                                        bits_sent = get_history(ciscospoke["itemid_sent"])
+                                        reachlink_restart = True 
                                     if "received" in item["name"]:
                                         ciscospoke["itemid_received"] = item["itemid"] 
-                                    bits_received = get_history(ciscospoke["itemid_received"])
-                                    bits_sent = get_history(ciscospoke["itemid_sent"])
-                                    reachlink_restart = True                                    
+                                        bits_received = get_history(ciscospoke["itemid_received"])                                                                       
                                 bandwidth_info_cisco.append({"branch_location": ciscospoke["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
