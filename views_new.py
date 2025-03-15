@@ -2088,6 +2088,7 @@ def get_microtekspoke_config(request: HttpRequest):
         if spokeinfo:
             spokedetails = {"spokedevice_name": spokeinfo["spokedevice_name"],
                         "router_username": spokeinfo["router_username"],
+                        "router_password": spokeinfo["router_password"],
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
                         }
