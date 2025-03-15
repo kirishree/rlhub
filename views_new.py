@@ -796,11 +796,11 @@ def homepage_info(request: HttpRequest):
                             "total_no_hubs": 1,
                             "active_no_hubs": 1,
                             "inactive_no_hubs": 0,
-                            "hub_summary": 1/1,
+                            "hub_summary": "1/1",
                             "total_no_branches": 0,
                             "active_no_branches": 0,
                             "inactive_no_branches": 0,
-                            "branch_summary": 0/0,
+                            "branch_summary": "0/0",
                             "hub_info": hub_info, 
                             "bandwidth_info": bandwidth_info,                             
                             "organization_id": organization_id
