@@ -5,7 +5,7 @@ import requests
 import getpass
 import re
 import ipaddress
-hub_ip = "185.69.209.245"
+hub_ip = "185.69.209.251"
 
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
@@ -37,7 +37,8 @@ def set_openvpn_client(spokeinfo):
         stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=test4 max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=yes')
         stdin, stdout, stderr = ssh_client.exec_command(f'user add name={spokeinfo["router_username"]} password={spokeinfo["router_password"]} group=full')
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp community add addresses=0.0.0.0/0 name={spokeinfo["snmpcommunitystring"]} read-access=yes comment=reachlinkserver')
-        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 comment=enable-ssh')
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 place-before=0 comment=enable-ssh')
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=8291 place-before=0 comment=enable-winboxaccess')
         print("command sent")
     except Exception as e:
         print(e)

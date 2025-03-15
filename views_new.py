@@ -132,8 +132,7 @@ def setass(response, devicename):
             time.sleep(40)   
         except Exception as e:
             print(e)
-        newspokedevicename = response[0]["spokedevice_name"]
-        newspokegreip = response[0]["gretunnel_ip"].split("/")[0]
+        newspokedevicename = response[0]["spokedevice_name"]        
         newspokeconnstatus = False
         with open(r'/etc/openvpn/server/openvpn-status.log','r') as f:
             lines = f.readlines()
@@ -170,6 +169,7 @@ def setass(response, devicename):
                 else:
                     newspokeovpnip = spoke["Tunnel_ip"]
                     newspokeconnstatus = True
+                    newspokegreip = response[0]["gretunnel_ip"].split("/")[0]
                     command = f"sudo ip neighbor replace {newspokegreip} lladdr {newspokeovpnip} dev Reach_link1"
                     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
                     query = {"spokedevice_name": newspokedevicename }
