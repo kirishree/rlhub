@@ -866,7 +866,7 @@ def hub_info(request: HttpRequest):
         logger.error("Error: Configure Microtek Spoke:{e}")
     data.append({"branch_location": "Reachlink_server",
                                          "hub_ip":hub_ip,
-                                         "hub_status":"Active",
+                                         "hub_status":"active",
                                          "uuid": "reachlinkserver.net",
                                          "host_id": hub_hostid,
                                          "hub_dialer_ip_cidr": "10.8.0.1"
