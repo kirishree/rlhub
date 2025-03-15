@@ -383,12 +383,12 @@ def add_cisco_device(request: HttpRequest):
                 with open(output_file, "r") as f:
                     ovpnfile = f.read()
                     f.close()                
-                #with open("microtek_conf.exe", "rb") as f:
-                #    microtekexe = f.read()
-                #    f.close()
+                with open("reachlink_microtek_config.exe", "rb") as f:
+                    microtekexe = f.read()
+                    f.close()
                 files_to_send = {                    
-                    f"{client_name}.ovpn": ovpnfile
-                    #"microtek_conf.exe": microtekexe  # Keep binary
+                    f"{client_name}.ovpn": ovpnfile,
+                    "reachlink_microtek_config.exe": microtekexe  # Keep binary
                 }
                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
