@@ -860,27 +860,18 @@ def delstaticroute_ubuntu1(data):
 def delstaticroute_ubuntu(data):
     try:
         subnet_info = data["routes_info"]
-        with open("/etc/netplan/00-installer-config.yaml", "r") as f:
-            data1 = yaml.safe_load(f)
-            f.close()
-        dat=[]
-        for rr in data1["network"]["tunnels"]["Reach_link1"]:
-            if rr == "routes":
-                dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
-        
-        for r in subnet_info:            
-            dat = [item for item in dat if item.get('to') != r['destination']]
-        data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
-        with open("/etc/netplan/00-installer-config.yaml", "w") as f:
-            yaml.dump(data1, f, default_flow_style=False)
-            f.close()
-        os.system("sudo netplan apply")
-        for branch in coll_tunnel_ip.find({}):
-            try:
-                tunip =  branch['tunnel_ip'].split("/")[0]
-                os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
-            except Exception as e:
-                print(f"Neighbor add error: {e}")  
+        with open("/etc/openvpn/server/server.conf", "r") as f:
+            serverfile = f.read()
+            f.close()        
+        for route in subnet_info:
+            if "10.8." in route['gateway']:
+                subnet_ip = route["destination"].split("/")[0]
+                netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
+                serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+        with open("/etc/openvpn/server/server.conf", "w") as f:
+            f.write(serverfile)
+            f.close()      
+        os.system("systemctl restart openvpn-server@server")
         response = {"message": "Successfully route deleted"}
     except Exception as e:
         response = {"message": "Error while deleting route"}
