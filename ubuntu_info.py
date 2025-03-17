@@ -381,7 +381,7 @@ def configurepbr_spoke_new(realipdata):
         response = {"message": f"Error: {e}"}
     print(response)    
 
-def addstaticroute_ubuntu(data):
+def addstaticroute_ubuntu1(data):
     try:
         real_routes = []
         past_subnets = []
@@ -439,6 +439,62 @@ def addstaticroute_ubuntu(data):
                               }
             background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
             background_thread.start() 
+        response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
+    except Exception as e:
+        print(e)
+        response = {"message": "Error while adding route"}
+    return response
+
+def addstaticroute_ubuntu(data):
+    try:
+        real_routes = []
+        past_subnets = []
+        routes = data["routes_info"]         
+        with open("/etc/openvpn/server/ipp.txt", "r") as f:
+            tunnelipinfo = f.read()
+            f.close()            
+        tunnelip_info = tunnelipinfo.split("\n")        
+        for route in routes: 
+            past_subnets.append(route["destination"]) 
+            if route["destination"].split(".")[0] != "10":
+                if route["destination"].split(".")[0] == "172":
+                    if 15 < int(route["destination"].split(".")[1]) < 32:
+                        private_ip = True
+                    else:
+                        private_ip = False
+                elif route["destination"].split(".")[0] == "192":
+                    if route["destination"].split(".")[1] == "168":
+                        private_ip = True
+                    else:
+                        private_ip = False
+                elif int(route["destination"].split(".")[0]) > 223: 
+                    private_ip = True
+                else:
+                    private_ip = False
+            else:
+                private_ip = True
+            if not private_ip:
+                real_routes.append(route)    
+        for route in routes:
+            for tunnelinfo in tunnelip_info:
+                if route["gateway"] in  tunnelinfo:
+                    subnet_ip = route["destination"].split("/")[0]
+                    netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
+                    tunnelinfo = tunnelinfo.strip()
+                    spokename = tunnelinfo.split(",")[0]
+                    if os.path.exists(f"/etc/openvpn/server/ccd/{spokename}"):
+                        with open(f"/etc/openvpn/server/ccd/{spokename}", "a") as f:
+                            f.write(f"\niroute {subnet_ip} {netmask} ")  
+                            f.close()   
+                    else:
+                        with open(f"/etc/openvpn/server/ccd/{spokename}", "w") as f:
+                            f.write(f"\niroute {subnet_ip} {netmask} ")  
+                            f.close()   
+
+                    with open(f"/etc/openvpn/server/server.conf", "a") as f:
+                        f.write(f"\nroute {subnet_ip} {netmask} ")  
+                        f.close() 
+        os.system("systemctl restart openvpn-server@server")  
         response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
     except Exception as e:
         print(e)
@@ -770,6 +826,35 @@ def create_tunnel_interface(data):
         
     except Exception as e:
         response = [{"message": f"Error while configuring tunnel interface with id {data['tunnel_intfc_name']}: {e}"}]
+    return response
+
+def delstaticroute_ubuntu1(data):
+    try:
+        subnet_info = data["routes_info"]
+        with open("/etc/netplan/00-installer-config.yaml", "r") as f:
+            data1 = yaml.safe_load(f)
+            f.close()
+        dat=[]
+        for rr in data1["network"]["tunnels"]["Reach_link1"]:
+            if rr == "routes":
+                dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
+        
+        for r in subnet_info:            
+            dat = [item for item in dat if item.get('to') != r['destination']]
+        data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
+        with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+            yaml.dump(data1, f, default_flow_style=False)
+            f.close()
+        os.system("sudo netplan apply")
+        for branch in coll_tunnel_ip.find({}):
+            try:
+                tunip =  branch['tunnel_ip'].split("/")[0]
+                os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
+            except Exception as e:
+                print(f"Neighbor add error: {e}")  
+        response = {"message": "Successfully route deleted"}
+    except Exception as e:
+        response = {"message": "Error while deleting route"}
     return response
 
 def delstaticroute_ubuntu(data):
