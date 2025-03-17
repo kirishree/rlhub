@@ -33,7 +33,7 @@ routes_protocol_map = {
     0: 'unspecified (default)',
     1: 'redirect',
     2: 'kernel',
-    3: 'boot/static',
+    3: 'static',
     4: 'static',
     8: 'gated',
     9: 'ra',
