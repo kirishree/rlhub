@@ -832,7 +832,7 @@ def branch_info(request: HttpRequest):
                     }
                 return JsonResponse(response, safe=False)
     except Exception as e:
-        logger.error("Error: Getting Branch info:{e}")
+        logger.error(f"Error: Getting Branch info:{e}")
     response = {    "data":data,
                         "total_branches":total_no_branches,
                         "inactive_branches":inactive_branches,
@@ -863,7 +863,7 @@ def hub_info(request: HttpRequest):
                     }
                 return JsonResponse(response, safe=False)
     except Exception as e:
-        logger.error("Error: Configure Microtek Spoke:{e}")
+        logger.error(f"Error: Configure Microtek Spoke:{e}")
     data.append({"branch_location": "Reachlink_server",
                                          "hub_ip":hub_ip,
                                          "hub_status":"active",
@@ -1065,7 +1065,7 @@ def get_interface_details_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.get_interface_robustel(data)
     except Exception as e:
-        logger.error("Error: Get interafce details of spoke:{e}")
+        logger.error(f"Error: Get interafce details of spoke:{e}")
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1110,7 +1110,7 @@ def create_vlan_interface_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.createvlaninterface(data) 
     except Exception as e:
-        logger.error("Error: Create VLAN interface in HUB:{e}")
+        logger.error(f"Error: Create VLAN interface in HUB:{e}")
         response = [{"message": f"Error: While creating VLAN interface"}]
     return JsonResponse(response, safe=False)
 
@@ -1153,7 +1153,7 @@ def create_sub_interface_spoke(request):
             response = router_configure.createsubinterface(data)      
     except Exception as e:
         response = [{"message": f"Error: while creating Sub interface"}]
-        logger.error("Error: Create Sub Interface spoke:{e}")
+        logger.error(f"Error: Create Sub Interface spoke:{e}")
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1194,7 +1194,7 @@ def create_loopback_interface_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = router_configure.createloopbackinterface(data)      
     except Exception as e:
-        logger.error("Error: Create Loopback Interface Spoke:{e}")
+        logger.error(f"Error: Create Loopback Interface Spoke:{e}")
         response = [{"message": f"Error: while creating Loopback Intreface"}]
     return JsonResponse(response, safe=False)
 
@@ -1237,7 +1237,7 @@ def create_tunnel_interface_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = router_configure.createtunnelinterface(data)      
     except Exception as e:
-        logger.error("Error: Create Tunnel Interface Spoke:{e}")
+        logger.error(f"Error: Create Tunnel Interface Spoke:{e}")
         response = [{"message": f"Error: While craeting Tunnel interface"}]
     return JsonResponse(response, safe=False)
 
@@ -1287,7 +1287,7 @@ def interface_config_spoke(request):
             response = robustel_configure.interface_config(data)
             print(response)
     except Exception as e:
-        logger.error("Error: Configure Interface Spoke:{e}")
+        logger.error(f"Error: Configure Interface Spoke:{e}")
         response = {"message": f"Error: while configuring interface"}
     return JsonResponse(response, safe=False)
 
@@ -1331,7 +1331,7 @@ def vlan_interface_delete_spoke(request):
             print(data)
             response = router_configure.deletevlaninterface(data)
     except Exception as e:
-        logger.error("Error: Delete Interface Spoke:{e}")
+        logger.error(f"Error: Delete Interface Spoke:{e}")
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 
@@ -1374,7 +1374,7 @@ def get_routing_table_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.get_routingtable_robustel(data)
     except Exception as e:
-        logger.error("Error: Get routing table spoke:{e}")
+        logger.error(f"Error: Get routing table spoke:{e}")
         response = []
     return JsonResponse(response, safe=False)
 
@@ -1419,7 +1419,7 @@ def add_route_spoke(request):
                 response = {"message":"Error in adding route"}
             print("check",response)
     except Exception as e:
-        logger.error("Error: Adding route in Spoke:{e}")
+        logger.error(f"Error: Adding route in Spoke:{e}")
         response = {"message": f"Error: while adding route"}
     return JsonResponse(response, safe=False)
 
@@ -1467,7 +1467,7 @@ def del_staticroute_spoke(request):
             else:
                 response = {"message":"Error in deleting route"}
     except Exception as e:
-        logger.error("Error: Delete route in Spoke:{e}")
+        logger.error(f"Error: Delete route in Spoke:{e}")
         response = {"message": f"Error: while deleting route"}
     return JsonResponse(response, safe=False)        
 
@@ -1505,7 +1505,7 @@ def get_pbr_info_spoke(request):
             #status = router_configure.addroute(data)
             response = []
     except Exception as e:
-        logger.error("Error: get pbr info spoke:{e}")
+        logger.error(f"Error: get pbr info spoke:{e}")
         response = []
     print(response)
     return JsonResponse(response, safe=False)
@@ -1541,7 +1541,7 @@ def diagnostics(request: HttpRequest):
         else:
             response = ubuntu_info.diagnostics(data)
     except Exception as e:
-        logger.error("Error: Ping from HUB:{e}")
+        logger.error(f"Error: Ping from HUB:{e}")
     return JsonResponse(response, safe=False)  
 
 @api_view(['POST'])  
@@ -1599,7 +1599,7 @@ def ping_spoke(request: HttpRequest):
                 print(rtt)
                 response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}
     except Exception as e:    
-        logger.error("Error: Ping from Spoke:{e}")
+        logger.error(f"Error: Ping from Spoke:{e}")
         response = {"message": f"Error: Subnet {data['subnet']} Not Reachable" }   
     return JsonResponse(response, safe=False)    
 
@@ -1692,7 +1692,7 @@ def addsubnet(request: HttpRequest):
         logger.debug(f'Received request for add route to ReachLink server: {request.method} {request.path} Requested ip: {public_ip}')
         response = ubuntu_info.addsubnet(data)        
     except Exception as e:
-        logger.error("Error: Add route in ReachLink server:{e}")
+        logger.error(f"Error: Add route in ReachLink server:{e}")
         response = {"message": f"Error in adding route, pl try again" }
     return JsonResponse(response, safe=False) 
 
@@ -1729,7 +1729,7 @@ def add_ip_rule_spoke(request):
             #status = router_configure.addroute(data)
             response = {"message":"Dummy"}
     except Exception as e:
-        logger.error("Error: Add IP rule Spoke:{e}")
+        logger.error(f"Error: Add IP rule Spoke:{e}")
         response = {"message": f"Error: {e}"}
     print(response)
     return JsonResponse(response, safe=False)
@@ -1757,7 +1757,7 @@ def autofix(request: HttpRequest):
         else:
             response = {"message":f"Error while changing gateway:{data['tunnel_ip']}"}
     except Exception as e:    
-        logger.error("Error: autofix in Spoke:{e}")
+        logger.error(f"Error: autofix in Spoke:{e}")
     logger.debug(f'Received request: {request.method} {request.path}')      
     return JsonResponse(response, safe=False)  
 
@@ -1820,7 +1820,7 @@ def get_routing_table(request):
         elif data["hub_wan_ip"] == hub_ip:
             response  =ubuntu_info.get_routing_table_ubuntu()        
     except Exception as e:
-        logger.error("Error: Get hub routing table:{e}")
+        logger.error(f"Error: Get hub routing table:{e}")
         response = []
     return JsonResponse(response, safe=False)
 
@@ -1858,7 +1858,7 @@ def addstaticroute_hub(request: HttpRequest):
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.addstaticroute_ubuntu(data)
     except Exception as e:  
-        logger.error("Error: Add static routing in HUB:{e}")
+        logger.error(f"Error: Add static routing in HUB:{e}")
         response = {"message": f"Error in adding route, pl try again." }
     return JsonResponse(response, safe=False) 
 
@@ -1886,7 +1886,7 @@ def delstaticroute_hub(request: HttpRequest):
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.delstaticroute_ubuntu(data)
     except Exception as e:
-        logger.error("Error: Delete static route HUB:{e}")
+        logger.error(f"Error: Delete static route HUB:{e}")
         response = {"message":f"Error while deleting route"}
     return JsonResponse(response, safe=False)
 
@@ -1912,7 +1912,7 @@ def get_interface_details_hub(request):
         elif data["hub_wan_ip"] == hub_ip:            
             response = ubuntu_info.get_interface_details_ubuntu(data)            
     except Exception as e:
-        logger.error("Error: Get Interface_details of HUB:{e}")
+        logger.error(f"Error: Get Interface_details of HUB:{e}")
         response = []    
     return JsonResponse(response, safe=False)
 
@@ -1933,7 +1933,7 @@ def create_vlan_interface_hub(request):
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.create_vlan_interface(data)        
     except Exception as e:
-        logger.error("Error: Create VLAN INterface HUB:{e}")
+        logger.error(f"Error: Create VLAN INterface HUB:{e}")
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
@@ -1954,7 +1954,7 @@ def create_sub_interface_hub(request):
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.create_vlan_interface(data)        
     except Exception as e:
-        logger.error("Error: Create Sub Interface HUB:{e}")
+        logger.error(f"Error: Create Sub Interface HUB:{e}")
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
@@ -1975,7 +1975,7 @@ def create_loopback_interface_hub(request):
         elif data["hub_wan_ip"] == hub_ip:
             response = [{"message":"Loopback interface created successfully"}] 
     except Exception as e:
-        logger.error("Error: Create Loopback Interface HUB:{e}")
+        logger.error(f"Error: Create Loopback Interface HUB:{e}")
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
@@ -1996,7 +1996,7 @@ def create_tunnel_interface_hub(request):
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.create_tunnel_interface(data)            
     except Exception as e:
-        logger.error("Error: Create Tunnel Interface in HUB:{e}")
+        logger.error(f"Error: Create Tunnel Interface in HUB:{e}")
         response = [{"message": f"Error: while Creating Tunnel Interface"}]
     return JsonResponse(response, safe=False)
 
@@ -2050,7 +2050,7 @@ def vlan_interface_delete_hub(request):
                                 )            
                 response = [{"message": f"Successfully  deleted VLAN Interface: {intfc_name}"}]
     except Exception as e:
-        logger.error("Error: Delete Interface HUB:{e}")
+        logger.error(f"Error: Delete Interface HUB:{e}")
         response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
     return JsonResponse(response, safe=False)
 
@@ -2079,7 +2079,7 @@ def interface_config_hub(request):
             response = router_configure.interfaceconfig(data)
             print(response)
     except Exception as e:
-        logger.error("Error: Interface configure HUB:{e}")
+        logger.error(f"Error: Interface configure HUB:{e}")
         response = {"message": f"Error: {e}"}
     return JsonResponse(response, safe=False)
 ##################HUB COMPLETE#################
@@ -2177,7 +2177,7 @@ def get_configured_hub(request):
         for hubinfo in coll_hub_info.find({}):
             hubips.append(hubinfo["hub_wan_ip_only"])
     except Exception as e:
-        print("error in fetch hubips:", e)
+        print(f"error in fetch hubips:", e)
     return JsonResponse(hubips, safe=False)
 
 @api_view(['POST'])
@@ -2197,6 +2197,6 @@ def change_password(request):
         logger.error(f"Error: Error User doesnot exist. {data}")
         response = {"message": "Error User doesnot exist"}        
     except Exception as e:
-        logger.error("Error: Change Password:{e}")
+        logger.error(f"Error: Change Password:{e}")
         response = {"message": "Error while changing password"}
     return JsonResponse(response, safe=False)
