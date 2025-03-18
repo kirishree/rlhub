@@ -667,21 +667,19 @@ def configurepbr(data):
                 break  
         mangle_info = output.split("\n")[1:-1]
         mangleinfo = []
-        data =[]      
+        data_pbr =[]      
         for intfc in mangle_info:
             if intfc.strip():
                 mangleinfo.append(intfc)
             else:
-                data.append(mangleinfo)
+                data_pbr.append(mangleinfo)
                 mangleinfo = []
         collect = []
-        for info in data:   
-            print("info", info)
+        for info in data_pbr:            
             new_routing_mark = " "  
             src_address = "any"
             dst_address = "any"     
-            for pbrinfo in info:
-                print("pbrinfo", pbrinfo)
+            for pbrinfo in info:                
                 pbrinfostrip = pbrinfo.strip()
                 if "new-routing-mark=" in pbrinfostrip:
                     new_routing_mark = pbrinfostrip.split("new-routing-mark=")[1].split(" ")[0]                   
@@ -692,16 +690,14 @@ def configurepbr(data):
             if new_routing_mark != " ":   
                 collect.append({"new_routing_mark":new_routing_mark,
                             "src_address": src_address,
-                            "dst_address": dst_address})
-        print("collect", collect)   
+                            "dst_address": dst_address})    
         
         # Execute the command to add rule in mangle for PBR
         for subnet in data["realip_subnet"]:          
             subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
             alreadyconfigured = False
             if subnet_key:
-                for pbr in collect:
-                    print("pbr", pbr)
+                for pbr in collect:                    
                     if pbr["src_address"] == subnet[subnet_key]:
                         alreadyconfigured = True
                         break
