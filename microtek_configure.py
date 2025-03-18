@@ -652,16 +652,61 @@ def configurepbr(data):
         # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password)
         # Execute the command to add rule in mangle for PBR
-        for subnet in data["realip_subnet"]:
-            print("subnet in pbr", subnet)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle print')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data             
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        mangle_info = output.split("\n")[1:-1]
+        mangleinfo = []
+        data =[]      
+        for intfc in mangle_info:
+            if intfc.strip():
+                mangleinfo.append(intfc)
+            else:
+                data.append(mangleinfo)
+                mangleinfo = []
+        collect = []
+        for info in data:   
+            new_routing_mark = " "  
+            src_address = "any"
+            dst_address = "any"     
+            for pbrinfo in info:
+                pbrinfostrip = pbrinfo.strip()
+                if "new-routing-mark=" in pbrinfostrip:
+                    new_routing_mark = pbrinfostrip.split("new-routing-mark=")[1].split(" ")[0]                   
+                if "src-address=" in pbrinfostrip:
+                    src_address = pbrinfostrip.split("src-address=")[1].split(" ")[0]   
+                if "dst-address=" in pbrinfostrip:
+                    dst_address = pbrinfostrip.split("dst-address=")[1].split(" ")[0]                 
+            if new_routing_mark != " ":   
+                collect.append({"new_routing_mark":new_routing_mark,
+                            "src_address": src_address,
+                            "dst_address": dst_address})    
+        
+        # Execute the command to add rule in mangle for PBR
+        for subnet in data["realip_subnet"]:          
             subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
+            alreadyconfigured = False
             if subnet_key:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet[subnet_key]} action=mark-routing new-routing-mark=reachlink')
+                for pbr in collect:
+                    if pbr["src_address"] == subnet[subnet_key]:
+                        alreadyconfigured = True
+                        break
+                if alreadyconfigured == False:
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet[subnet_key]} action=mark-routing new-routing-mark=reachlink')
         response = [{"message": f"Successfully configured PBR in Microtek Spoke"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while configuring PBR in Microtek Spoke"}]
-          
+        response = [{"message": f"Error while configuring PBR in Microtek Spoke"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
