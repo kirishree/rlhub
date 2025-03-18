@@ -698,6 +698,7 @@ def configurepbr(data):
             alreadyconfigured = False
             if subnet_key:
                 for pbr in collect:
+                    print("pbr", pbr)
                     if pbr["src_address"] == subnet[subnet_key]:
                         alreadyconfigured = True
                         break
