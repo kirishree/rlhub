@@ -460,7 +460,7 @@ def addstaticroute_ubuntu(data):
                 with open("/etc/reach/staticroutes.sh", "a") as f:
                     f.write(f'\nip route add {route["destination"]} via {route["gateway"]}')
                     f.close()
-                os.system(f"ip route add {route["destination"]} via {route["gateway"]}")
+                os.system(f'ip route add {route["destination"]} via {route["gateway"]}')
                 continue
             for tunnelinfo in tunnelip_info:
                 if route["gateway"] in  tunnelinfo:
