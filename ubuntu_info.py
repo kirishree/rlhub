@@ -335,10 +335,12 @@ def configurepbr_spoke(data):
 def configurepbr_spoke_new(realipdata):
     try:    
         realipsubnet = realipdata["realip_subnet"]
-        tunneinfo = coll_tunnel_ip.find({})
         datacollected=[]
         for realips in realipsubnet:
-            realips["tunnel_ip"] = realips["gateway"] + "/24"
+            if "10.8." not in realips["gateway"]:
+                realips["tunnel_ip"] = realips["gateway"] + "/24"
+            else:
+                realips["tunnel_ip"] = realips["gateway"]
             tunnelinfo = coll_tunnel_ip.find_one({"tunnel_ip":realips["tunnel_ip"]})
             realips["uuid"] = tunnelinfo["uuid"]
             datacollected.append(realips)
@@ -353,8 +355,7 @@ def configurepbr_spoke_new(realipdata):
                     response = requests.post(url + "add_ip_rule", data=json_data, headers=headers)  # Timeout set to 5 seconds                               
                     if response.status_code == 200:           
                         get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                        ip_rule_response = json.loads(get_response)
-                        print(lan_info)
+                        ip_rule_response = json.loads(get_response)                        
                         response = {"message":ip_rule_response["message"]}              
                     else:
                         response = {"message":"Error while configuring ip rule in spoke"}
@@ -453,9 +454,32 @@ def addstaticroute_ubuntu(data):
         with open("/etc/openvpn/server/ipp.txt", "r") as f:
             tunnelipinfo = f.read()
             f.close()            
-        tunnelip_info = tunnelipinfo.split("\n")        
-        for route in routes: 
-            past_subnets.append(route["destination"]) 
+        tunnelip_info = tunnelipinfo.split("\n")          
+        for route in routes:
+            if "10.8.0" not in route["gateway"]:
+                with open("/etc/reach/staticroutes.sh", "a") as f:
+                    f.write(f'\nip route add {route["destination"]} via {route["gateway"]}')
+                    f.close()
+                os.system(f"ip route add {route["destination"]} via {route["gateway"]}")
+                continue
+            for tunnelinfo in tunnelip_info:
+                if route["gateway"] in  tunnelinfo:
+                    subnet_ip = route["destination"].split("/")[0]
+                    netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
+                    tunnelinfo = tunnelinfo.strip()
+                    spokename = tunnelinfo.split(",")[0]
+                    if os.path.exists(f"/etc/openvpn/server/ccd/{spokename}"):
+                        with open(f"/etc/openvpn/server/ccd/{spokename}", "a") as f:
+                            f.write(f"\niroute {subnet_ip} {netmask} ")  
+                            f.close()   
+                    else:
+                        with open(f"/etc/openvpn/server/ccd/{spokename}", "w") as f:
+                            f.write(f"\niroute {subnet_ip} {netmask} ")  
+                            f.close()   
+
+                    with open(f"/etc/openvpn/server/server.conf", "a") as f:
+                        f.write(f"\nroute {subnet_ip} {netmask} ")  
+                        f.close()               
             if route["destination"].split(".")[0] != "10":
                 if route["destination"].split(".")[0] == "172":
                     if 15 < int(route["destination"].split(".")[1]) < 32:
@@ -474,26 +498,13 @@ def addstaticroute_ubuntu(data):
             else:
                 private_ip = True
             if not private_ip:
-                real_routes.append(route)    
-        for route in routes:
-            for tunnelinfo in tunnelip_info:
-                if route["gateway"] in  tunnelinfo:
-                    subnet_ip = route["destination"].split("/")[0]
-                    netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
-                    tunnelinfo = tunnelinfo.strip()
-                    spokename = tunnelinfo.split(",")[0]
-                    if os.path.exists(f"/etc/openvpn/server/ccd/{spokename}"):
-                        with open(f"/etc/openvpn/server/ccd/{spokename}", "a") as f:
-                            f.write(f"\niroute {subnet_ip} {netmask} ")  
-                            f.close()   
-                    else:
-                        with open(f"/etc/openvpn/server/ccd/{spokename}", "w") as f:
-                            f.write(f"\niroute {subnet_ip} {netmask} ")  
-                            f.close()   
-
-                    with open(f"/etc/openvpn/server/server.conf", "a") as f:
-                        f.write(f"\nroute {subnet_ip} {netmask} ")  
-                        f.close() 
+                if "microtek" in spokename:
+                    real_routes.append(route) 
+        if len(real_routes) > 0:
+            pbr_spoke_data = { "realip_subnet": real_routes
+                              }
+            background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
+            background_thread.start()    
         os.system("systemctl restart openvpn-server@server")  
         response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
     except Exception as e:
