@@ -1296,6 +1296,7 @@ def interface_config_spoke(request):
 def vlan_interface_delete_spoke(request):
     try:
         data = json.loads(request.body)
+        print("vlan delete ", data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for delete interface spoke: {request.method} {request.path} Requested ip: {public_ip}')
