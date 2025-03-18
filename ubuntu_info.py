@@ -384,70 +384,6 @@ def configurepbr_spoke_new(realipdata):
         response = {"message": f"Error: {e}"}
     print(response)    
 
-def addstaticroute_ubuntu1(data):
-    try:
-        real_routes = []
-        past_subnets = []
-        routes = data["routes_info"] 
-        for route in routes: 
-            past_subnets.append(route["destination"]) 
-            if route["destination"].split(".")[0] != "10":
-                if route["destination"].split(".")[0] == "172":
-                    if 15 < int(route["destination"].split(".")[1]) < 32:
-                        private_ip = True
-                    else:
-                        private_ip = False
-                elif route["destination"].split(".")[0] == "192":
-                    if route["destination"].split(".")[1] == "168":
-                        private_ip = True
-                    else:
-                        private_ip = False
-                elif int(route["destination"].split(".")[0]) > 223: 
-                    private_ip = True
-                else:
-                    private_ip = False
-            else:
-                private_ip = True
-            if not private_ip:
-                real_routes.append(route)                     
-        #  interface_addresses = configured_address_interface()
-        with open("/etc/netplan/00-installer-config.yaml", "r") as f:
-            data1 = yaml.safe_load(f)
-            f.close()
-        dat=[]
-        for rr in data1["network"]["tunnels"]["Reach_link1"]:
-            if rr == "routes":
-                dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
-        for r in routes:
-            try:                    
-                if (ipaddress.ip_network(r["destination"], strict=False) and ipaddress.ip_address(r["gateway"])):
-                    dat.append({"to": r["destination"],
-                                    "via": r["gateway"]}
-                                )                    
-            except ValueError:
-                response = [{"message":"Either subnet or Gateway is not valid IP"}]        
-        data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
-        with open("/etc/netplan/00-installer-config.yaml", "w") as f:
-            yaml.dump(data1, f, default_flow_style=False)
-            f.close()
-        os.system("sudo netplan apply")  
-        for branch in coll_tunnel_ip.find({}):
-            try:
-                tunip = branch["tunnel_ip"].split("/")[0]
-                os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
-            except Exception as e:
-                print(f"Neighbor add error: {e}")
-        if len(real_routes) > 0:
-            pbr_spoke_data = { "realip_subnet": real_routes
-                              }
-            background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
-            background_thread.start() 
-        response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
-    except Exception as e:
-        print(e)
-        response = {"message": "Error while adding route"}
-    return response
-
 def addstaticroute_ubuntu(data):
     try:
         real_routes = []
@@ -842,49 +778,29 @@ def create_tunnel_interface(data):
         response = [{"message": f"Error while configuring tunnel interface with id {data['tunnel_intfc_name']}: {e}"}]
     return response
 
-def delstaticroute_ubuntu1(data):
-    try:
-        subnet_info = data["routes_info"]
-        with open("/etc/netplan/00-installer-config.yaml", "r") as f:
-            data1 = yaml.safe_load(f)
-            f.close()
-        dat=[]
-        for rr in data1["network"]["tunnels"]["Reach_link1"]:
-            if rr == "routes":
-                dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]
-        
-        for r in subnet_info:            
-            dat = [item for item in dat if item.get('to') != r['destination']]
-        data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
-        with open("/etc/netplan/00-installer-config.yaml", "w") as f:
-            yaml.dump(data1, f, default_flow_style=False)
-            f.close()
-        os.system("sudo netplan apply")
-        for branch in coll_tunnel_ip.find({}):
-            try:
-                tunip =  branch['tunnel_ip'].split("/")[0]
-                os.system(f"ip neighbor add {tunip} lladdr {branch['public_ip']} dev Reach_link1") 
-            except Exception as e:
-                print(f"Neighbor add error: {e}")  
-        response = {"message": "Successfully route deleted"}
-    except Exception as e:
-        response = {"message": "Error while deleting route"}
-    return response
-
 def delstaticroute_ubuntu(data):
     try:
         subnet_info = data["routes_info"]
         with open("/etc/openvpn/server/server.conf", "r") as f:
             serverfile = f.read()
-            f.close()        
+            f.close() 
+        with open("/etc/reach/staticroutes.sh", "r") as f:
+            staticroutefile = f.read()
+            f.close()
         for route in subnet_info:
             if "10.8." in route['gateway']:
                 subnet_ip = route["destination"].split("/")[0]
                 netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
                 serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+            else:
+                staticroutefile.replace(f"ip route add {route["destination"]} via {route["gateway"]}", f"#ip route add {route["destination"]} via {route["gateway"]}")                
+                os.system(f'ip route del {route["destination"]} via {route["gateway"]}')        
         with open("/etc/openvpn/server/server.conf", "w") as f:
             f.write(serverfile)
-            f.close()      
+            f.close()   
+        with open("/etc/reach/staticroutes.sh", "w") as f:   
+            f.write(staticroutefile)
+            f.close()
         os.system("systemctl restart openvpn-server@server")
         response = {"message": "Successfully route deleted"}
     except Exception as e:
