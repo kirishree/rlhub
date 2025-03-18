@@ -651,7 +651,10 @@ def configurepbr(data):
         ssh_client.connect(hostname=router_ip, username=username, password=password)
         # Execute the command to add rule in mangle for PBR
         for subnet in data["realip_subnet"]:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet["subnet"]} action=mark-routing new-routing-mark=reachlink')
+            print("subnet in pbr", subnet)
+            subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
+            if subnet_key:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet[subnet_key]} action=mark-routing new-routing-mark=reachlink')
         response = [{"message": f"Successfully configured PBR in Microtek Spoke"}]
     except Exception as e:
         print(f"An error occurred: {e}")

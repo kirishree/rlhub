@@ -184,7 +184,7 @@ def diagnostics(data):
     ip_addresses = [data["subnet"].split("/")[0]]
     for ip in ip_addresses:    
         try:
-            command = (f"ping -c 5  {ip}")
+            command = (f"ping -I 192.168.2.3 -c 5  {ip}")
             output = subprocess.check_output(command.split()).decode()
             lines = output.strip().split("\n")
             # Extract the round-trip time from the last line of output
@@ -501,6 +501,7 @@ def addstaticroute_ubuntu(data):
                 if "microtek" in spokename:
                     real_routes.append(route) 
         if len(real_routes) > 0:
+            print("real routes", real_routes)
             pbr_spoke_data = { "realip_subnet": real_routes
                               }
             background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
