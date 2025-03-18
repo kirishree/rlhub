@@ -369,7 +369,9 @@ def configurepbr_spoke_new(realipdata):
                 microtek_pbr_data["router_password"] = router_info["router_password"]
                 microtek_pbr_data["uuid"] = data["uuid"]
                 microtek_pbr_data["tunnel_ip"] = data["tunnel_ip"]
-                microtek_pbr_data["realip_subnet"] = [{"subnet":data["subnet"]}]
+                subnet_key = "destination" if "destination" in data else "subnet" if "subnet" in data else None
+                if subnet_key:
+                    microtek_pbr_data["realip_subnet"] = [{"subnet":data[subnet_key]}]
                 status = microtek_configure.configurepbr(microtek_pbr_data)
                 response = {"message":status}
             elif "cisco" in data["uuid"]:
