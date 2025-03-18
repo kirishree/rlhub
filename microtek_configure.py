@@ -564,8 +564,10 @@ def createvlaninterface(data):
                     interface_addresses.append(intfcaddress) 
         for int_addr in data["addresses"]:
             for address in interface_addresses:
+                print("address", address)                
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
                 ip_obj = ipaddress.ip_address(int_addr.split("/")[0])
+                print("ip_obj", ip_obj)
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
