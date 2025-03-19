@@ -41,6 +41,7 @@ def set_openvpn_client(spokeinfo):
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp community add addresses=0.0.0.0/0 name={spokeinfo["snmpcommunitystring"]} read-access=yes comment=reachlinkserver')
         stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 comment=enable-ssh place-before=0')
         stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=8291 place-before=0 comment=enable-winboxaccess')
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip route add dst-address=0.0.0.0/0 gateway=10.8.0.1 routing-mark=10.8.0.1')
         print("command sent")
     except Exception as e:
         print(e)
