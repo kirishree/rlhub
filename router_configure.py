@@ -630,7 +630,7 @@ def adduser(data):
 def deletevlaninterface(data):
     try:
         # Define the router details
-        if "ether" in data["intfc_name"] and "." not in data["intfc_name"]:            
+        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"]:            
             return [{"message": f"Error: Physical Interface cannot be deleted"}]
         router_ip = data["tunnel_ip"].split("/")[0]
         username = data["router_username"]
