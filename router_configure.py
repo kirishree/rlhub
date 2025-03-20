@@ -725,6 +725,9 @@ def interfaceconfig(data):
         if data["intfc_name"].lower() == "fastethernet4" or data["intfc_name"].lower() == "dialer1":
             response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
             return response
+        if "ether" in data["intfc_name"].lower():
+            response = [{"message": f"Error Not able to configure IP on layer 2 interface"}]
+            return response
         router_ip = data["tunnel_ip"].split("/")[0]
         username = data["router_username"]
         password = data['router_password']

@@ -86,16 +86,25 @@ def get_history(itemid):
         history_response = session.post(zabbix_api_url, json=get_history)
         history_result1 = history_response.json()
         history_result = history_result1.get('result')
-        print(history_result1)
         if 'error' in history_result:
             print(f"Failed to get item list: {history_result['error']['data']}")
             return False
         else:
-            return history_result[0]["value"]                       
+            return history_result                    
     except Exception as e:
         print(f"Failed to get History: {e}")
         return False   
+def main():
+    try:
+        hostid = get_host_id("DUBAI-UAE")[0]["hostid"]
+        itemid_info = get_item_id(hostid, "Interface")
+        for items in itemid_info:
+            if "Bits" in items["name"]:
+                trafficdata = get_history(items["itemid"])
+                print(trafficdata)
+                break
+    except Exception as e:
+        print(e)
 
-hostid = get_host_id("DUBAI-UAE")[0]["hostid"]
-print(get_item_id(hostid, "Interface"))
-print(get_history("55463"))
+if __name__ == "__main__":
+    main()
