@@ -1326,14 +1326,13 @@ def vlan_interface_delete_spoke(request):
             interface_details = microtek_configure.deletevlaninterface(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            print(data)
             response = router_configure.deletevlaninterface(data)
     except Exception as e:
         logger.error(f"Error: Delete Interface Spoke:{e}")
-        response = {"message": f"Error: {e}"}
+        response = {"message": f"Error: "}
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
