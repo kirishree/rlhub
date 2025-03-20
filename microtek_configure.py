@@ -445,8 +445,8 @@ def interfacedetails(data):
         return collect
 
 def interfaceconfig(data):   
-   # Define the router details
-    print("interface_name")
+   # Define the router details   
+    print(data) 
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
@@ -454,7 +454,6 @@ def interfaceconfig(data):
     
     if data["intfc_name"] == "ether1" or data["intfc_name"] == "Base Tunnel" or data["intfc_name"] == "Overlay Tunnel":
         response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
-        print("hiiii", response)
         return response
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
@@ -486,6 +485,7 @@ def interfaceconfig(data):
                     for currentaddr in data["current_addresses"]:
                         if intfcaddress == currentaddr:
                             removeitemno = addr.split(" ")[1]
+                            print(currentaddr, removeitemno)
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
         
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
