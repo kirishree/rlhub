@@ -481,11 +481,9 @@ def interfaceconfig(data):
         addresses_info = output.split("\n")   
         for addr in addresses_info:
             if "address=" in addr:
-                    intfcaddress = addr.split("address=")[1].split(" ")[0]                    
-                    for currentaddr in data["current_addresses"]:
-                        if intfcaddress == currentaddr:
-                            removeitemno = addr.split(" ")[1]
-                            print(currentaddr, removeitemno)
+                    intfcname = addr.split("interface=")[1].split(" ")[0] 
+                    if intfcname == data["intfc_name"]:                    
+                            removeitemno = addr.split(" ")[1]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
         
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
@@ -508,8 +506,10 @@ def interfaceconfig(data):
         interface_addresses = [] 
         for addr in addresses_info:
             if "address=" in addr:
-                    intfcaddress = addr.split("address=")[1].split(" ")[0]  
-                    interface_addresses.append(intfcaddress) 
+                    intfcname = addr.split("interface=")[1].split(" ")[0] 
+                    if intfcname != data["intfc_name"]:
+                        intfcaddress = addr.split("address=")[1].split(" ")[0]  
+                        interface_addresses.append(intfcaddress) 
         for int_addr in data["new_addresses"]:
             for address in interface_addresses:
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
