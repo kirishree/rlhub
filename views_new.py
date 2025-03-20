@@ -143,7 +143,7 @@ def setass(response, devicename):
                     connected_spoke.append(collection) 
         for spoke in connected_spoke:
             if spoke["spokedevice_name"] == newspokedevicename:
-                if devicename == "robustel" or devicename == "microtek":
+                if devicename == "microtek":
                     query = {"spokedevice_name": newspokedevicename }
                     update_data = {"$set": {"public_ip":spoke["Public_ip"],
                                             "tunnel_ip": spoke["Tunnel_ip"]                                                                       
@@ -165,7 +165,30 @@ def setass(response, devicename):
                                         "registered_devices": regdevices["registered_devices"]                                                                           
                                         }
                                        }
-                    coll_registered_organization.update_many(query, update_data)                               
+                    coll_registered_organization.update_many(query, update_data)   
+                elif devicename == "robustel":
+                    query = {"spokedevice_name": newspokedevicename }
+                    update_data = {"$set": {"public_ip":spoke["Public_ip"],
+                                            "tunnel_ip": spoke["Tunnel_ip"]                                                                       
+                                        }
+                                       }
+                    newspokeconnstatus = True    
+                    coll_tunnel_ip.update_many(query, update_data) 
+                    organizationid = response[0]["organization_id"]
+                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                    for dev in regdevices["registered_devices"]:                    
+                        if "robustel_spokes_info" in dev:                             
+                                for rospoke in  dev["robustel_spokes_info"]:                         
+                                    if newspokedevicename == rospoke["spokedevice_name"]:
+                                        rospoke["tunnel_ip"] = spoke["Tunnel_ip"] 
+                                        rospoke["public_ip"] = spoke["Public_ip"]                               
+                                        
+                    query = {"organization_id": organizationid}
+                    update_data = {"$set": {
+                                        "registered_devices": regdevices["registered_devices"]                                                                           
+                                        }
+                                       }
+                    coll_registered_organization.update_many(query, update_data)                                  
                 else:
                     newspokeovpnip = spoke["Tunnel_ip"]
                     newspokeconnstatus = True
@@ -321,7 +344,7 @@ def add_cisco_device(request: HttpRequest):
                     "ca.crt": cacrt,
                     "client.crt": clientcrt,
                     "client.key": clientkey,
-                    "robustel_conf.exe": robustelexe  # Keep binary
+                    "reachlink_robustel_config.exe": robustelexe  # Keep binary
                 }
                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
@@ -338,8 +361,8 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
-                #background_thread.start() 
+                background_thread = threading.Thread(target=setass, args=(response, "robustel",))
+                background_thread.start() 
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test") 
             else:

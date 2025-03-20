@@ -5,8 +5,12 @@ import requests
 import getpass
 import re
 import ipaddress
-hub_ip = "185.69.209.245"
-
+hub_ip = "185.69.209.251"
+hub_ip_whitelist = "185.69.209.251/32"
+router_ip = "192.168.0.1"
+username = "admin"
+password = "admin"
+urllogin = "https://reachlinktest.cloudetel.com/auth"
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
     time.sleep(wait_time)  # Wait for the command to be processed  
@@ -22,10 +26,6 @@ def set_openvpn_client():
     """
     Connects to a Robustel router via SSH and create OpenVPN tunnel in client mode'.
     """
-    router_ip = "192.168.0.1"
-    username = "admin"
-    password = "admin"
-
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -62,7 +62,7 @@ def set_openvpn_client():
                             "set firewall white_list 1 src_addr 192.168.0.0/24",
                             "add firewall white_list 2",
                             "set firewall white_list 2 desc reachlinkserver",
-                            "set firewall white_list 2 src_addr 185.69.209.245/32",
+                            f"set firewall white_list 2 src_addr {hub_ip_whitelist}",
                             "add firewall white_list 3",
                             "set firewall white_list 3 desc reachlinknetwork",
                             "set firewall white_list 3 src_addr 10.8.0.0/24",
@@ -119,8 +119,7 @@ def main():
         else:
             print("❌ Invalid email format. Please enter a valid email.")
     print(f"Enter the password of {username}:")
-    password = getpass.getpass() 
-    urllogin = "https://reachlink.cloudetel.com/auth"
+    password = getpass.getpass()    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
