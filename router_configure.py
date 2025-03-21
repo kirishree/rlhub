@@ -99,7 +99,7 @@ def delroute(data):
 
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return False
@@ -186,7 +186,7 @@ def pingspoke(data):
 
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return False
@@ -219,7 +219,7 @@ def traceroute(data):
 
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return False
@@ -284,7 +284,7 @@ def get_interface_ciscoold(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return intfcdetails
@@ -353,7 +353,7 @@ def get_routingtable_cisco(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return []
@@ -425,7 +425,7 @@ def delstaticroute(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return False
@@ -462,7 +462,7 @@ def createvlaninterface(data):
 
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
@@ -509,7 +509,7 @@ def createsubinterface(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
@@ -552,7 +552,7 @@ def createloopbackinterface(data):
 
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
@@ -593,7 +593,7 @@ def adduser(data):
         
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return False
@@ -644,7 +644,7 @@ def deletevlaninterface(data):
 
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
@@ -681,7 +681,7 @@ def createtunnelinterface(data):
 
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
@@ -742,7 +742,7 @@ def interfaceconfig(data):
 
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
@@ -815,7 +815,7 @@ def get_interface_cisco(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return intfcdetails
@@ -942,7 +942,7 @@ def removeuser(data):
 
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
