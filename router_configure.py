@@ -58,7 +58,7 @@ def addroute(data):
 
     try:
     # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
         print(f"SSH Connection Error: {e}")
         return False

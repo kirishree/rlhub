@@ -34,7 +34,7 @@ def set_openvpn_client(spokeinfo):
         # Execute the ping command
         clientname = "reachlink"
         certname = clientname + "_1"
-        stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=reachlink max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=yes')
+        stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=reachlink max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=no')
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp set enabled=yes')
         stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input protocol=udp src-address=10.8.0.0/24 dst-port=161 action=accept place-before=0 comment=enable-snmpaccess')
         stdin, stdout, stderr = ssh_client.exec_command(f'user add name={spokeinfo["router_username"]} password={spokeinfo["router_password"]} group=full')
