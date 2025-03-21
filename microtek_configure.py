@@ -14,7 +14,7 @@ def pingspoke(data):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the ping command
         stdin, stdout, stderr = ssh_client.exec_command(f'/ping {data["subnet"]} count 5')
         final_output = " "
@@ -58,7 +58,7 @@ def addroute(data):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the ping command
         subnets = data["subnet_info"]
         for subnet in subnets:
@@ -82,7 +82,7 @@ def traceroute(data):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/tool traceroute {data["trace_ip"]}')
         # Initialize variables for output collection
@@ -131,7 +131,7 @@ def routingtable1(data):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print')
         # Initialize variables for output collection
@@ -211,7 +211,7 @@ def routingtable(data):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
         # Initialize variables for output collection
@@ -299,7 +299,7 @@ def interfacedetails(data):
 
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface print detail')
         # Initialize variables for output collection
@@ -460,7 +460,7 @@ def interfaceconfig(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
@@ -541,7 +541,7 @@ def createvlaninterface(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)               
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -597,7 +597,7 @@ def deletevlaninterface(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan print detail')
         # Initialize variables for output collection
@@ -650,7 +650,7 @@ def configurepbr(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the command to add rule in mangle for PBR
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle print')
         # Initialize variables for output collection
@@ -723,7 +723,7 @@ def getconfigurepbr(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the command to add rule in mangle for PBR
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle print')
         # Initialize variables for output collection
@@ -786,7 +786,7 @@ def delstaticroute(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
         # Initialize variables for output collection
@@ -856,7 +856,7 @@ def laninfo(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
@@ -1063,7 +1063,7 @@ def lanconfig(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
@@ -1202,7 +1202,7 @@ def dhcpconfig(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password)
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
         # Execute the dhcp server command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
         # Initialize variables for output collection
