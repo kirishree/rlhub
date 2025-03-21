@@ -381,21 +381,17 @@ def interfacedetails(data):
                     macaddress = intinfostrip.split("mac-address=")[1].split(" ")[0]
                 if "actual-mtu=" in intinfostrip:
                     mtu = intinfostrip.split("actual-mtu")[1].split(" ")[0]
- #               if "last-link-up-time=" in intinfostrip:
-#                    intfc_status = "up"
-  #              else:
-   #                 intfc_status = "down"
             if intfc_status == "up":
                 statusintfc = "up"    
             else:
                 statusintfc = "down"
-            collect.append({"interface_name":interfacename,
+            if interfacename != "ether2" or interfacename != "ether3" or interfacename != "ether4" or interfacename != "ether5":
+                collect.append({"interface_name":interfacename,
                                 "mac_address": macaddress,
                                 "type": typeinfo,
                                 "mtu": mtu,
                                 "addresses": [{"IPv4address":" "}],
                                 "status":intfc_status
-
                                 })        
         addresses_info = addressoutput.split("\n")[1:-1]
         addressinfo = []
@@ -407,7 +403,6 @@ def interfacedetails(data):
                 data1.append(addressinfo)
                 addressinfo = []
         collectaddr = []
-#        print("data1",data1)
         for info1 in data1:           
             for addrinfo in info1:
                 addrinfostrip = addrinfo.strip()
@@ -415,22 +410,16 @@ def interfacedetails(data):
                     intfcaddress = addrinfostrip.split("address=")[1].split(" ")[0]
                     
                 if " interface=" in addrinfostrip:
-                    intfc = addrinfostrip.split(" interface=")[1].split(" ")[0]
-                
-                
+                    intfc = addrinfostrip.split(" interface=")[1].split(" ")[0]             
             collectaddr.append({"interface_name":intfc,
                                 "address": intfcaddress                                            
 
-                                })      
-#        print(collectaddr)  
+                                })     
         for interface in collect:
             for intfci in collectaddr:
-                if interface["interface_name"] == intfci["interface_name"]:                    
- 
+                if interface["interface_name"] == intfci["interface_name"]:                 
                     if intfci["address"] != " ":
-#                       print("intfcaddr", intfci["address"]) 
                        interface["addresses"].append({"IPv4address":intfci["address"]})
-        #print(collect)
         for interface in collect:
             if interface["interface_name"] == "ovpn1":
                 interface["interface_name"] = "Base Tunnel"
@@ -438,10 +427,7 @@ def interfacedetails(data):
             if interface["interface_name"] == "reachlink":
                 interface["interface_name"] = "Overlay Tunnel"
                 interface["type"] = "tunnel"
-
-            interface["addresses"] = [addr for addr in interface["addresses"] if addr["IPv4address"].strip()]
-
-    
+            interface["addresses"] = [addr for addr in interface["addresses"] if addr["IPv4address"].strip()]    
         return collect
 
 def interfaceconfig(data):   
