@@ -539,8 +539,8 @@ def interfaceconfig(data):
             else:
                 private_ip = True
             if not private_ip:
-                routerrealip = newaddr["address"].split("/")[0] + "/32"
-                routersubnet = str(ipaddress.ip_network(addr, strict=False))
+                routerrealip = newaddr["address"].split("/")[0]
+                routersubnet = str(ipaddress.ip_network(newaddr["address"], strict=False))
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
         response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
     except Exception as e:
