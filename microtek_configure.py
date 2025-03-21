@@ -519,7 +519,29 @@ def interfaceconfig(data):
                     ssh_client.close()            
                     return response
         for newaddr in data["new_addresses"]:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')  
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')
+            
+            if newaddr["address"].split(".")[0] != "10":
+                if newaddr["address"].split(".")[0] == "172":
+                    if 15 < int(newaddr["address"].split(".")[1]) < 32:
+                        private_ip = True
+                    else:
+                        private_ip = False
+                elif newaddr["address"].split(".")[0] == "192":
+                    if newaddr["address"].split(".")[1] == "168":
+                        private_ip = True
+                    else:
+                        private_ip = False
+                elif int(newaddr["address"].split(".")[0]) > 223: 
+                    private_ip = True
+                else:
+                    private_ip = False
+            else:
+                private_ip = True
+            if not private_ip:
+                routerrealip = newaddr["address"].split("/")[0] + "/32"
+                routersubnet = str(ipaddress.ip_network(addr, strict=False))
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
         response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -702,7 +724,7 @@ def configurepbr(data):
                         alreadyconfigured = True
                         break
                 if alreadyconfigured == False:
-                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet[subnet_key]} action=mark-routing new-routing-mark=reachlink')
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet[subnet_key]} dst-address=!{subnet[subnet_key]} action=mark-routing new-routing-mark=reachlink')
         response = [{"message": f"Successfully configured PBR in Microtek Spoke"}]
     except Exception as e:
         print(f"An error occurred: {e}")
