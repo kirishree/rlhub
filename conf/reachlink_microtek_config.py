@@ -6,7 +6,11 @@ import getpass
 import re
 import ipaddress
 hub_ip = "185.69.209.251"
-
+router_ip = "192.168.88.1"
+username = "admin"
+password = ""
+urllogin = "https://reachlinktest.cloudetel.com/auth"
+url = "https://reachlinktest.cloudetel.com/get_microtekspoke_config"
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
     time.sleep(wait_time)  # Wait for the command to be processed  
@@ -18,11 +22,8 @@ def send_command_wo(shell, command, delay=1):
     output = shell.recv(65535).decode('utf-8')
     return output
 
-def set_openvpn_client(spokeinfo):   
-# Define the router details
-    router_ip = "192.168.88.1"
-    username = "admin"
-    password = ""
+def set_openvpn_client(spokeinfo):
+# Define the router details   
 
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
@@ -41,8 +42,7 @@ def set_openvpn_client(spokeinfo):
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp community add addresses=0.0.0.0/0 name={spokeinfo["snmpcommunitystring"]} read-access=yes comment=reachlinkserver')
         stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 comment=enable-ssh place-before=0')
         stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=8291 place-before=0 comment=enable-winboxaccess')
-        stdin, stdout, stderr = ssh_client.exec_command(f'ip route add dst-address=0.0.0.0/0 gateway=10.8.0.1 routing-mark=reachlink')
-        print("command sent")
+        stdin, stdout, stderr = ssh_client.exec_command(f'ip route add dst-address=0.0.0.0/0 gateway=10.8.0.1 routing-mark=reachlink')        
     except Exception as e:
         print(e)
         print("Error while configuring pl try again.")
@@ -82,8 +82,7 @@ def main():
     print(f"Enter the registered device(branch) location:")
     branch_location = input()
     bl = branch_location.lower()
-    branch_uuid = bl +  "_microtek.net"
-    urllogin = "https://reachlinktest.cloudetel.com/auth"
+    branch_uuid = bl +  "_microtek.net"    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -97,8 +96,7 @@ def main():
                 print("Enter a key to exit...")
                 input()
                 return
-            else:
-                print(json_authresponse)
+            else:                
                 access_token = json_authresponse["access"]                
         else:
             print("Error while authenticating data")
@@ -110,7 +108,6 @@ def main():
         print("Enter a key to exit...")
         input()
         return
-    url = "https://reachlinktest.cloudetel.com/get_microtekspoke_config"
     # Set the headers to indicate that you are sending JSON data
     headers = {"Content-Type": "application/json",
                "Authorization": f"Bearer {access_token}"}
@@ -126,7 +123,7 @@ def main():
             json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
             spokeinfo = json.loads(json_response)
             if  "This Microtek Spoke is already Registered" not in spokeinfo["message"]:
-                print(spokeinfo)  
+                print(spokeinfo["message"])  
                 print("Enter a key to exit...")
                 input()
                 return            
@@ -140,6 +137,8 @@ def main():
         print("Enter a key to exit...")
         input()
         return
+    print(spokeinfo["message"]) 
+    print("Start to configure")
     set_openvpn_client(spokeinfo)
 
 if __name__ == "__main__":
