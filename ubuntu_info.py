@@ -119,6 +119,10 @@ def get_routing_table_ubuntu():
                             if "ROUTING_TABLE," in routesovpn:
                                 if  destinationclient in routesovpn.split(",")[1]:
                                     gateway = routesovpn.split(",")[2]
+                                    branch_name = coll_tunnel_ip.find_one({"spokedevice_name": gateway})
+                                    if branch_name:
+                                        gateway = branch_name.get("branch_location", " ")
+                                    break
                     response.append({"outgoint_interface_name":str(intfc_name),
                                   "gateway":str(gateway),
                                   "destination":str(destination)+"/"+str(dst_len),
