@@ -109,7 +109,7 @@ def get_routing_table_ubuntu():
                                         intfc_name = "Overlay Tunnel"
                                     if str(intfc_name) == "tun0":
                                         intfc_name = "Base Tunnel"
-                                    response.append({"outgoing_interface_name":str(intfc_name),
+                                    response.append({"outgoint_interface_name":str(intfc_name),
                                                     "gateway":str(gateway),
                                                     "destination":str(destination)+"/"+str(dst_len),
                                                     "metric":int(metric),
@@ -121,7 +121,7 @@ def get_routing_table_ubuntu():
                         intfc_name = "Overlay Tunnel"
                     if str(intfc_name) == "tun0":
                         intfc_name = "Base Tunnel"   
-                    response.append({"outgoing_interface_name":str(intfc_name),
+                    response.append({"outgoint_interface_name":str(intfc_name),
                                   "gateway":str(gateway),
                                   "destination":str(destination)+"/"+str(dst_len),
                                   "metric":int(metric),
