@@ -57,6 +57,9 @@ def get_routing_table_ubuntu():
     try:
         ipr = IPRoute()
         routes = ipr.get_routes(family=socket.AF_INET)
+        with open ("/etc/openvpn/server/openvpn-status.log", "r") as f:
+            openvpnstatus = f.read()
+            f.close()
         for route in routes:            
             if route['type'] == 1:
                 destination = "0.0.0.0"
@@ -68,6 +71,7 @@ def get_routing_table_ubuntu():
                 for attr in route['attrs']:
                     if attr[0] == 'RTA_OIF':
                         intfc_name = ipr.get_links(attr[1])[0].get_attr('IFLA_IFNAME')
+                        print("intfc name", intfc_name)
                         if str(table) != "Main Routing Table":
                             command = (f"ip link show {intfc_name}")
                             output = subprocess.check_output(command.split()).decode()
@@ -76,12 +80,19 @@ def get_routing_table_ubuntu():
                                 table = lines[0].split("master")[1].split(" ")[1]
                             except IndexError:
                                 table = table
-                    if attr[0] == 'RTA_GATEWAY':
-                        gateway = attr[1]
-                    if attr[0] == 'RTA_PRIORITY':
-                        metric = attr[1]
                     if attr[0] == 'RTA_DST':
                         destination = attr[1]
+                    if attr[0] == 'RTA_GATEWAY':
+                        gateway = attr[1]
+                        print("destination:", destination, "gateway:", gateway)
+                        if "10.8.0." in gateway:                            
+                            destinationclient = destination.split("/")[0]
+                            for routesovpn in openvpnstatus.split("\n"):
+                                if "ROUTING_TABLE," in routesovpn:
+                                    if  destinationclient in routesovpn.split(",")[1]:
+                                        gateway = routesovpn.split(",")[2]
+                    if attr[0] == 'RTA_PRIORITY':
+                        metric = attr[1]                    
                     if attr[0] == 'RTA_TABLE':
                         if attr[1] == 254:
                             table = "Main Routing Table"
