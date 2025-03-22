@@ -70,8 +70,7 @@ def get_routing_table_ubuntu():
                 dst_len = route['dst_len']
                 for attr in route['attrs']:
                     if attr[0] == 'RTA_OIF':
-                        intfc_name = ipr.get_links(attr[1])[0].get_attr('IFLA_IFNAME')
-                        print("intfc name", intfc_name)
+                        intfc_name = ipr.get_links(attr[1])[0].get_attr('IFLA_IFNAME')                        
                         if str(table) != "Main Routing Table":
                             command = (f"ip link show {intfc_name}")
                             output = subprocess.check_output(command.split()).decode()
@@ -83,9 +82,9 @@ def get_routing_table_ubuntu():
                     if attr[0] == 'RTA_DST':
                         destination = attr[1]
                     if attr[0] == 'RTA_GATEWAY':
-                        gateway = attr[1]
-                        print("destination:", destination, "gateway:", gateway)
-                        if "10.8.0." in gateway:                            
+                        gateway = attr[1]                        
+                        if "10.8.0." in gateway:
+                            print(attr)                            
                             destinationclient = destination.split("/")[0]
                             for routesovpn in openvpnstatus.split("\n"):
                                 if "ROUTING_TABLE," in routesovpn:
