@@ -82,14 +82,7 @@ def get_routing_table_ubuntu():
                     if attr[0] == 'RTA_DST':
                         destination = attr[1]
                     if attr[0] == 'RTA_GATEWAY':
-                        gateway = attr[1]                        
-                        if "10.8.0." in gateway:
-                            print(attr)                            
-                            destinationclient = destination.split("/")[0]
-                            for routesovpn in openvpnstatus.split("\n"):
-                                if "ROUTING_TABLE," in routesovpn:
-                                    if  destinationclient in routesovpn.split(",")[1]:
-                                        gateway = routesovpn.split(",")[2]
+                        gateway = attr[1]                  
                     if attr[0] == 'RTA_PRIORITY':
                         metric = attr[1]                    
                     if attr[0] == 'RTA_TABLE':
@@ -120,6 +113,12 @@ def get_routing_table_ubuntu():
                         intfc_name = "Overlay Tunnel"
                     if str(intfc_name) == "tun0":
                         intfc_name = "Base Tunnel"   
+                    if "10.8.0." in gateway:
+                        destinationclient = destination.split("/")[0]
+                        for routesovpn in openvpnstatus.split("\n"):
+                            if "ROUTING_TABLE," in routesovpn:
+                                if  destinationclient in routesovpn.split(",")[1]:
+                                    gateway = routesovpn.split(",")[2]
                     response.append({"outgoint_interface_name":str(intfc_name),
                                   "gateway":str(gateway),
                                   "destination":str(destination)+"/"+str(dst_len),
