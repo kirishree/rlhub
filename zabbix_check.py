@@ -94,13 +94,45 @@ def get_history(itemid):
     except Exception as e:
         print(f"Failed to get History: {e}")
         return False   
+    
+def get_trends(itemid): 
+    time_from = int(time.mktime(time.strptime("2025-03-15 00:00:00", "%Y-%m-%d %H:%M:%S")))
+    time_to = int(time.mktime(time.strptime("2025-03-18 00:00:00", "%Y-%m-%d %H:%M:%S")))
+    print("time from", time_from)
+    print("time to", time_to)
+    get_trend = {
+        "jsonrpc": "2.0",
+        "method": "trend.get",
+        "params": {
+            "output": "extend",
+            "itemids": "55433"            
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        trend_response = session.post(zabbix_api_url, json=get_trend)
+        trend_result1 = trend_response.json()
+        trend_result = trend_result1.get('result')
+        if 'error' in trend_result:
+            print(f"Failed to get item list: {trend_result['error']['data']}")
+            return False
+        else:
+            return trend_result                    
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+        return False   
+    
 def main():
     try:
         hostid = get_host_id("DUBAI-UAE")[0]["hostid"]
         itemid_info = get_item_id(hostid, "Interface")
         for items in itemid_info:
             if "Bits" in items["name"]:
-                trafficdata = get_history(items["itemid"])
+                #trafficdata = get_history(items["itemid"])
+                trafficdata = get_trends(items["itemid"])
+                for trend in trafficdata:
+                    trend["clock"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(trend["clock"])))
                 print(trafficdata)
                 break
     except Exception as e:

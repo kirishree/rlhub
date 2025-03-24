@@ -22,6 +22,14 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
+import numpy as np  # For percentile calculation
 import logging
 logger = logging.getLogger('reachlink')
 import os
@@ -77,6 +85,12 @@ ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
 device_info_path = config('DEVICE_INFO_PATH')
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 robustel_exe_path = config('ROBUSTEL_EXE_PATH')
+# Zabbix API URL
+zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
+# Api key
+auth_token = config('ZABBIX_API_TOKEN')
+# Create a session
+session = requests.Session()
 
 def new_client(client_name):
     try:
@@ -2223,3 +2237,241 @@ def change_password(request):
         logger.error(f"Error: Change Password:{e}")
         response = {"message": "Error while changing password"}
     return JsonResponse(response, safe=False)
+
+def get_item_id(host_id, name):
+    """Fetch item IDs related to bits received/sent."""
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid", "name"],
+            "hostids": host_id,
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        intfcname = name.split(" ")[1].split(":")[0]
+        print("intfcname", intfcname)
+        response = session.post(zabbix_api_url, json=get_item)
+        result = response.json().get('result', [])
+        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname in item["name"]}
+        return items
+    except Exception as e:
+        print(f"Failed to get item list: {e}")
+        return {}
+
+def get_history(itemid):
+    """Fetch historical traffic data (bits received/sent) for the last 3 days."""
+    time_from = int(time.mktime(time.strptime("2025-03-15 00:00:00", "%Y-%m-%d %H:%M:%S")))
+    time_to = int(time.mktime(time.strptime("2025-03-18 00:00:00", "%Y-%m-%d %H:%M:%S")))
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": ["clock", "value"],
+            "itemids": itemid,
+            "sortfield": "clock",
+            "sortorder": "DESC",
+            "time_from": time_from,
+            "time_till": time_to
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        return response.json().get('result', [])
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+        return []
+
+def get_trends(itemid):    
+    get_trend = {
+        "jsonrpc": "2.0",
+        "method": "trend.get",
+        "params": {
+            "output": "extend",
+            "itemids": itemid            
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        trend_response = session.post(zabbix_api_url, json=get_trend)
+        trend_result1 = trend_response.json()
+        trend_result = trend_result1.get('result')
+        if 'error' in trend_result:
+            print(f"Failed to get item list: {trend_result['error']['data']}")
+            return False
+        else:
+            return trend_result                    
+    except Exception as e:
+        print(f"Failed to get trend: {e}")
+        return False   
+    
+def save_to_text(data, filename="traffic_data.txt"):
+    """Save the traffic data to a text file."""
+    with open(filename, "w") as file:
+        for timestamp, value in data:
+            file.write(f"{timestamp}: {value} bits\n")
+    print(f"Traffic data saved to {filename}")
+
+def convert_to_mb(bits):
+    """Convert bits to Megabytes (MB)."""
+    #return round(int(bits) / (8 * 1024 * 1024), 4)
+    return round(int(bits) / (1024 * 1024), 4)
+
+def convert_to_mbps(bits):
+    """Convert bits to Megabits per second (Mbit/s)."""
+    return round(int(bits) / (1024 * 1024), 4)
+
+def save_to_pdf(datain, dataout, intfcname, filename="traffic_data.pdf", logo_path="logo.png"):
+    """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
+
+    # Define PDF document with margins
+    doc = SimpleDocTemplate(filename, pagesize=letter,
+                            leftMargin=30, rightMargin=30, topMargin=40, bottomMargin=40)
+    elements = []
+
+    # Get styles for headings
+    styles = getSampleStyleSheet()
+    
+    # **Add Logo** (Ensure 'logo.png' is in the same directory)
+    try:
+        img = Image(logo_path, width=100, height=50)  # Adjust size as needed
+        elements.append(img)
+        elements.append(Spacer(1, 10))  # Space below logo
+    except:
+        print("Logo not found, continuing without it.")
+
+    # **Title & Subtitle**
+    title = Paragraph(f"<b>Network Traffic Report for {intfcname}</b>", styles["Title"])
+    subtitle = Paragraph(f"<b>Generated on:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}", styles["Normal"])
+    
+    elements.append(title)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(subtitle)
+    elements.append(Spacer(1, 20))  # More space before the table
+
+    # Table Header
+    data = [["Date & Time", "In Min (MB)", "In Max (MB)", "In Avg (MB)", 
+             "Out Min (MB)", "Out Max (MB)", "Out Avg (MB)", "Total Speed (Mbit/s)"]]
+
+    in_avg_values = []
+    out_avg_values = []
+    total_speed_values = []
+
+    # Add data rows
+    for i in range(len(datain)):
+        time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(datain[i]["clock"])))
+        in_min = convert_to_mb(datain[i]["value_min"])
+        in_max = convert_to_mb(datain[i]["value_max"])
+        in_avg = convert_to_mb(datain[i]["value_avg"])
+        out_min = convert_to_mb(dataout[i]["value_min"])
+        out_max = convert_to_mb(dataout[i]["value_max"])
+        out_avg = convert_to_mb(dataout[i]["value_avg"])
+        total_speed = convert_to_mbps(int(datain[i]["value_avg"]) + int(dataout[i]["value_avg"]))
+
+        # Store values for percentile calculation
+        in_avg_values.append(int(datain[i]["value_avg"]))
+        out_avg_values.append(int(dataout[i]["value_avg"]))
+        total_speed_values.append(int(datain[i]["value_avg"]) + int(dataout[i]["value_avg"]))
+
+        row = [time_str, in_min, in_max, in_avg, out_min, out_max, out_avg, total_speed]
+        data.append(row)
+
+    # Calculate 95th percentile
+    in_95th = convert_to_mbps(np.percentile(in_avg_values, 95))
+    out_95th = convert_to_mbps(np.percentile(out_avg_values, 95))
+    total_95th = convert_to_mbps(np.percentile(total_speed_values, 95))
+
+    # Append 95th percentile row to table
+    data.append(["95th Percentile", "-", "-", in_95th, "-", "-", out_95th, total_95th])
+
+    # Set column widths to fit within the page
+    column_widths = [110, 70, 70, 70, 70, 70, 70, 90]
+
+    # Create the table with defined column widths
+    table = Table(data, colWidths=column_widths)
+
+    # Add table styles
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background color
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Grid for table
+        ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),  # 95th percentile row highlight
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
+    elements.append(table)
+    # Build PDF
+    doc.build(elements)
+    print(f"Traffic data saved to {filename}")
+
+def traffic_report(request):
+    try:
+        #data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
+        #hostid = data["hostid"]
+        #intfcname = data["intfcname"]
+        hostid = "10084"
+        intfcname = "Interface enp0s3: Network traffic"         
+        item_ids = get_item_id(hostid, intfcname)        
+        if not item_ids:
+            print("No relevant items found.")
+            logger.error(f"Error: Gte Traffic report: No relevant items found.")
+            response = [{"message": "No relevant items found."}]
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(response)
+            response1["Access-Control-Expose-Headers"] = "X-Message"
+            return response1
+        all_data = []
+        for name, itemid in item_ids.items():
+            #history = get_history(itemid)
+            trend = get_trends(itemid)
+            if "received" in name:
+                incoming_traffic = trend                
+            if "sent" in name:
+                outgoing_traffic = trend   
+        if incoming_traffic:
+            #save_to_text(all_data)
+            save_to_pdf(incoming_traffic, outgoing_traffic, intfcname)
+            with open("traffic_data.pdf", "rb") as f:
+                trafficdatapdf = f.read()
+                # Files to include in ZIP
+            #os.system("rm -r traffic_data.pdf")
+            files_to_send = {
+                "traffic_data.pdf": trafficdatapdf
+            }
+            # Create an in-memory ZIP buffer
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for filename, content in files_to_send.items():
+                    zip_file.writestr(filename, content)
+            # Prepare the response
+            buffer.seek(0)
+            json_message = json.dumps({"message": "Traffic data generated successfully."})
+            response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+            response["Content-Disposition"] = 'attachment; filename="traffic_data.zip"'
+            response["X-Message"] = json_message  # Ensure this is a JSON-encoded string
+            response["Access-Control-Expose-Headers"] = "X-Message"
+            return response
+        else:
+            print("No history data retrieved.")
+            logger.error(f"Error: Get Traffic report: No relevant items found.")
+            response = [{"message": "Error No relevant history found."}]
+    except Exception as e:
+        print(f"Error: {e}")
+        logger.error(f"Error: Get Traffic report: {e}")
+        response = [{"message": "Error Internal server problem."}]
+    response1 = HttpResponse(content_type='text/plain')
+    response1['X-Message'] = json.dumps(response)
+    response1["Access-Control-Expose-Headers"] = "X-Message"
+    return response1
