@@ -2251,8 +2251,7 @@ def get_item_id(host_id, name):
         'id': 1,
     }
     try:
-        intfcname = name.split(" ")[1].split(":")[0]
-        print("intfcname", intfcname)
+        intfcname = name.split(" ")[1].split(":")[0]        
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])
         items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname in item["name"]}
@@ -2437,7 +2436,7 @@ def traffic_report(request):
             response1["Access-Control-Expose-Headers"] = "X-Message"
             return response1
         for name, itemid in item_ids.items():          
-            trend = get_trends(itemid)
+            trend = get_trends(itemid, fromdate, todate)
             if "received" in name:
                 incoming_traffic = trend                
             if "sent" in name:
