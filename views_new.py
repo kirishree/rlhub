@@ -2261,39 +2261,18 @@ def get_item_id(host_id, name):
         print(f"Failed to get item list: {e}")
         return {}
 
-def get_history(itemid):
-    """Fetch historical traffic data (bits received/sent) for the last 3 days."""
-    time_from = int(time.mktime(time.strptime("2025-03-15 00:00:00", "%Y-%m-%d %H:%M:%S")))
-    time_to = int(time.mktime(time.strptime("2025-03-18 00:00:00", "%Y-%m-%d %H:%M:%S")))
-
-    get_history = {
-        "jsonrpc": "2.0",
-        "method": "history.get",
-        "params": {
-            "output": ["clock", "value"],
-            "itemids": itemid,
-            "sortfield": "clock",
-            "sortorder": "DESC",
-            "time_from": time_from,
-            "time_till": time_to
-        },
-        'auth': auth_token,
-        'id': 1,
-    }
-    try:
-        response = session.post(zabbix_api_url, json=get_history)
-        return response.json().get('result', [])
-    except Exception as e:
-        print(f"Failed to get History: {e}")
-        return []
-
-def get_trends(itemid):    
+def get_trends(itemid, fromdate, todate):  
+    time_from = int(time.mktime(time.strptime(fromdate, "%Y-%m-%d %H:%M:%S")))
+    time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
     get_trend = {
         "jsonrpc": "2.0",
         "method": "trend.get",
         "params": {
             "output": "extend",
-            "itemids": itemid            
+            "itemids": itemid,
+            "time_from": time_from,
+            "time_till": time_to
+                        
         },
         'auth': auth_token,
         'id': 1,
@@ -2311,13 +2290,6 @@ def get_trends(itemid):
         print(f"Failed to get trend: {e}")
         return False   
     
-def save_to_text(data, filename="traffic_data.txt"):
-    """Save the traffic data to a text file."""
-    with open(filename, "w") as file:
-        for timestamp, value in data:
-            file.write(f"{timestamp}: {value} bits\n")
-    print(f"Traffic data saved to {filename}")
-
 def convert_to_mb(bits):
     """Convert bits to Megabytes (MB)."""
     #return round(int(bits) / (8 * 1024 * 1024), 4)
@@ -2327,7 +2299,7 @@ def convert_to_mbps(bits):
     """Convert bits to Megabits per second (Mbit/s)."""
     return round(int(bits) / (1024 * 1024), 4)
 
-def save_to_pdf(datain, dataout, intfcname, filename="traffic_data.pdf", logo_path="logo.png"):
+def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, huborbranch, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
@@ -2347,51 +2319,51 @@ def save_to_pdf(datain, dataout, intfcname, filename="traffic_data.pdf", logo_pa
         print("Logo not found, continuing without it.")
 
     # **Title & Subtitle**
-    title = Paragraph(f"<b>Network Traffic Report for {intfcname}</b>", styles["Title"])
-    subtitle = Paragraph(f"<b>Generated on:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}", styles["Normal"])
-    
-    elements.append(title)
-    elements.append(Spacer(1, 12))  # Space
-    elements.append(subtitle)
-    elements.append(Spacer(1, 20))  # More space before the table
+    title = Paragraph(f"<b>Report for {intfcname}</b>", styles["Title"])
+    title2 = Paragraph(f"<b>{huborbranch}:{branch_location}</b>", styles["Title"])
+    subtitle = Paragraph(f"<b>Generated on:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}", styles["Normal"]) 
 
     # Table Header
-    data = [["Date & Time", "In Min (MB)", "In Max (MB)", "In Avg (MB)", 
-             "Out Min (MB)", "Out Max (MB)", "Out Avg (MB)", "Total Speed (Mbit/s)"]]
+    data = [["Date & Time", "In speed (Mbit/s)", "In volume (MB)", 
+             "Out speed (Mbit/s)", "Out volume (MB)", "Total Speed", "Total Volume"]]
 
     in_avg_values = []
     out_avg_values = []
     total_speed_values = []
+    total_volumes = []
 
     # Add data rows
     for i in range(len(datain)):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(datain[i]["clock"])))
-        in_min = convert_to_mb(datain[i]["value_min"])
-        in_max = convert_to_mb(datain[i]["value_max"])
-        in_avg = convert_to_mb(datain[i]["value_avg"])
-        out_min = convert_to_mb(dataout[i]["value_min"])
-        out_max = convert_to_mb(dataout[i]["value_max"])
-        out_avg = convert_to_mb(dataout[i]["value_avg"])
-        total_speed = convert_to_mbps(int(datain[i]["value_avg"]) + int(dataout[i]["value_avg"]))
+        in_speed = convert_to_mbps(int(datain[i]["value_avg"]))
+        out_speed = convert_to_mbps(int(dataout[i]["value_avg"]))
+        in_volume = round((in_speed * 180) / (8), 4)
+        out_volume = round((out_speed * 180) / (8), 4)
+        total_speed = round(in_speed + out_speed, 4)
+        total_volume = round(in_volume + out_volume, 4)
 
         # Store values for percentile calculation
-        in_avg_values.append(int(datain[i]["value_avg"]))
-        out_avg_values.append(int(dataout[i]["value_avg"]))
-        total_speed_values.append(int(datain[i]["value_avg"]) + int(dataout[i]["value_avg"]))
+        in_avg_values.append(in_speed)
+        out_avg_values.append(out_speed)
+        total_speed_values.append(total_speed)
+        total_volumes.append(total_volume)
 
-        row = [time_str, in_min, in_max, in_avg, out_min, out_max, out_avg, total_speed]
+        row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume]
         data.append(row)
 
     # Calculate 95th percentile
-    in_95th = convert_to_mbps(np.percentile(in_avg_values, 95))
-    out_95th = convert_to_mbps(np.percentile(out_avg_values, 95))
-    total_95th = convert_to_mbps(np.percentile(total_speed_values, 95))
+    in_95th = round(np.percentile(in_avg_values, 95), 4)    
+    out_95th = round(np.percentile(out_avg_values, 95), 4)
+    total_95th = round(np.percentile(total_speed_values, 95), 4)
+    avg_speed = round(np.mean(total_speed_values), 4)  # Average
+    total_traffic = round(np.sum(total_volumes), 4)  # Total
+    percentile = round(np.percentile(total_speed_values, 95), 4)
 
     # Append 95th percentile row to table
-    data.append(["95th Percentile", "-", "-", in_95th, "-", "-", out_95th, total_95th])
+    #data.append(["95th Percentile", in_95th, "-", out_95th, "-", total_95th, "-"])
 
     # Set column widths to fit within the page
-    column_widths = [110, 70, 70, 70, 70, 70, 70, 90]
+    column_widths = [110, 70, 70, 70, 70, 70, 90]
 
     # Create the table with defined column widths
     table = Table(data, colWidths=column_widths)
@@ -2406,12 +2378,32 @@ def save_to_pdf(datain, dataout, intfcname, filename="traffic_data.pdf", logo_pa
         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('TOPPADDING', (0, 0), (-1, 0), 8),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Grid for table
-        ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),  # 95th percentile row highlight
+        #('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),  # 95th percentile row highlight
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
     ]))
+    totaltraffic = Paragraph(f"<b>Traffic Total: {str(total_traffic)} MB</b>", styles["Normal"])
+    avgspeed = Paragraph(f"<b>Average Speed: {str(avg_speed)} Mbit/s</b>", styles["Normal"])
+    percentilestr = Paragraph(f"<b>Percentile: {str(percentile)} Mbit/s</b>", styles["Normal"])
+    duration = Paragraph(f"<b>Duration: {fromdate} to {todate} </b>", styles["Normal"])
+    elements.append(title)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(title2)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(subtitle)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(duration)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(totaltraffic)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(avgspeed)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(percentilestr)
+    elements.append(Spacer(1, 20))  # More space before the table
     elements.append(table)
+
     # Build PDF
     doc.build(elements)
+
     print(f"Traffic data saved to {filename}")
 
 def traffic_report(request):
@@ -2421,32 +2413,41 @@ def traffic_report(request):
         logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
         #hostid = data["hostid"]
         #intfcname = data["intfcname"]
-        hostid = "10084"
-        intfcname = "Interface enp0s3: Network traffic"         
+        #branch_location = data["branch_location"]
+        #fromdate = data["fromdate"]
+        #todate = data["todate"]
+        #ishub = data["ishub"]
+        ishub = True
+        if ishub:
+            huborbranch = "HUB Location"
+        else:
+            huborbranch = "Branch Location"
+        hostid = "10677"
+        intfcname = "Interface Fa4(): Network traffic"
+        branch_location = "Jeddah Cisco HUB"
+        fromdate = "2025-03-15 00:00:00"
+        todate = "2025-03-18 00:00:00"
         item_ids = get_item_id(hostid, intfcname)        
         if not item_ids:
             print("No relevant items found.")
-            logger.error(f"Error: Gte Traffic report: No relevant items found.")
+            logger.error(f"Error: Get Traffic report: No relevant items found.")
             response = [{"message": "No relevant items found."}]
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
             return response1
-        all_data = []
-        for name, itemid in item_ids.items():
-            #history = get_history(itemid)
+        for name, itemid in item_ids.items():          
             trend = get_trends(itemid)
             if "received" in name:
                 incoming_traffic = trend                
             if "sent" in name:
                 outgoing_traffic = trend   
-        if incoming_traffic:
-            #save_to_text(all_data)
-            save_to_pdf(incoming_traffic, outgoing_traffic, intfcname)
+        if incoming_traffic:            
+            save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, huborbranch)
             with open("traffic_data.pdf", "rb") as f:
                 trafficdatapdf = f.read()
                 # Files to include in ZIP
-            #os.system("rm -r traffic_data.pdf")
+            os.system("rm -r traffic_data.pdf")
             files_to_send = {
                 "traffic_data.pdf": trafficdatapdf
             }

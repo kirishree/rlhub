@@ -321,8 +321,8 @@ def save_to_pdf1(datain, dataout, filename="traffic_data.pdf"):
 def main():
     try:
         #hostid = get_host_id("DUBAI-UAE")
-        hostid = "10084"
-        intfcname = "Interface enp0s3: Network traffic"
+        hostid = "10708"
+        intfcname = "Interface Gi0/0/0: Network traffic"
         if not hostid:
             print("Host ID not found.")
             return
