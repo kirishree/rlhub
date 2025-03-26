@@ -2281,6 +2281,34 @@ def get_item_id(host_id, name):
         print(f"Failed to get item list: {e}")
         return {}
 
+def get_item_id_uptime(host_id):
+    """Fetch item IDs related to bits received/sent."""
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+        "output": ["lastvalue", "name"],
+        "hostids": host_id,        
+        "search": {
+            "key_": "system.net.uptime"
+        },
+        "sortfield": "name"
+    },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:          
+        response = session.post(zabbix_api_url, json=get_item)
+        result = response.json().get('result', [])
+        uptimevalue = result[0]['lastvalue']
+        # Convert to readable format
+        uptime_str = str(datetime.timedelta(seconds=uptimevalue))
+        #items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] in item["name"]}
+        return uptime_str     
+    except Exception as e:
+        print(f"Failed to get item list: {e}")
+        return False
+
 def get_trends(itemid, fromdate, todate):  
     time_from = int(time.mktime(time.strptime(fromdate, "%Y-%m-%d %H:%M:%S")))
     time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
@@ -2407,7 +2435,7 @@ def graph_delete(graphid):
         print(f"Failed to delete graph: {e}")
         return False
     
-def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, graphname, filename="traffic_data.pdf", logo_path="logo.png"):
+def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, uptime_str, graphname, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
@@ -2493,6 +2521,7 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, g
     avgspeed = Paragraph(f"<b>Average Speed: {str(avg_speed)} Mbit/s</b>", styles["Normal"])
     percentilestr = Paragraph(f"<b>Percentile: {str(percentile)} Mbit/s</b>", styles["Normal"])
     duration = Paragraph(f"<b>Duration: {fromdate} to {todate} </b>", styles["Normal"])
+    uptime = Paragraph(f"<b>Uptime: {uptime_str} </b>", styles["Normal"])
     elements.append(title)
     elements.append(Spacer(1, 12))  # Space
     elements.append(title2)
@@ -2500,6 +2529,8 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, g
     elements.append(subtitle)
     elements.append(Spacer(1, 12))  # Space
     elements.append(duration)
+    elements.append(Spacer(1, 12))  # Space
+    elements.append(uptime)
     elements.append(Spacer(1, 12))  # Space
     elements.append(totaltraffic)
     elements.append(Spacer(1, 12))  # Space
@@ -2573,8 +2604,9 @@ def traffic_report(request):
                         incoming_traffic = trend                
                     if "sent" in name:
                         outgoing_traffic = trend         
-                if incoming_traffic:            
-                    save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, download_graph_name)
+                if incoming_traffic:  
+                    uptime_str = get_item_id_uptime(hostid)          
+                    save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, uptime_str, download_graph_name)
                     with open("traffic_data.pdf", "rb") as f:
                             trafficdatapdf = f.read()
                             # Files to include in ZIP

@@ -9,6 +9,8 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
 import numpy as np  # For percentile calculation
+import datetime
+
 # Zabbix server details
 ZABBIX_WEB_URL="https://reachlinktest.cloudetel.com/zabbix/index.php"
 USERNAME="Admin"
@@ -67,22 +69,39 @@ def get_item_id(host_id, name):
     try:          
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])
-        if "Interface" in name:
-            intfcname = name.split(":")[0] 
-            items = {}
-            for item in result:
-                if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]:
-                    items.update({item["name"]:item["itemid"]})
-                if "Uptime(network)" in item["name"]:
-                    items.update({item["name"]:item["itemid"]})
-            #items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]}
-            print(items)
-            return items
-        else:
-            return {}
+        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] in item["name"]}
+        return items        
     except Exception as e:
         print(f"Failed to get item list: {e}")
         return {}
+
+def get_item_id_uptime(host_id):
+    """Fetch item IDs related to bits received/sent."""
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+        "output": ["lastvalue", "name"],
+        "hostids": host_id,        
+        "search": {
+            "key_": "system.net.uptime"
+        },
+        "sortfield": "name"
+    },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:          
+        response = session.post(zabbix_api_url, json=get_item)
+        result = response.json().get('result', [])
+        uptimevalue = result[0]['lastvalue']
+        # Convert to readable format
+        uptime_str = str(datetime.timedelta(seconds=uptimevalue))
+        #items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] in item["name"]}
+        return uptime_str     
+    except Exception as e:
+        print(f"Failed to get item list: {e}")
+        return False
     
 def get_history(itemid):
     """Fetch historical traffic data (bits received/sent) for the last 3 days."""
@@ -363,6 +382,7 @@ def main():
             return
 
         item_ids = get_item_id(hostid, intfcname)
+        get_item_id_uptime(hostid) 
         print(item_ids)
         if not item_ids:
             print("No relevant items found.")
@@ -371,7 +391,7 @@ def main():
             if "received" in name:
                 itemidreceived = itemid                
             if "sent" in name:
-                itemidsent = itemid     
+                itemidsent = itemid        
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         graphname = f"graph_{timestamp}"     
         graphid = graph_create(itemidsent, itemidreceived, fromdate, todate, graphname)
@@ -388,8 +408,8 @@ def main():
                         outgoing_traffic = trend         
                 if incoming_traffic:
                     #save_to_text(all_data)
-                    #print("HI")
-                    save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, download_graph_name)
+                    print("HI")
+                    #save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, download_graph_name)
                 else:
                     print("No history data retrieved.")
 
