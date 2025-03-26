@@ -10,10 +10,10 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 import numpy as np  # For percentile calculation
 # Zabbix server details
-ZABBIX_WEB_URL = "https://reachlinktest.cloudetel.com/zabbix/index.php"
-USERNAME = "Admin"
-PASSWORD = "zabbix"
-GRAPH_URL = "https://reachlinktest.cloudetel.com/zabbix/chart2.php"
+ZABBIX_WEB_URL="https://reachlinktest.cloudetel.com/zabbix/index.php"
+USERNAME="Admin"
+PASSWORD="zabbix"
+GRAPH_URL="https://reachlinktest.cloudetel.com/zabbix/chart2.php"
 # Start a session to maintain cookies
 session = requests.Session()
 

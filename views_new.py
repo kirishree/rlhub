@@ -89,6 +89,19 @@ robustel_exe_path = config('ROBUSTEL_EXE_PATH')
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 # Api key
 auth_token = config('ZABBIX_API_TOKEN')
+# Zabbix server details
+ZABBIX_WEB_URL=config('ZABBIX_WEB_URL')
+USERNAME=config('USERNAME')
+PASSWORD=config('PASSWORD')
+GRAPH_URL=config('GRAPH_URL')
+
+# Step 1: Login using web form
+login_payload = {
+    "name": USERNAME,
+    "password": PASSWORD,
+    "enter": "Sign in"
+}
+
 # Create a session
 session = requests.Session()
 
