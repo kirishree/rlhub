@@ -64,17 +64,26 @@ def get_item_id(host_id, name):
         'auth': auth_token,
         'id': 1,
     }
-    try:
-        intfcname = name.split(":")[0]
-        print("intfcname", intfcname)
+    try:          
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])
-        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]}
-        return items
+        if "Interface" in name:
+            intfcname = name.split(":")[0] 
+            items = {}
+            for item in result:
+                if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]:
+                    items.update({item["name"]:item["itemid"]})
+                if "Uptime(network)" in item["name"]:
+                    items.update({item["name"]:item["itemid"]})
+            #items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]}
+            print(items)
+            return items
+        else:
+            return {}
     except Exception as e:
         print(f"Failed to get item list: {e}")
         return {}
-
+    
 def get_history(itemid):
     """Fetch historical traffic data (bits received/sent) for the last 3 days."""
     time_from = int(time.mktime(time.strptime("2025-03-15 00:00:00", "%Y-%m-%d %H:%M:%S")))

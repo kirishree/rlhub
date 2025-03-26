@@ -2270,12 +2270,13 @@ def get_item_id(host_id, name):
         'auth': auth_token,
         'id': 1,
     }
-    try:
-        intfcname = name.split(":")[0]   
+    try:          
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])
-        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]}
+        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name == item["name"]}
+        print(items)
         return items
+        
     except Exception as e:
         print(f"Failed to get item list: {e}")
         return {}
