@@ -2120,6 +2120,10 @@ def interface_config_hub(request):
             data["router_password"] = router_info["router_password"]
             response = microtek_configure.interfaceconfig(data)      
         elif "ciscohub" in data["uuid"]:
+            if data["intfc_name"].lower() == "loopback1":
+                response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
+                print(response)
+                return response
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
