@@ -2059,6 +2059,9 @@ def vlan_interface_delete_hub(request):
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Delete interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
         if "ciscohub" in data["uuid"]:
+            if data["intfc_name"].lower() == "loopback1":
+                response = [{"message": f"Error Don't try to modify interface interface {data['intfc_name']}"}] 
+                return JsonResponse(response, safe=False)
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_ip"]
@@ -2123,14 +2126,14 @@ def interface_config_hub(request):
             if data["intfc_name"].lower() == "loopback1":
                 response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
                 print(response)
-                return response
+                return JsonResponse(response, safe=False)
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 print(data)
-            #response = router_configure.interfaceconfig(data)
+            response = router_configure.interfaceconfig(data)
             print(response)
     except Exception as e:
         logger.error(f"Error: Interface configure HUB:{e}")
