@@ -9,9 +9,23 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
 import numpy as np  # For percentile calculation
+# Zabbix server details
+ZABBIX_WEB_URL = "https://reachlinktest.cloudetel.com/zabbix/index.php"
+USERNAME = "Admin"
+PASSWORD = "zabbix"
+GRAPH_URL = "https://reachlinktest.cloudetel.com/zabbix/chart2.php"
+# Start a session to maintain cookies
+session = requests.Session()
 
+# Step 1: Login using web form
+login_payload = {
+    "name": USERNAME,
+    "password": PASSWORD,
+    "enter": "Sign in"
+}
 # Zabbix API URL
 zabbix_api_url = "http://185.69.209.251/zabbix/api_jsonrpc.php" # Replace with your Zabbix API URL
+zabbix_graph_url = "https://reachlinktest.cloudetel.com/zabbix"
 # Api key
 auth_token = "de4bc85eca6a76481473f6e4efa71812ee7995c02ace600a62b750bc04841810"
 # Create a session
@@ -61,6 +75,120 @@ def get_item_id(host_id, name):
         print(f"Failed to get item list: {e}")
         return {}
 
+def get_history(itemid):
+    """Fetch historical traffic data (bits received/sent) for the last 3 days."""
+    time_from = int(time.mktime(time.strptime("2025-03-15 00:00:00", "%Y-%m-%d %H:%M:%S")))
+    time_to = int(time.mktime(time.strptime("2025-03-18 00:00:00", "%Y-%m-%d %H:%M:%S")))
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": ["clock", "value"],
+            "itemids": itemid,
+            "sortfield": "clock",
+            "sortorder": "DESC",
+            "time_from": time_from,
+            "time_till": time_to
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        return response.json().get('result', [])
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+        return []
+
+def download_graph(graphid, fromdate, todate):
+    try:
+        login_response = session.post(ZABBIX_WEB_URL, data=login_payload)
+        # Check if login was successful
+        if "zbx_session" not in session.cookies.get_dict():
+            print("Login failed! Check credentials.")
+            return False
+        print("Login successful! Proceeding to download graph...")
+        # Step 2: Fetch the graph image
+        params = {
+            "graphid": graphid,  # Replace with your graph ID
+            "from": fromdate,  # Start time (Unix timestamp)
+            "to": todate,  # End time (Unix timestamp)
+            "width": 800,
+            "height": 400,
+            "profileIdx": "web.graphs"
+            }
+        graph_response = session.get(GRAPH_URL, params=params)
+        # Step 3: Save the graph if response is an image
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        graph_filename = f"graph_{timestamp}.png"
+        if "image/png" in graph_response.headers.get("Content-Type", ""):
+            with open(graph_filename, "wb") as f:
+                f.write(graph_response.content)
+            print("Graph image downloaded successfully as graph.png")
+            return graph_filename
+        else:
+            print("Failed to retrieve graph. Response:", graph_response.text)
+            return False
+    except Exception as e:
+        print("Execption raised on donload graph", e)
+        return False
+    
+def graph_create(itemid1, itemid2, fromdate, todate, graphname):
+    graph_create = {
+        "jsonrpc": "2.0",
+        "method": "graph.create",
+        "params": {
+            "name": graphname,
+            "width": 900,
+            "height": 200,
+            "show_work_period": 0,
+            "show_triggers": 0,
+            "gitems": [
+                {
+                "itemid": itemid1,
+                "color": "1a2856",
+                "drawtype": 1
+                },
+                {
+                "itemid": itemid2,
+                "color": "c8262b",
+                "drawtype": 2
+                }
+            ]            
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=graph_create)
+        graphids = response.json()        
+        graphid = graphids["result"]["graphids"][0] 
+        return graphid    
+    except Exception as e:
+        print(f"Failed to get create graph: {e}")
+        return False
+
+def graph_delete(graphid):
+    graph_delete = {
+        "jsonrpc": "2.0",
+        "method": "graph.delete",
+        "params": [
+                    graphid
+                    
+                ],
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=graph_delete)
+        graphids = response.json()        
+        graphid = graphids["result"]["graphids"][0] 
+        return graphid    
+    except Exception as e:
+        print(f"Failed to delete graph: {e}")
+        return False
+    
 def get_trends(itemid, fromdate, todate):  
     time_from = int(time.mktime(time.strptime(fromdate, "%Y-%m-%d %H:%M:%S")))
     time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
@@ -99,7 +227,7 @@ def convert_to_mbps(bits):
     """Convert bits to Megabits per second (Mbit/s)."""
     return round(int(bits) / (1024 * 1024), 4)
 
-def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, filename="traffic_data.pdf", logo_path="logo.png"):
+def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, graphname, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
@@ -198,7 +326,14 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, f
     elements.append(avgspeed)
     elements.append(Spacer(1, 12))  # Space
     elements.append(percentilestr)
-    elements.append(Spacer(1, 20))  # More space before the table
+    elements.append(Spacer(1, 12))  # More space before the table
+    # **Add Logo** (Ensure 'logo.png' is in the same directory)
+    try:
+        graphimg = Image(graphname, width=500, height=200)  # Adjust size as needed
+        elements.append(graphimg)
+        elements.append(Spacer(1, 20))  # Space below logo
+    except:
+        print("Logo not found, continuing without it.")
     elements.append(table)
 
     # Build PDF
@@ -223,22 +358,31 @@ def main():
         if not item_ids:
             print("No relevant items found.")
             return
-
-        all_data = []
         for name, itemid in item_ids.items():
-            #history = get_history(itemid)
-            trend = get_trends(itemid, fromdate, todate)
             if "received" in name:
-                incoming_traffic = trend                
+                itemidreceived = itemid                
             if "sent" in name:
-                outgoing_traffic = trend            
-        
-
-        if incoming_traffic:
-            #save_to_text(all_data)
-            save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate)
-        else:
-            print("No history data retrieved.")
+                itemidsent = itemid     
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        graphname = f"graph_{timestamp}"     
+        graphid = graph_create(itemidsent, itemidreceived, fromdate, todate, graphname)
+        if graphid:
+            download_graph_name = download_graph(graphid, fromdate, todate)
+            graph_delete(graphid)
+            if(download_graph_name):                
+                for name, itemid in item_ids.items():
+                    #history = get_history(itemid)
+                    trend = get_trends(itemid, fromdate, todate)
+                    if "received" in name:
+                        incoming_traffic = trend                
+                    if "sent" in name:
+                        outgoing_traffic = trend         
+                if incoming_traffic:
+                    #save_to_text(all_data)
+                    #print("HI")
+                    save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, download_graph_name)
+                else:
+                    print("No history data retrieved.")
 
     except Exception as e:
         print(f"Error: {e}")

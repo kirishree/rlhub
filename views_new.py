@@ -2405,6 +2405,8 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, h
 
     print(f"Traffic data saved to {filename}")
 
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
 def traffic_report(request):
     try:
         #data = json.loads(request.body)
