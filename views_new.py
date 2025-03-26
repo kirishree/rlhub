@@ -2410,6 +2410,7 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, h
 def traffic_report(request):
     try:
         data = json.loads(request.body)
+        print(data)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
         hostid = data["hostid"]
