@@ -2273,7 +2273,7 @@ def get_item_id(host_id, name):
     try:          
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])
-        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] == item["name"]}
+        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] in item["name"]}
         print(items)
         return items
         
