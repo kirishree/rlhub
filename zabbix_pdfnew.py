@@ -65,11 +65,11 @@ def get_item_id(host_id, name):
         'id': 1,
     }
     try:
-        intfcname = name.split(" ")[1].split(":")[0]
+        intfcname = name.split(":")[0]
         print("intfcname", intfcname)
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])
-        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname in item["name"]}
+        items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and intfcname == item["name"].split("(")[0]}
         return items
     except Exception as e:
         print(f"Failed to get item list: {e}")
@@ -345,7 +345,7 @@ def main():
     try:
         #hostid = get_host_id("DUBAI-UAE")
         hostid = "10677"
-        intfcname = "Interface Fa4(): Network traffic"
+        intfcname = "Interface Fa4: Network traffic"
         branch_location = "Jeddah Cisco HUB"
         fromdate = "2025-03-15 00:00:00"
         todate = "2025-03-18 00:00:00"
