@@ -2130,7 +2130,7 @@ def interface_config_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 print(data)
-            response = router_configure.interfaceconfig(data)
+            #response = router_configure.interfaceconfig(data)
             print(response)
     except Exception as e:
         logger.error(f"Error: Interface configure HUB:{e}")
