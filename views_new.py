@@ -2409,25 +2409,25 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, h
 @permission_classes([IsAuthenticated])
 def traffic_report(request):
     try:
-        #data = json.loads(request.body)
+        data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
-        #hostid = data["hostid"]
-        #intfcname = data["intfcname"]
-        #branch_location = data["branch_location"]
-        #fromdate = data["fromdate"]
-        #todate = data["todate"]
-        #ishub = data["ishub"]
+        hostid = data["hostid"]
+        intfcname = data["intfcname"]
+        branch_location = data["branch_location"]
+        fromdate = data["fromdate"]
+        todate = data["todate"]
+        ishub = data["ishub"]
         ishub = True
         if ishub:
             huborbranch = "HUB Location"
         else:
             huborbranch = "Branch Location"
-        hostid = "10677"
-        intfcname = "Interface Fa4(): Network traffic"
-        branch_location = "Jeddah Cisco HUB"
-        fromdate = "2025-03-15 00:00:00"
-        todate = "2025-03-18 00:00:00"
+        #hostid = "10677"
+        #intfcname = "Interface Fa4(): Network traffic"
+        #branch_location = "Jeddah Cisco HUB"
+        #fromdate = "2025-03-15 00:00:00"
+        #todate = "2025-03-18 00:00:00"
         item_ids = get_item_id(hostid, intfcname)        
         if not item_ids:
             print("No relevant items found.")
