@@ -2298,7 +2298,95 @@ def convert_to_mbps(bits):
     """Convert bits to Megabits per second (Mbit/s)."""
     return round(int(bits) / (1024 * 1024), 4)
 
-def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, huborbranch, filename="traffic_data.pdf", logo_path="logo.png"):
+def download_graph(graphid, fromdate, todate):
+    try:
+        login_response = session.post(ZABBIX_WEB_URL, data=login_payload)
+        # Check if login was successful
+        if "zbx_session" not in session.cookies.get_dict():
+            print("Login failed! Check credentials.")
+            return False
+        print("Login successful! Proceeding to download graph...")
+        # Step 2: Fetch the graph image
+        params = {
+            "graphid": graphid,  # Replace with your graph ID
+            "from": fromdate,  # Start time (Unix timestamp)
+            "to": todate,  # End time (Unix timestamp)
+            "width": 800,
+            "height": 400,
+            "profileIdx": "web.graphs"
+            }
+        graph_response = session.get(GRAPH_URL, params=params)
+        # Step 3: Save the graph if response is an image
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        graph_filename = f"graph_{timestamp}.png"
+        if "image/png" in graph_response.headers.get("Content-Type", ""):
+            with open(graph_filename, "wb") as f:
+                f.write(graph_response.content)
+            print("Graph image downloaded successfully as graph.png")
+            return graph_filename
+        else:
+            print("Failed to retrieve graph. Response:", graph_response.text)
+            return False
+    except Exception as e:
+        print("Execption raised on donload graph", e)
+        return False
+    
+def graph_create(itemid1, itemid2, graphname):
+    graph_create = {
+        "jsonrpc": "2.0",
+        "method": "graph.create",
+        "params": {
+            "name": graphname,
+            "width": 900,
+            "height": 200,
+            "show_work_period": 0,
+            "show_triggers": 0,
+            "gitems": [
+                {
+                "itemid": itemid1,
+                "color": "1a2856",
+                "drawtype": 1
+                },
+                {
+                "itemid": itemid2,
+                "color": "c8262b",
+                "drawtype": 2
+                }
+            ]            
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=graph_create)
+        graphids = response.json()        
+        graphid = graphids["result"]["graphids"][0] 
+        return graphid    
+    except Exception as e:
+        print(f"Failed to get create graph: {e}")
+        return False
+
+def graph_delete(graphid):
+    graph_delete = {
+        "jsonrpc": "2.0",
+        "method": "graph.delete",
+        "params": [
+                    graphid
+                    
+                ],
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=graph_delete)
+        graphids = response.json()        
+        graphid = graphids["result"]["graphids"][0] 
+        return graphid    
+    except Exception as e:
+        print(f"Failed to delete graph: {e}")
+        return False
+    
+def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, graphname, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
@@ -2319,7 +2407,7 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, h
 
     # **Title & Subtitle**
     title = Paragraph(f"<b>Report for {intfcname}</b>", styles["Title"])
-    title2 = Paragraph(f"<b>{huborbranch}:{branch_location}</b>", styles["Title"])
+    title2 = Paragraph(f"<b>{branch_location}</b>", styles["Title"])
     subtitle = Paragraph(f"<b>Generated on:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}", styles["Normal"]) 
 
     # Table Header
@@ -2397,7 +2485,14 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, h
     elements.append(avgspeed)
     elements.append(Spacer(1, 12))  # Space
     elements.append(percentilestr)
-    elements.append(Spacer(1, 20))  # More space before the table
+    elements.append(Spacer(1, 12))  # More space before the table
+    # **Add Logo** (Ensure 'logo.png' is in the same directory)
+    try:
+        graphimg = Image(graphname, width=500, height=200)  # Adjust size as needed
+        elements.append(graphimg)
+        elements.append(Spacer(1, 20))  # Space below logo
+    except:
+        print("Logo not found, continuing without it.")
     elements.append(table)
 
     # Build PDF
@@ -2438,38 +2533,59 @@ def traffic_report(request):
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
             return response1
-        for name, itemid in item_ids.items():          
-            trend = get_trends(itemid, fromdate, todate)
+        for name, itemid in item_ids.items():
             if "received" in name:
-                incoming_traffic = trend                
+                itemidreceived = itemid                
             if "sent" in name:
-                outgoing_traffic = trend   
-        if incoming_traffic:            
-            save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, huborbranch)
-            with open("traffic_data.pdf", "rb") as f:
-                trafficdatapdf = f.read()
-                # Files to include in ZIP
-            os.system("rm -r traffic_data.pdf")
-            files_to_send = {
-                "traffic_data.pdf": trafficdatapdf
-            }
-            # Create an in-memory ZIP buffer
-            buffer = io.BytesIO()
-            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                for filename, content in files_to_send.items():
-                    zip_file.writestr(filename, content)
-            # Prepare the response
-            buffer.seek(0)
-            json_message = json.dumps({"message": "Traffic data generated successfully."})
-            response = HttpResponse(buffer.getvalue(), content_type="application/zip")
-            response["Content-Disposition"] = 'attachment; filename="traffic_data.zip"'
-            response["X-Message"] = json_message  # Ensure this is a JSON-encoded string
-            response["Access-Control-Expose-Headers"] = "X-Message"
-            return response
+                itemidsent = itemid 
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        graphname = f"graph_{timestamp}"     
+        graphid = graph_create(itemidsent, itemidreceived, graphname)
+        if graphid: 
+            download_graph_name = download_graph(graphid, fromdate, todate)
+            graph_delete(graphid)
+            if(download_graph_name):                
+                for name, itemid in item_ids.items():
+                    #history = get_history(itemid)
+                    trend = get_trends(itemid, fromdate, todate)
+                    if "received" in name:
+                        incoming_traffic = trend                
+                    if "sent" in name:
+                        outgoing_traffic = trend         
+                if incoming_traffic:            
+                    save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, download_graph_name)
+                    with open("traffic_data.pdf", "rb") as f:
+                            trafficdatapdf = f.read()
+                            # Files to include in ZIP
+                    os.system("rm -r traffic_data.pdf")
+                    files_to_send = {
+                        "traffic_data.pdf": trafficdatapdf
+                    }
+                    # Create an in-memory ZIP buffer
+                    buffer = io.BytesIO()
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    json_message = json.dumps({"message": "Traffic data generated successfully."})
+                    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+                    response["Content-Disposition"] = 'attachment; filename="traffic_data.zip"'
+                    response["X-Message"] = json_message  # Ensure this is a JSON-encoded string
+                    response["Access-Control-Expose-Headers"] = "X-Message"
+                    return response
+                else:
+                    print("No history data retrieved.")
+                    logger.error(f"Error: Get Traffic report: No relevant items found.")
+                    response = [{"message": "Error No relevant history found."}]
+            else:
+                print("Issue to download graph")
+                logger.error(f"Error: Get Traffic report: Issue to get Graph.")
+                response = [{"message": "Error Issue to get Graph."}]
         else:
-            print("No history data retrieved.")
-            logger.error(f"Error: Get Traffic report: No relevant items found.")
-            response = [{"message": "Error No relevant history found."}]
+            print("Issue to create graph")
+            logger.error(f"Error: Get Traffic report: Issue to create Graph.")
+            response = [{"message": "Error Issue to create Graph."}]
     except Exception as e:
         print(f"Error: {e}")
         logger.error(f"Error: Get Traffic report: {e}")
