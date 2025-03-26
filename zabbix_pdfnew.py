@@ -9,7 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
 import numpy as np  # For percentile calculation
-import datetime
+from datetime import timedelta
 
 # Zabbix server details
 ZABBIX_WEB_URL="https://reachlinktest.cloudetel.com/zabbix/index.php"
@@ -96,7 +96,7 @@ def get_item_id_uptime(host_id):
         result = response.json().get('result', [])
         uptimevalue = result[0]['lastvalue']
         # Convert to readable format
-        uptime_str = str(datetime.timedelta(seconds=uptimevalue))
+        uptime_str = str(timedelta(seconds=uptimevalue))
         #items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] in item["name"]}
         return uptime_str     
     except Exception as e:

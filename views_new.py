@@ -58,6 +58,7 @@ import ubuntu_info
 import onboardblock
 import robustel_configure
 from decouple import config
+from datetime import timedelta
 newuser = False
 dummy_expiry_date = ""
 mongo_uri = config('DB_CONNECTION_STRING')
@@ -2302,7 +2303,7 @@ def get_item_id_uptime(host_id):
         result = response.json().get('result', [])
         uptimevalue = result[0]['lastvalue']
         # Convert to readable format
-        uptime_str = str(datetime.timedelta(seconds=uptimevalue))
+        uptime_str = str(timedelta(seconds=uptimevalue))
         #items = {item["name"]: item["itemid"] for item in result if "Bits" in item["name"] and name.split(":")[0] in item["name"]}
         return uptime_str     
     except Exception as e:
