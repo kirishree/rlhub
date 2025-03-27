@@ -2471,7 +2471,6 @@ def get_percentile(itemidsent, itemidreceived, fromdate):
             total_percentile = round(np.percentile(totalvalues, 95), 4)
             coverage = round((len(totalvalues)/60) * 100, 4)     
         else:
-            #print(history_results)
             in_value_avg = 0
             out_value_avg = 0
             total_value_avg = 0
@@ -2479,6 +2478,33 @@ def get_percentile(itemidsent, itemidreceived, fromdate):
             out_percentile = 0
             total_percentile = 0
             coverage = 0  
+            get_trend = {
+                "jsonrpc": "2.0",
+                "method": "trend.get",
+                "params": {
+                    "output": "extend",
+                    "itemids": [itemidsent, itemidreceived],            
+                    "time_from": int(fromdate),
+                    "time_till": int(fromdate) + 3600
+                },
+                'auth': auth_token,
+                'id': 1,
+            }
+            try:
+                response = session.post(zabbix_api_url, json=get_trend)
+                trend_results = response.json().get('result')                
+                for trend_result in trend_results:
+                    coverage = round((int(trend_result["num"])/60) * 100, 4)
+                    if trend_result["itemid"] == itemidsent:
+                        in_value_avg = trend_result["value_avg"]
+                        in_percentile = trend_result["value_max"]
+                    if trend_result["itemid"] == itemidreceived:
+                        out_value_avg = trend_result["value_avg"]
+                        out_percentile = trend_result["value_max"]
+                total_value_avg = in_value_avg + out_value_avg
+                total_percentile = in_percentile + out_percentile
+            except Exception as e:
+                print("Error in trend data")                
         percentile_result = {"in_avg":in_value_avg,
                              "in_percentile": in_percentile,
                              "out_avg": out_value_avg,
@@ -2653,15 +2679,14 @@ def traffic_report(request):
         logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
         hostid = data["hostid"]
         intfcname = data["intfcname"]
-        branch_location = data["branch_location"]
         fromdate = data["fromdate"]
         todate = data["todate"]
         ishub = data["ishub"]
         ishub = True
         if ishub:
-            huborbranch = "HUB Location"
+            branch_location = "HUB Location: " + data["branch_location"]
         else:
-            huborbranch = "Branch Location"
+            branch_location = "Branch Location: " + data["branch_location"]
         #hostid = "10677"
         #intfcname = "Interface Fa4(): Network traffic"
         #branch_location = "Jeddah Cisco HUB"
