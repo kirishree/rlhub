@@ -2436,12 +2436,67 @@ def graph_delete(graphid):
         print(f"Failed to delete graph: {e}")
         return False
     
-def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, uptime_str, graphname, filename="traffic_data.pdf", logo_path="logo.png"):
+def get_percentile(itemidsent, itemidreceived, fromdate):    
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": [itemidsent, itemidreceived],            
+            "time_from": int(fromdate),
+            "time_till": int(fromdate) + 3600
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        history_results = response.json().get('result')
+        sentvalues = []
+        receivedvalues = []
+        totalvalues = []
+        for history_result in history_results:
+            if history_result["itemid"] == itemidsent:
+                sentvalues.append(int(history_result["value"]))
+            if history_result["itemid"] == itemidreceived:
+                receivedvalues.append(int(history_result["value"]))
+        for i in range(0,len(sentvalues)):
+            totalvalues.append(sentvalues[i] +receivedvalues[i] )
+        if len(totalvalues) > 0:
+            in_value_avg = round(np.mean(sentvalues), 4)
+            out_value_avg = round(np.mean(receivedvalues), 4)
+            total_value_avg = round(np.mean(totalvalues), 4)
+            in_percentile = round(np.percentile(sentvalues, 95), 4)
+            out_percentile = round(np.percentile(receivedvalues, 95), 4)
+            total_percentile = round(np.percentile(totalvalues, 95), 4)
+            coverage = round((len(totalvalues)/60) * 100, 4)     
+        else:
+            #print(history_results)
+            in_value_avg = 0
+            out_value_avg = 0
+            total_value_avg = 0
+            in_percentile = 0
+            out_percentile = 0
+            total_percentile = 0
+            coverage = 0  
+        percentile_result = {"in_avg":in_value_avg,
+                             "in_percentile": in_percentile,
+                             "out_avg": out_value_avg,
+                             "out_percentile": out_percentile,
+                             "total_avg": total_value_avg,
+                             "total_percentile": total_percentile,
+                             "coverage": coverage}
+        return percentile_result
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+        return []
+
+def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
     doc = SimpleDocTemplate(filename, pagesize=letter,
-                            leftMargin=30, rightMargin=30, topMargin=40, bottomMargin=40)
+                            leftMargin=20, rightMargin=20, topMargin=40, bottomMargin=40)
     elements = []
 
     # Get styles for headings
@@ -2461,31 +2516,40 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, u
     subtitle = Paragraph(f"<b>Generated on:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}", styles["Normal"]) 
 
     # Table Header
-    data = [["Date & Time", "In speed (Mbit/s)", "In volume (MB)", 
-             "Out speed (Mbit/s)", "Out volume (MB)", "Total Speed", "Total Volume"]]
+    data = [["Date Time", "Traffic In(Mbit/s)", "Traffic In(MB)", 
+             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage"]]
 
     in_avg_values = []
     out_avg_values = []
     total_speed_values = []
     total_volumes = []
+    total_coverages = []
+    in_volumes = []
+    out_volumes = []
+    time_from = int(time.mktime(time.strptime(fromdate, "%Y-%m-%d %H:%M:%S")))
+    time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
 
     # Add data rows
-    for i in range(len(datain)):
-        time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(datain[i]["clock"])))
-        in_speed = convert_to_mbps(int(datain[i]["value_avg"]))
-        out_speed = convert_to_mbps(int(dataout[i]["value_avg"]))
+    for time_from in range(time_from, time_to, 3600):
+        time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
+        percentile_output = get_percentile(itemidsent, itemidreceived, time_from)
+        in_speed = convert_to_mbps(int(percentile_output["in_avg"]))
+        out_speed = convert_to_mbps(int(percentile_output["out_avg"]))
+        coverage = percentile_output["coverage"]
         in_volume = round((in_speed * 180) / (8), 4)
         out_volume = round((out_speed * 180) / (8), 4)
         total_speed = round(in_speed + out_speed, 4)
         total_volume = round(in_volume + out_volume, 4)
-
+        total_percentile = convert_to_mbps(percentile_output["total_percentile"])
         # Store values for percentile calculation
         in_avg_values.append(in_speed)
         out_avg_values.append(out_speed)
         total_speed_values.append(total_speed)
-        total_volumes.append(total_volume)
-
-        row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume]
+        total_volumes.append(total_volume)  
+        total_coverages.append(coverage) 
+        in_volumes.append(in_volume) 
+        out_volumes.append(out_volume)
+        row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage]
         data.append(row)
 
     # Calculate 95th percentile
@@ -2495,16 +2559,42 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, u
     avg_speed = round(np.mean(total_speed_values), 4)  # Average
     total_traffic = round(np.sum(total_volumes), 4)  # Total
     percentile = round(np.percentile(total_speed_values, 95), 4)
+    avg_in_speed = round(np.mean(in_avg_values), 4)
+    avg_out_speed = round(np.mean(out_avg_values), 4)    
+    avg_coverage = round(np.mean(total_coverages), 4)
+    total_in_volumes = round(np.sum(in_volumes), 4)
+    total_out_volumes = round(np.sum(out_volumes), 4)
+    # Table Header
+    data1 = [["Date Time", "Traffic In(Mbit/s)", "Traffic In(MB)", 
+             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage"]]
 
+    data1.append([f"Sums(of {len(total_volumes)}) values", " ", total_in_volumes, 
+                  " ", total_out_volumes, " ", total_traffic, " " , " "])
+    
+    data1.append([f"Averages(of {len(total_volumes)}) values", avg_in_speed, " ", 
+                  avg_out_speed, " ", avg_speed, " ", " " , avg_coverage])
     # Append 95th percentile row to table
     #data.append(["95th Percentile", in_95th, "-", out_95th, "-", total_95th, "-"])
-
     # Set column widths to fit within the page
-    column_widths = [110, 70, 70, 70, 70, 70, 90]
+    column_widths = [110, 70, 60, 70, 65, 70, 70, 50, 50]
 
     # Create the table with defined column widths
     table = Table(data, colWidths=column_widths)
-
+    # Create the table with defined column widths
+    tableconsolidated = Table(data1, colWidths=column_widths)
+    # Add table styles
+    tableconsolidated.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background color
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Grid for table
+        #('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),  # 95th percentile row highlight
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
     # Add table styles
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background color
@@ -2546,11 +2636,11 @@ def save_to_pdf(datain, dataout, intfcname, branch_location, fromdate, todate, u
         elements.append(Spacer(1, 20))  # Space below logo
     except:
         print("Logo not found, continuing without it.")
+    elements.append(tableconsolidated)
+    elements.append(Spacer(1, 12))  # More space before the table
     elements.append(table)
-
     # Build PDF
     doc.build(elements)
-
     print(f"Traffic data saved to {filename}")
 
 @api_view(['POST'])  
@@ -2597,17 +2687,10 @@ def traffic_report(request):
         if graphid: 
             download_graph_name = download_graph(graphid, fromdate, todate)
             graph_delete(graphid)
-            if(download_graph_name):                
-                for name, itemid in item_ids.items():
-                    #history = get_history(itemid)
-                    trend = get_trends(itemid, fromdate, todate)
-                    if "received" in name:
-                        incoming_traffic = trend                
-                    if "sent" in name:
-                        outgoing_traffic = trend         
-                if incoming_traffic:  
-                    uptime_str = get_item_id_uptime(hostid)          
-                    save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, uptime_str, download_graph_name)
+            if(download_graph_name):
+                    uptime_str = get_item_id_uptime(hostid) 
+                    save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str)         
+                    #save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, uptime_str, download_graph_name)
                     with open("traffic_data.pdf", "rb") as f:
                             trafficdatapdf = f.read()
                             # Files to include in ZIP
@@ -2627,11 +2710,7 @@ def traffic_report(request):
                     response["Content-Disposition"] = 'attachment; filename="traffic_data.zip"'
                     response["X-Message"] = json_message  # Ensure this is a JSON-encoded string
                     response["Access-Control-Expose-Headers"] = "X-Message"
-                    return response
-                else:
-                    print("No history data retrieved.")
-                    logger.error(f"Error: Get Traffic report: No relevant items found.")
-                    response = [{"message": "Error No relevant history found."}]
+                    return response                
             else:
                 print("Issue to download graph")
                 logger.error(f"Error: Get Traffic report: Issue to get Graph.")
