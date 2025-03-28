@@ -2298,10 +2298,8 @@ def get_item_id_ping(host_id):
         'id': 1,
     }
     try:          
-        response = session.post(zabbix_api_url, json=get_item)
-        result = response.json().get('result', [])[0]["itemid"]  
-        itemidping = response.json().get('result', [])[0]["itemid"]  
-        print(result)     
+        response = session.post(zabbix_api_url, json=get_item)        
+        itemidping = response.json().get('result', [])[0]["itemid"]       
         return itemidping
     except Exception as e:
         print(f"Failed to get item list: {e}")
@@ -2486,7 +2484,8 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
                 sentvalues.append(int(history_result["value"]))
             if history_result["itemid"] == itemidreceived:
                 receivedvalues.append(int(history_result["value"]))
-            if history_result["itemid"] == itemidping:                
+            if history_result["itemid"] == itemidping: 
+                print(history_result["value"])               
                 pingvalues.append(int(history_result["value"]))
         for i in range(0,len(sentvalues)):
             totalvalues.append(sentvalues[i] +receivedvalues[i])
@@ -2497,8 +2496,9 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
             in_percentile = round(np.percentile(sentvalues, 95), 4)
             out_percentile = round(np.percentile(receivedvalues, 95), 4)
             total_percentile = round(np.percentile(totalvalues, 95), 4)           
-            coverage = round((len(totalvalues)/60) * 100, 4)     
-            downtime = round(((60-(len(pingvalues)))/60) * 100, 4)
+            coverage = round((len(totalvalues)/60) * 100, 4)   
+            responsecount = int(60-(len(pingvalues)))
+            downtime = round((responsecount/60) * 100, 4)
         else:
             in_value_avg = 0
             out_value_avg = 0
