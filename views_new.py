@@ -2485,7 +2485,9 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
                 sentvalues.append(int(history_result["value"]))
             if history_result["itemid"] == itemidreceived:
                 receivedvalues.append(int(history_result["value"]))
-            if history_result["itemid"] == itemidping:                            
+            if history_result["itemid"] == itemidping:  
+                print(history_result["value"]) 
+                print(type(history_result["value"]))                         
                 pingvalues.append(int(history_result["value"]))
         for i in range(0,len(sentvalues)):
             total = sentvalues[i] + receivedvalues[i]
@@ -2499,7 +2501,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
             total_percentile = round(np.percentile(totalvalues, 95), 4)           
             coverage = round((len(totalvalues)/60) * 100, 4)   
             responsecount = np.sum(pingvalues)
-            downtime = round((responsecount/len(pingvalues)), 4)
+            downtime = (responsecount/len(pingvalues))
         else:
             in_value_avg = 0
             out_value_avg = 0
