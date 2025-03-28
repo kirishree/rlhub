@@ -2465,8 +2465,8 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
         "jsonrpc": "2.0",
         "method": "history.get",
         "params": {
-            "output": "extend",     
-            "history": 0,       
+            "output": "extend",    
+                   
             "itemids": [itemidsent, itemidreceived, itemidping],            
             "time_from": int(fromdate),
             "time_till": int(fromdate) + 3600
