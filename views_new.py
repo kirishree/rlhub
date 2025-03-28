@@ -2299,11 +2299,10 @@ def get_item_id_ping(host_id):
     }
     try:          
         response = session.post(zabbix_api_url, json=get_item)
-        result = response.json().get('result', [])   
+        result = response.json().get('result', [])[0]["itemid"]  
+        itemidping = response.json().get('result', [])[0]["itemid"]  
         print(result)     
-        for item in result:
-            if "response" in item["name"]:
-                return item["itemid"] 
+        return itemidping
     except Exception as e:
         print(f"Failed to get item list: {e}")
     return False
@@ -2481,8 +2480,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
         sentvalues = []
         receivedvalues = []
         totalvalues = []
-        pingvalues = []
-        print(response.json())
+        pingvalues = []        
         for history_result in history_results:
             if history_result["itemid"] == itemidsent:
                 sentvalues.append(int(history_result["value"]))
