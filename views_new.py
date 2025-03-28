@@ -2517,7 +2517,7 @@ def get_percentile(itemidsent, itemidreceived, fromdate):
         print(f"Failed to get History: {e}")
         return []
 
-def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, filename="traffic_data.pdf", logo_path="logo.png"):
+def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
@@ -2556,7 +2556,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
 
     # Add data rows
-    for time_from in range(time_from, time_to, 3600):
+    for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
         percentile_output = get_percentile(itemidsent, itemidreceived, time_from)
         in_speed = convert_to_mbps(int(percentile_output["in_avg"]))
@@ -2683,6 +2683,7 @@ def traffic_report(request):
         todate = data["todate"]
         ishub = data["ishub"]
         ishub = True
+        interval = int(data.get("interval", 3600))
         if ishub:
             branch_location = "HUB Location: " + data["branch_location"]
         else:
@@ -2714,7 +2715,7 @@ def traffic_report(request):
             graph_delete(graphid)
             if(download_graph_name):
                     uptime_str = get_item_id_uptime(hostid) 
-                    save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str)         
+                    save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str, interval)         
                     #save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, uptime_str, download_graph_name)
                     with open("traffic_data.pdf", "rb") as f:
                             trafficdatapdf = f.read()
