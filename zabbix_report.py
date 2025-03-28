@@ -10,7 +10,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 import numpy as np  # For percentile calculation
 from datetime import timedelta
-
+import os
 # Zabbix server details
 ZABBIX_WEB_URL="https://reachlinktest.cloudetel.com/zabbix/index.php"
 USERNAME="Admin"
@@ -75,6 +75,32 @@ def get_item_id(host_id, name):
         print(f"Failed to get item list: {e}")
         return {}
 
+def get_item_id_ping(host_id):
+    """Fetch item IDs related to bits received/sent."""
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid", "name"],
+            "hostids": host_id,
+            "search": {
+            "key_": "icmpping"
+            },
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:          
+        response = session.post(zabbix_api_url, json=get_item)
+        result = response.json().get('result', [])
+        items = {item["name"]: item["itemid"] for item in result if "ping" in item["name"]}
+        return items         
+    except Exception as e:
+        print(f"Failed to get item list: {e}")
+        return False
+    
+print(get_item_id_ping("10677"))
+
 def get_item_id_uptime(host_id):
     """Fetch item IDs related to bits received/sent."""
     get_item = {
@@ -128,16 +154,19 @@ def get_percentile(itemidsent, itemidreceived, fromdate):
                 sentvalues.append(int(history_result["value"]))
             if history_result["itemid"] == itemidreceived:
                 receivedvalues.append(int(history_result["value"]))
-        for i in range(0,len(sentvalues)):
-            totalvalues.append(sentvalues[i] +receivedvalues[i] )
+        for i in range(0,len(sentvalues)):            
+            total = sentvalues[i] + receivedvalues[i] 
+            totalvalues.append(total)           
+        
         if len(totalvalues) > 0:
             in_value_avg = round(np.mean(sentvalues), 4)
             out_value_avg = round(np.mean(receivedvalues), 4)
             total_value_avg = round(np.mean(totalvalues), 4)
             in_percentile = round(np.percentile(sentvalues, 95), 4)
-            out_percentile = round(np.percentile(receivedvalues, 95), 4)
+            out_percentile = round(np.percentile(receivedvalues, 95), 4)            
             total_percentile = round(np.percentile(totalvalues, 95), 4)
-            coverage = round((len(totalvalues)/60) * 100, 4)     
+            coverage = round((len(totalvalues)/60) * 100, 4)           
+            
         else:
             print(history_results)
             in_value_avg = 0
@@ -301,7 +330,9 @@ def get_trends(itemid, fromdate, todate):
     except Exception as e:
         print(f"Failed to get trend: {e}")
         return False   
-    
+#fromdate = "2025-03-27 11:00:00"
+#todate = "2025-03-28 10:00:00"
+#print(get_trends("57212", fromdate, todate))
 def convert_to_mb(bits):
     """Convert bits to Megabytes (MB)."""
     #return round(int(bits) / (8 * 1024 * 1024), 4)
@@ -359,7 +390,10 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         out_volume = round((out_speed * 180) / (8), 4)
         total_speed = round(in_speed + out_speed, 4)
         total_volume = round(in_volume + out_volume, 4)
+        print("check", percentile_output["total_percentile"])
         total_percentile = convert_to_mbps(percentile_output["total_percentile"])
+        print(total_percentile)
+        os.exit()
         # Store values for percentile calculation
         in_avg_values.append(in_speed)
         out_avg_values.append(out_speed)
@@ -468,8 +502,8 @@ def main():
         hostid = "10677"
         intfcname = "Interface Fa4(): Network traffic"
         branch_location = "Jeddah Cisco HUB"
-        fromdate = "2025-03-24 00:00:00"
-        todate = "2025-03-26 00:00:00"
+        fromdate = "2025-03-26 10:00:00"
+        todate = "2025-03-26 18:00:00"
         if not hostid:
             print("Host ID not found.")
             return

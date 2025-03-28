@@ -22,7 +22,7 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
-from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -2282,31 +2282,6 @@ def get_item_id(host_id, name):
         print(f"Failed to get item list: {e}")
         return {}
 
-def get_item_id_ping(host_id):
-    """Fetch item IDs related to bits received/sent."""
-    get_item = {
-        "jsonrpc": "2.0",
-        "method": "item.get",
-        "params": {
-            "output": ["itemid", "name"],
-            "hostids": host_id,
-            "search": {
-            "key_": "icmppingsec"
-            },
-        },
-        'auth': auth_token,
-        'id': 1,
-    }
-    try:          
-        response = session.post(zabbix_api_url, json=get_item)
-        result = response.json().get('result', [])        
-        for item in result:
-            if "ping" in item["name"]:
-                return item["itemid"] 
-    except Exception as e:
-        print(f"Failed to get item list: {e}")
-    return False
-
 def get_item_id_uptime(host_id):
     """Fetch item IDs related to bits received/sent."""
     get_item = {
@@ -2461,13 +2436,13 @@ def graph_delete(graphid):
         print(f"Failed to delete graph: {e}")
         return False
     
-def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):    
+def get_percentile(itemidsent, itemidreceived, fromdate):    
     get_history = {
         "jsonrpc": "2.0",
         "method": "history.get",
         "params": {
             "output": "extend",
-            "itemids": [itemidsent, itemidreceived, itemidping],            
+            "itemids": [itemidsent, itemidreceived],            
             "time_from": int(fromdate),
             "time_till": int(fromdate) + 3600
         },
@@ -2480,25 +2455,22 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
         sentvalues = []
         receivedvalues = []
         totalvalues = []
-        pingvalues = []
         for history_result in history_results:
             if history_result["itemid"] == itemidsent:
                 sentvalues.append(int(history_result["value"]))
             if history_result["itemid"] == itemidreceived:
                 receivedvalues.append(int(history_result["value"]))
-            if history_result["itemid"] == itemidping:
-                pingvalues.append(int(history_result["value"]))
-        for i in range(0,len(sentvalues)):
-            totalvalues.append(sentvalues[i] +receivedvalues[i])
+        for i in range(0, len(sentvalues)):
+            total = sentvalues[i] + receivedvalues[i] 
+            totalvalues.append(total)             
         if len(totalvalues) > 0:
             in_value_avg = round(np.mean(sentvalues), 4)
             out_value_avg = round(np.mean(receivedvalues), 4)
             total_value_avg = round(np.mean(totalvalues), 4)
             in_percentile = round(np.percentile(sentvalues, 95), 4)
             out_percentile = round(np.percentile(receivedvalues, 95), 4)
-            total_percentile = round(np.percentile(totalvalues, 95), 4)           
+            total_percentile = round(np.percentile(totalvalues, 95), 4)
             coverage = round((len(totalvalues)/60) * 100, 4)     
-            downtime = round(((60-(len(pingvalues)))/60) * 100, 4)
         else:
             in_value_avg = 0
             out_value_avg = 0
@@ -2507,13 +2479,12 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
             out_percentile = 0
             total_percentile = 0
             coverage = 0  
-            downtime = 0
             get_trend = {
                 "jsonrpc": "2.0",
                 "method": "trend.get",
                 "params": {
                     "output": "extend",
-                    "itemids": [itemidsent, itemidreceived, itemidping],            
+                    "itemids": [itemidsent, itemidreceived],            
                     "time_from": int(fromdate),
                     "time_till": int(fromdate) + 3600
                 },
@@ -2531,8 +2502,6 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
                     if trend_result["itemid"] == itemidreceived:
                         out_value_avg = trend_result["value_avg"]
                         out_percentile = trend_result["value_max"]
-                    if trend_result["itemid"] == itemidreceived:
-                        downtime = round( ( (60-int(trend_result["num"])) /60) * 100, 4)
                 total_value_avg = in_value_avg + out_value_avg
                 total_percentile = in_percentile + out_percentile
             except Exception as e:
@@ -2543,18 +2512,17 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
                              "out_percentile": out_percentile,
                              "total_avg": total_value_avg,
                              "total_percentile": total_percentile,
-                             "coverage": coverage,
-                             "downtime": downtime}
+                             "coverage": coverage}
         return percentile_result
     except Exception as e:
         print(f"Failed to get History: {e}")
         return []
 
-def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, filename="traffic_data.pdf", logo_path="logo.png"):
+def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
     # Define PDF document with margins
-    doc = SimpleDocTemplate(filename, pagesize=landscape(letter),
+    doc = SimpleDocTemplate(filename, pagesize=letter,
                             leftMargin=20, rightMargin=20, topMargin=40, bottomMargin=40)
     elements = []
 
@@ -2576,7 +2544,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
 
     # Table Header
     data = [["Date Time", "Traffic In(Mbit/s)", "Traffic In(MB)", 
-             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage", "Downtime"]]
+             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage"]]
 
     in_avg_values = []
     out_avg_values = []
@@ -2585,14 +2553,13 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     total_coverages = []
     in_volumes = []
     out_volumes = []
-    downtimes = []
     time_from = int(time.mktime(time.strptime(fromdate, "%Y-%m-%d %H:%M:%S")))
     time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
 
     # Add data rows
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
-        percentile_output = get_percentile(itemidsent, itemidreceived, itemidping, time_from)
+        percentile_output = get_percentile(itemidsent, itemidreceived, time_from)
         in_speed = convert_to_mbps(int(percentile_output["in_avg"]))
         out_speed = convert_to_mbps(int(percentile_output["out_avg"]))
         coverage = percentile_output["coverage"]
@@ -2609,9 +2576,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         total_coverages.append(coverage) 
         in_volumes.append(in_volume) 
         out_volumes.append(out_volume)
-        downtime = percentile_output["downtime"]
-        downtimes.append(downtime)
-        row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage, downtime]
+        row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage]
         data.append(row)
 
     # Calculate 95th percentile
@@ -2624,22 +2589,21 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     avg_in_speed = round(np.mean(in_avg_values), 4)
     avg_out_speed = round(np.mean(out_avg_values), 4)    
     avg_coverage = round(np.mean(total_coverages), 4)
-    avg_downtime = round(np.mean(downtimes), 4)
     total_in_volumes = round(np.sum(in_volumes), 4)
     total_out_volumes = round(np.sum(out_volumes), 4)
     # Table Header
     data1 = [["Date Time", "Traffic In(Mbit/s)", "Traffic In(MB)", 
-             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage", "Downtime"]]
+             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage"]]
 
     data1.append([f"Sums(of {len(total_volumes)}) values", " ", total_in_volumes, 
-                  " ", total_out_volumes, " ", total_traffic, " " , " ", " "])
+                  " ", total_out_volumes, " ", total_traffic, " " , " "])
     
     data1.append([f"Averages(of {len(total_volumes)}) values", avg_in_speed, " ", 
-                  avg_out_speed, " ", avg_speed, " ", " " , avg_coverage, avg_downtime])
+                  avg_out_speed, " ", avg_speed, " ", " " , avg_coverage])
     # Append 95th percentile row to table
     #data.append(["95th Percentile", in_95th, "-", out_95th, "-", total_95th, "-"])
     # Set column widths to fit within the page
-    column_widths = [110, 70, 70, 70, 70, 70, 70, 70, 70, 70]
+    column_widths = [110, 70, 60, 70, 65, 70, 70, 50, 50]
 
     # Create the table with defined column widths
     table = Table(data, colWidths=column_widths)
@@ -2752,8 +2716,7 @@ def traffic_report(request):
             graph_delete(graphid)
             if(download_graph_name):
                     uptime_str = get_item_id_uptime(hostid) 
-                    itemidping = get_item_id_ping(hostid)
-                    save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str, interval, itemidping)         
+                    save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str, interval)         
                     #save_to_pdf(incoming_traffic, outgoing_traffic, intfcname, branch_location, fromdate, todate, uptime_str, download_graph_name)
                     with open("traffic_data.pdf", "rb") as f:
                             trafficdatapdf = f.read()
