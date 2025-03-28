@@ -2459,7 +2459,8 @@ def graph_delete(graphid):
         print(f"Failed to delete graph: {e}")
         return False
     
-def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):    
+def get_percentile(itemidsent, itemidreceived, itemidping, fromdate): 
+    print(itemidping)   
     get_history = {
         "jsonrpc": "2.0",
         "method": "history.get",
