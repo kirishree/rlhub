@@ -2719,7 +2719,8 @@ def traffic_report(request):
                     with open("traffic_data.pdf", "rb") as f:
                             trafficdatapdf = f.read()
                             # Files to include in ZIP
-                    os.system("rm -r traffic_data.pdf")
+                    #os.system("rm -r traffic_data.pdf")
+                    os.system(f"rm -r {download_graph_name}")
                     files_to_send = {
                         "traffic_data.pdf": trafficdatapdf
                     }
