@@ -2291,7 +2291,7 @@ def get_item_id_ping(host_id):
             "output": ["itemid", "name"],
             "hostids": host_id,
             "search": {
-            "key_": "icmppingsec"
+            "key_": "icmppingloss"
             },
         },
         'auth': auth_token,
@@ -2465,8 +2465,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
         "jsonrpc": "2.0",
         "method": "history.get",
         "params": {
-            "output": "extend",
-            "history": 0,
+            "output": "extend",            
             "itemids": [itemidsent, itemidreceived, itemidping],            
             "time_from": int(fromdate),
             "time_till": int(fromdate) + 3600
@@ -2487,9 +2486,10 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
             if history_result["itemid"] == itemidreceived:
                 receivedvalues.append(int(history_result["value"]))
             if history_result["itemid"] == itemidping:                            
-                pingvalues.append(history_result["value"])
+                pingvalues.append(int(history_result["value"]))
         for i in range(0,len(sentvalues)):
-            totalvalues.append(sentvalues[i] +receivedvalues[i])
+            total = sentvalues[i] + receivedvalues[i]
+            totalvalues.append(total)
         if len(totalvalues) > 0:
             in_value_avg = round(np.mean(sentvalues), 4)
             out_value_avg = round(np.mean(receivedvalues), 4)
@@ -2498,8 +2498,8 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
             out_percentile = round(np.percentile(receivedvalues, 95), 4)
             total_percentile = round(np.percentile(totalvalues, 95), 4)           
             coverage = round((len(totalvalues)/60) * 100, 4)   
-            responsecount = int(60-(len(pingvalues)))
-            downtime = round((responsecount/60) * 100, 4)
+            responsecount = np.sum(pingvalues)
+            downtime = round((responsecount/len(pingvalues)), 4)
         else:
             in_value_avg = 0
             out_value_avg = 0
@@ -2554,8 +2554,10 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
+    custom_width = 1000  # Example: Set to your desired width in points
+    custom_height = 612  # Keep letter height or modify
     # Define PDF document with margins
-    doc = SimpleDocTemplate(filename, pagesize=landscape(letter),
+    doc = SimpleDocTemplate(filename, pagesize=(custom_width, custom_height),
                             leftMargin=20, rightMargin=20, topMargin=40, bottomMargin=40)
     elements = []
 
@@ -2640,7 +2642,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     # Append 95th percentile row to table
     #data.append(["95th Percentile", in_95th, "-", out_95th, "-", total_95th, "-"])
     # Set column widths to fit within the page
-    column_widths = [110, 70, 70, 70, 70, 70, 70, 70, 70, 70]
+    column_widths = [110, 90, 90, 90, 90, 90, 90, 90, 70, 70]
 
     # Create the table with defined column widths
     table = Table(data, colWidths=column_widths)

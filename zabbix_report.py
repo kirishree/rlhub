@@ -136,7 +136,8 @@ def get_percentile(itemidsent, itemidreceived, fromdate):
         "method": "history.get",
         "params": {
             "output": "extend",
-            "itemids": [itemidsent, itemidreceived],            
+            "history": 0,
+            "itemids": [itemidsent, itemidreceived, "52628"],            
             "time_from": int(fromdate),
             "time_till": int(fromdate) + 3600
         },
@@ -391,9 +392,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         total_speed = round(in_speed + out_speed, 4)
         total_volume = round(in_volume + out_volume, 4)
         print("check", percentile_output["total_percentile"])
-        total_percentile = convert_to_mbps(percentile_output["total_percentile"])
-        print(total_percentile)
-        os.exit()
+        total_percentile = convert_to_mbps(percentile_output["total_percentile"])     
         # Store values for percentile calculation
         in_avg_values.append(in_speed)
         out_avg_values.append(out_speed)
@@ -502,8 +501,8 @@ def main():
         hostid = "10677"
         intfcname = "Interface Fa4(): Network traffic"
         branch_location = "Jeddah Cisco HUB"
-        fromdate = "2025-03-26 10:00:00"
-        todate = "2025-03-26 18:00:00"
+        fromdate = "2025-03-27 10:00:00"
+        todate = "2025-03-28 12:00:00"
         if not hostid:
             print("Host ID not found.")
             return
