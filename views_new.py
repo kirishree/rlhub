@@ -2502,8 +2502,8 @@ def get_percentile(itemidsent, itemidreceived, itemidping, fromdate):
                 receivedvalues.append(int(history_result["value"]))
         for history_los in history_loss:
             if history_los["itemid"] == itemidping:  
-                print(history_los["value"]) 
-                print(type(history_los["value"]))                         
+                #print(history_los["value"]) 
+                #print(type(history_los["value"]))                         
                 pingvalues.append(int(history_los["value"]))
         for i in range(0,len(sentvalues)):
             total = sentvalues[i] + receivedvalues[i]
