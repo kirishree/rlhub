@@ -358,15 +358,15 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                     coverage = round((int(trend_result["num"])/60) * 100, 4)
                     downtime = round((100 - coverage), 4)
                     if trend_result["itemid"] == itemidsent:
-                        in_value_avg = trend_result["value_avg"]
-                        in_percentile = trend_result["value_max"]
+                        in_value_avg = int(trend_result["value_avg"])
+                        in_percentile = int(trend_result["value_max"])
                     if trend_result["itemid"] == itemidreceived:
-                        out_value_avg = trend_result["value_avg"]
-                        out_percentile = trend_result["value_max"]
+                        out_value_avg = int(trend_result["value_avg"])
+                        out_percentile = int(trend_result["value_max"])
                     if trend_result["itemid"] == itemidping:
                         downtime = round( ( (no_icmpsamplesperinterval-int(trend_result["num"])) /no_icmpsamplesperinterval) * 100, 4)
-                total_value_avg = in_value_avg + out_value_avg
-                total_percentile = in_percentile + out_percentile
+                total_value_avg = round((in_value_avg + out_value_avg), 4)
+                total_percentile = round((in_percentile + out_percentile), 4)
             except Exception as e:
                 print("Error in trend data")                
         percentile_result = {"in_avg":in_value_avg,
