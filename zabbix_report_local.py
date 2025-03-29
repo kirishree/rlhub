@@ -5,7 +5,7 @@ import ipaddress
 import requests
 import time
 from datetime import timedelta
-from decouple import config
+#from decouple import config
 from datetime import timedelta
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
@@ -16,16 +16,24 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 import numpy as np  # For percentile calculation
 # Zabbix API URL
-zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
+#zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 # Api key
-auth_token = config('ZABBIX_API_TOKEN')
+#auth_token = config('ZABBIX_API_TOKEN')
 # Zabbix server details
-ZABBIX_WEB_URL=config('ZABBIX_WEB_URL')
-USERNAME=config('USERNAME')
-PASSWORD=config('PASSWORD')
-GRAPH_URL=config('GRAPH_URL')
-#Zabbix API URL
-
+#ZABBIX_WEB_URL=config('ZABBIX_WEB_URL')
+#USERNAME=config('USERNAME')
+#PASSWORD=config('PASSWORD')
+#GRAPH_URL=config('GRAPH_URL')
+# Zabbix API URL
+zabbix_api_url = "http://185.69.209.251/zabbix/api_jsonrpc.php" # Replace with your Zabbix API URL
+zabbix_graph_url = "https://reachlinktest.cloudetel.com/zabbix"
+# Api key
+auth_token = "de4bc85eca6a76481473f6e4efa71812ee7995c02ace600a62b750bc04841810"
+# Zabbix server details
+ZABBIX_WEB_URL="https://reachlinktest.cloudetel.com/zabbix/index.php"
+USERNAME="Admin"
+PASSWORD="zabbix"
+GRAPH_URL="https://reachlinktest.cloudetel.com/zabbix/chart2.php"
 # Step 1: Login using web form
 login_payload = {
     "name": USERNAME,
@@ -586,3 +594,20 @@ def traffic_report_gen(data):
         print(f"Error: {e}")        
         response = {"message": "Error Internal server problem.", "status": False}    
     return response
+data = {"hostid":"10677",
+        "intfcname": "Interface Fa4(): Network traffic",
+        "branch_location": "Jeddah Cisco HUB",
+        "fromdate": "2025-03-27 00:00:00",
+        "todate": "2025-03-29 00:00:00",
+        "ishub": True       
+        }
+data1 = {   'hostid': '10084', 
+            'intfcname': 'Interface enp0s3: Network traffic',
+            'branch_location': 'Reachlink_server', 
+            'fromdate': '2025-03-21 06:05:00',
+            'todate': '2025-03-29 06:20:00', 
+            'ishub': True, 
+            'interval': 3600
+        }
+
+print(traffic_report_gen(data))
