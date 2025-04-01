@@ -287,7 +287,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
             pingvalues = []        
             for history_los in history_loss:
                 if history_los["itemid"] == itemidping:  
-                    pingvalues.append(int(history_los["value"]))
+                    pingvalues.append(int(float(history_los["value"])))
         history_results = response.json().get('result')        
         sentvalues = []
         receivedvalues = []
