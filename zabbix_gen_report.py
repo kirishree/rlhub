@@ -55,8 +55,7 @@ def get_item_id(host_id, name):
         items = {} 
         no_samplesperhour = 60
         for item in result:
-
-            if "Bits" in item["name"] and name.split(":")[0] in item["name"]:                
+            if "Bits" in item["name"] and name.split(":")[0] == item["name"].split(":")[0]:                
                 items.update({item["name"]: item["itemid"]})
                 int_interval = item["delay"]
                 if "m" in  item["delay"]:   
@@ -382,6 +381,33 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
         print(f"Failed to get History: {e}")
         return []
 
+def get_graph_id(host_id, name):    
+    get_graphid = {
+        "jsonrpc": "2.0",
+        "method": "graph.get",
+        "params": {
+            "output": ["graphid", "name"],
+            "hostids": host_id,
+            "search": {
+                        "name": name
+                        },           
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        update_response = session.post(zabbix_api_url, json=get_graphid)
+        update_result1 = update_response.json()
+        update_result = update_result1.get('result')
+        if 'error' in update_result:
+            print(f"Failed to get item list: {update_result['error']['data']}")
+            return False
+        else:            
+            return update_result[0]['graphid']
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
+
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -568,10 +594,11 @@ def traffic_report_gen(data):
                 itemidsent = itemid 
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         graphname = f"graph_{timestamp}"     
-        graphid = graph_create(itemidsent, itemidreceived, graphname)
+        #graphid = graph_create(itemidsent, itemidreceived, graphname)
+        graphid = get_graph_id(hostid, intfcname)
         if graphid: 
             download_graph_name = download_graph(graphid, fromdate, todate)
-            graph_delete(graphid)
+            #graph_delete(graphid)
             if(download_graph_name):
                     uptime_str = get_item_id_uptime(hostid) 
                     itemidping, icmp_samplesperhr = get_item_id_ping(hostid)

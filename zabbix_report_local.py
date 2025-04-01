@@ -63,8 +63,7 @@ def get_item_id(host_id, name):
         items = {} 
         no_samplesperhour = 60
         for item in result:
-
-            if "Bits" in item["name"] and name.split(":")[0] in item["name"]:                
+            if "Bits" in item["name"] and name.split(":")[0] == item["name"].split(":")[0]:                           
                 items.update({item["name"]: item["itemid"]})
                 int_interval = item["delay"]
                 if "m" in  item["delay"]:   
@@ -206,6 +205,35 @@ def download_graph(graphid, fromdate, todate):
         print("Execption raised on donload graph", e)
         return False
     
+def get_graph_id(host_id, name):    
+    get_graphid = {
+        "jsonrpc": "2.0",
+        "method": "graph.get",
+        "params": {
+            "output": ["graphid", "name"],
+            "hostids": host_id,
+            "search": {
+                        "name": name
+                        },           
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        update_response = session.post(zabbix_api_url, json=get_graphid)
+        update_result1 = update_response.json()
+        update_result = update_result1.get('result')
+        if 'error' in update_result:
+            print(f"Failed to get item list: {update_result['error']['data']}")
+            return False
+        else:            
+            return update_result[0]['graphid']
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
+
+#print(get_graph_id('10721', 'Interface ether1: Network traffic'))
+
 def graph_create(itemid1, itemid2, graphname):
     graph_create = {
         "jsonrpc": "2.0",
@@ -292,10 +320,13 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
         if itemidping:
             responseloss = session.post(zabbix_api_url, json=get_history_loss)
             history_loss = responseloss.json().get('result')
-            pingvalues = []        
+            pingvalues = []     
+            #print('hi###################')
             for history_los in history_loss:
-                if history_los["itemid"] == itemidping:  
-                    pingvalues.append(int(history_los["value"]))
+                if history_los["itemid"] == itemidping: 
+                    #time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(history_los["clock"]))) 
+                    #print(time_str)
+                    pingvalues.append(int(float(history_los["value"])))
         history_results = response.json().get('result')        
         sentvalues = []
         receivedvalues = []
@@ -317,6 +348,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
             total_percentile = round(np.percentile(totalvalues, 95), 4)           
             coverage = round((len(totalvalues)/no_intfcsamplesperinterval) * 100, 4)  
             if itemidping:
+                print(pingvalues)
                 responsecount = np.sum(pingvalues)
                 downtime = 0
                 if len(pingvalues) > 0:
@@ -369,9 +401,11 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                         in_value_avg = trend_result["value_avg"]
                         in_percentile = trend_result["value_max"]
                     if trend_result["itemid"] == itemidreceived:
+                        print("received", trend_result["value_avg"])
                         out_value_avg = trend_result["value_avg"]
                         out_percentile = trend_result["value_max"]
                     if trend_result["itemid"] == itemidping:
+                        print("trenddown time", no_icmpsamplesperinterval, trend_result["num"] )
                         downtime = round( ( (no_icmpsamplesperinterval-int(trend_result["num"])) /no_icmpsamplesperinterval) * 100, 4)
                 total_value_avg = in_value_avg + out_value_avg
                 total_percentile = in_percentile + out_percentile
@@ -576,10 +610,11 @@ def traffic_report_gen(data):
                 itemidsent = itemid 
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         graphname = f"graph_{timestamp}"     
-        graphid = graph_create(itemidsent, itemidreceived, graphname)
+        #graphid = graph_create(itemidsent, itemidreceived, graphname)
+        graphid = get_graph_id(hostid, intfcname)
         if graphid: 
             download_graph_name = download_graph(graphid, fromdate, todate)
-            graph_delete(graphid)
+            #graph_delete(graphid)
             if(download_graph_name):
                     uptime_str = get_item_id_uptime(hostid) 
                     itemidping, icmp_samplesperhr = get_item_id_ping(hostid)
@@ -609,5 +644,13 @@ data1 = {   'hostid': '10084',
             'ishub': True, 
             'interval': 3600
         }
+
+data3 = {'hostid': '10721', 'intfcname': 'Interface ether1: Network traffic', 
+        'branch_location': 'microtek21', 'fromdate': '2025-03-25 15:33:00', 
+        'todate': '2025-03-26 07:48:00', 'ishub': False, 'interval': 14400}
+
+data = {'hostid': '10677', 'intfcname': 'Interface Fa4: Network traffic', 
+        'branch_location': 'jeddah', 'fromdate': '2025-03-30 15:11:00', 
+        'todate': '2025-03-31 15:26:00', 'ishub': True, 'interval': 3600}
 
 print(traffic_report_gen(data))
