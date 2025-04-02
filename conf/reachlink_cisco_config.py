@@ -112,7 +112,7 @@ def main():
             print("❌ Invalid IP format. Please enter a valid IP.")
     bl = branch_location.lower()
     uuid = bl + "_" + hubip + "_cisco_ubuntu.net"
-    urllogin = "http://185.69.209.245:5000/auth"
+    urllogin = "http://185.69.209.251:5000/auth"
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:

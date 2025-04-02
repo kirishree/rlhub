@@ -65,6 +65,7 @@ def get_ciscospoke_config(data):
         print("orgid", organization_id)  
         if organization_id:            
             details = coll_registered_organization.find_one({"organization_id":organization_id})
+            print("details", details)
             if details:                                                   
                 if current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]                  

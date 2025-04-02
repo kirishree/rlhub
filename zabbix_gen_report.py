@@ -411,11 +411,11 @@ def get_graph_id(host_id, name):
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
-    custom_width = 1500  # Example: Set to your desired width in points
+    custom_width = 1200  # Example: Set to your desired width in points
     custom_height = 612  # Keep letter height or modify
     # Define PDF document with margins
     doc = SimpleDocTemplate(filename, pagesize=(custom_width, custom_height),
-                            leftMargin=20, rightMargin=20, topMargin=40, bottomMargin=40)
+                            leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
     elements = []
 
     # Get styles for headings
@@ -531,18 +531,25 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
+        ('FONTSIZE', (0, 0), (-1, 0), 8),  # Adjust font size for Table Header better fit
+        ('FONTSIZE', (0, 0), (-1, -1), 10),  # Adjust font size for better fit
         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('TOPPADDING', (0, 0), (-1, 0), 8),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Grid for table
         #('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),  # 95th percentile row highlight
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        #('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
     ]))
     totaltraffic = Paragraph(f"<b>Traffic Total: {str(total_traffic)} MB</b>", styles["Normal"])
     avgspeed = Paragraph(f"<b>Average Speed: {str(avg_speed)} Mbit/s</b>", styles["Normal"])
     percentilestr = Paragraph(f"<b>Percentile: {str(percentile)} Mbit/s</b>", styles["Normal"])
     duration = Paragraph(f"<b>Duration: {fromdate} to {todate} </b>", styles["Normal"])
     uptime = Paragraph(f"<b>Uptime: {uptime_str} </b>", styles["Normal"])
+    
+    # Table Header
+    datainfo = [["Report Time Span", f"{fromdate} - {todate}"]]
+    datainfo.append
+
+    
     elements.append(title)
     elements.append(Spacer(1, 12))  # Space
     elements.append(title2)
