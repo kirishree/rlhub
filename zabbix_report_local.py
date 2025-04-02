@@ -653,4 +653,9 @@ data = {'hostid': '10677', 'intfcname': 'Interface Fa4: Network traffic',
         'branch_location': 'jeddah', 'fromdate': '2025-03-30 15:11:00', 
         'todate': '2025-03-31 15:26:00', 'ishub': True, 'interval': 3600}
 
+
+data = {'hostid': '10677', 'intfcname': 'Base Tunnel: Network traffic', 
+        'branch_location': 'jeddah', 'fromdate': '2025-03-30 15:11:00', 
+        'todate': '2025-03-31 15:26:00', 'ishub': True, 'interval': 3600}
+
 print(traffic_report_gen(data))

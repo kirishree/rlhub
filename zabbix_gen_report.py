@@ -64,7 +64,7 @@ def get_item_id(host_id, name):
                     no_samplesperhour = round(3600 / int(item["delay"].split('s')[0]))
         return items, no_samplesperhour        
     except Exception as e:
-        print(f"Failed to get item list: {e}")
+        print(f"Failed to get sent & recieved itemid: {e}")
         return {}, False
 
 def get_item_id_ping(host_id):
@@ -94,8 +94,8 @@ def get_item_id_ping(host_id):
             no_samplesperhour = round(3600 / int(delay.split('s')[0]))       
         return itemidping, no_samplesperhour    
     except Exception as e:
-        print(f"Failed to get item list: {e}")
-    return False, False
+        print(f"Failed to get icmp item id: {e}")
+    return False, no_samplesperhour
 
 def get_item_id_uptime(host_id):
     """Fetch item IDs related to bits received/sent."""
@@ -123,7 +123,7 @@ def get_item_id_uptime(host_id):
         print(uptime_str)
         return uptime_str     
     except Exception as e:
-        print(f"Failed to get item list: {e}")
+        print(f"Failed to get uptime: {e}")
         return False
 
 def get_trends(itemid, fromdate, todate):  
@@ -147,7 +147,7 @@ def get_trends(itemid, fromdate, todate):
         trend_result1 = trend_response.json()
         trend_result = trend_result1.get('result')
         if 'error' in trend_result:
-            print(f"Failed to get item list: {trend_result['error']['data']}")
+            print(f"Failed to get trend data: {trend_result['error']['data']}")
             return False
         else:
             return trend_result                    
@@ -400,7 +400,7 @@ def get_graph_id(host_id, name):
         update_result1 = update_response.json()
         update_result = update_result1.get('result')
         if 'error' in update_result:
-            print(f"Failed to get item list: {update_result['error']['data']}")
+            print(f"Failed to get graph id: {update_result['error']['data']}")
             return False
         else:            
             return update_result[0]['graphid']
@@ -411,7 +411,7 @@ def get_graph_id(host_id, name):
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, filename="traffic_data.pdf", logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
-    custom_width = 1000  # Example: Set to your desired width in points
+    custom_width = 1500  # Example: Set to your desired width in points
     custom_height = 612  # Keep letter height or modify
     # Define PDF document with margins
     doc = SimpleDocTemplate(filename, pagesize=(custom_width, custom_height),
@@ -456,6 +456,8 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     # Add data rows
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
+        time_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from) + interval))
+        date_time = time_str + time_to.split(" ")[0]
         percentile_output = get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamples_interval, no_icmpsamples_interval, interval, time_from)
         in_speed = convert_to_mbps(int(percentile_output["in_avg"]))
         out_speed = convert_to_mbps(int(percentile_output["out_avg"]))
@@ -475,7 +477,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         out_volumes.append(out_volume)
         downtime = percentile_output["downtime"]
         downtimes.append(downtime)
-        row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage, downtime]
+        row = [date_time, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage, downtime]
         data.append(row)
 
     # Calculate 95th percentile
@@ -503,7 +505,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     # Append 95th percentile row to table
     #data.append(["95th Percentile", in_95th, "-", out_95th, "-", total_95th, "-"])
     # Set column widths to fit within the page
-    column_widths = [110, 90, 90, 90, 90, 90, 90, 90, 70, 70]
+    column_widths = [160, 90, 90, 90, 90, 90, 90, 90, 70, 70]
 
     # Create the table with defined column widths
     table = Table(data, colWidths=column_widths)
@@ -515,12 +517,13 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
+        ('FONTSIZE', (0, 0), (-1, 0), 8),  # Adjust font size for Table Header better fit
+        ('FONTSIZE', (0, 0), (-1, -1), 10),  # Adjust font size for better fit
         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('TOPPADDING', (0, 0), (-1, 0), 8),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Grid for table
         #('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),  # 95th percentile row highlight
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        #('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
     ]))
     # Add table styles
     table.setStyle(TableStyle([
@@ -558,7 +561,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(Spacer(1, 12))  # More space before the table
     # **Add Logo** (Ensure 'logo.png' is in the same directory)
     try:
-        graphimg = Image(graphname, width=500, height=200)  # Adjust size as needed
+        graphimg = Image(graphname, width=900, height=300)  # Adjust size as needed
         elements.append(graphimg)
         elements.append(Spacer(1, 20))  # Space below logo
     except:
@@ -576,7 +579,9 @@ def traffic_report_gen(data):
         intfcname = data["intfcname"]
         fromdate = data["fromdate"]
         todate = data["todate"]
-        ishub = data["ishub"]         
+        ishub = data["ishub"]     
+        intfcname = intfcname.replace("Base Tunnel", "Interface ovpn1()")
+        intfcname = intfcname.replace("Overlay Tunnel", "reachlink()").replace("Base Tunnel", "Interface tun0").replace()   
         interval = int(data.get("interval", 3600))
         if ishub:
             branch_location = "HUB Location: " + data["branch_location"]
