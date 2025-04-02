@@ -514,7 +514,7 @@ def main():
                             print("Already item_id available")
                         else: 
                             if "host_id" in cispoke:                                                
-                                item_id = get_item_id(cispoke["host_id"], "Interface Fa4(): Bits")
+                                item_id = get_item_id(cispoke["host_id"], "Interface Fa4: Bits")
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         cispoke["itemid_sent"] = item["itemid"] 
