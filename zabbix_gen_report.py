@@ -579,9 +579,7 @@ def traffic_report_gen(data):
         intfcname = data["intfcname"]
         fromdate = data["fromdate"]
         todate = data["todate"]
-        ishub = data["ishub"]     
-        intfcname = intfcname.replace("Base Tunnel", "Interface ovpn1()")
-        intfcname = intfcname.replace("Overlay Tunnel", "reachlink()").replace("Base Tunnel", "Interface tun0").replace()   
+        ishub = data["ishub"]       
         interval = int(data.get("interval", 3600))
         if ishub:
             branch_location = "HUB Location: " + data["branch_location"]
