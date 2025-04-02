@@ -457,7 +457,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
         time_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from) + interval))
-        date_time = time_str + time_to.split(" ")[0]
+        date_time = time_str + " to " + time_to.split(" ")[1]
         percentile_output = get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamples_interval, no_icmpsamples_interval, interval, time_from)
         in_speed = convert_to_mbps(int(percentile_output["in_avg"]))
         out_speed = convert_to_mbps(int(percentile_output["out_avg"]))
