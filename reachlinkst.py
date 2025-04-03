@@ -187,7 +187,7 @@ def main():
                                                     "bits_sent": bits_sent })
                                 print(bandwidth_info)
                             else:
-                                item_id = get_item_id(midevice.get("host_id", ""), f"Interface ether1(): Bits")
+                                item_id = get_item_id(midevice.get("host_id", ""), f"Interface ether1: Bits")
                                 bits_received = 0
                                 bits_sent = 0                                
                                 for item in item_id:
@@ -244,7 +244,7 @@ def main():
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
                             else:
-                                item_id = get_item_id(cidevice.get("host_id", ""), f"Interface Fa4(): Bits")
+                                item_id = get_item_id(cidevice.get("host_id", ""), f"Interface Fa4: Bits")
                                 bits_received = 0
                                 bits_sent = 0                                
                                 for item in item_id:
@@ -477,7 +477,7 @@ def main():
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
                         else:
-                            item_id = get_item_id(device["cisco_hub_info"].get("host_id", ""), f"Interface Fa4(): Bits")
+                            item_id = get_item_id(device["cisco_hub_info"].get("host_id", ""), f"Interface Fa4: Bits")
                             bits_received = 0
                             bits_sent = 0                                
                             for item in item_id:
@@ -519,7 +519,7 @@ def main():
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
                             else:
-                                item_id = get_item_id(ciscospoke.get("host_id", ""), f"Interface Fa4(): Bits")
+                                item_id = get_item_id(ciscospoke.get("host_id", ""), f"Interface Fa4: Bits")
                                 bits_received = 0
                                 bits_sent = 0                                
                                 for item in item_id:

@@ -475,7 +475,7 @@ def main():
                             print("Already item_id available")
                         else: 
                             if "host_id" in mispoke:
-                                item_id = get_item_id(mispoke["host_id"], "Interface ether1(): Bits")
+                                item_id = get_item_id(mispoke["host_id"], "Interface ether1: Bits")
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         mispoke["itemid_sent"] = item["itemid"] 
@@ -551,7 +551,7 @@ def main():
                         print("Already item_id available")
                     else: 
                         if "host_id" in device["cisco_hub_info"]:                                                
-                            item_id = get_item_id(device["cisco_hub_info"]["host_id"], "Interface Fa4(): Bits")
+                            item_id = get_item_id(device["cisco_hub_info"]["host_id"], "Interface Fa4: Bits")
                             for item in item_id:
                                 if "sent" in item["name"]:
                                     device["cisco_hub_info"]["itemid_sent"] = item["itemid"] 

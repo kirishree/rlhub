@@ -6,6 +6,8 @@ import requests
 import getpass
 import re
 import ipaddress
+urllogin = "https://reachlink.cloudetel.com/auth"
+url = "https://reachlink.cloudetel.com/get_ciscohub_config"
 
 def find_com_port(description=None):
     """
@@ -115,8 +117,7 @@ def main():
         else:
             print("❌ Invalid IP format. Please enter a valid IP.")
     bl = branch_location.lower()
-    uuid = bl + "_ciscohub.net"
-    urllogin = "http://185.69.209.245:5000/auth"
+    uuid = bl + "_ciscohub.net"    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -142,7 +143,7 @@ def main():
         print("Enter a key to exit...")
         input()
         return
-    url = "http://185.69.209.245:5000/get_ciscohub_config"
+    
     # Set the headers to indicate that you are sending JSON data
     headers = {"Content-Type": "application/json",
                "Authorization": f"Bearer {access_token}"}
@@ -216,6 +217,7 @@ def main():
         "configure terminal",
             "interface FastEthernet4",
                 f"ip address {json_response['interface_wan_ip']} {json_response['interface_wan_netmask']}",
+                "no shut",
                 "duplex auto",
                 "speed auto",
                 "end",
