@@ -362,7 +362,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
 
     # Table Header
     data = [["Date Time", "Ping Time(msec)", "Minimum(msec)", 
-             "Maximum(msec)", "Packet Loss", "Percentile", "Coverage", "Downtime"]]
+             "Maximum(msec)", "Packet Loss(%)", "Percentile(msec)", "Coverage(%)", "Downtime(%)"]]
 
     response_avg_values = []
     response_max_values = []
@@ -410,7 +410,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     
     # Table Header
     data1 = [["Date Time", "Ping Time(msec)", "Minimum(msec)", 
-             "Maximum(msec)", "Packet Loss", "Percentile", "Coverage", "Downtime"]]
+             "Maximum(msec)", "Packet Loss(%)", "Percentile(msec)", "Coverage(%)", "Downtime(%)"]]
        
     data1.append([f"Averages(of {len(response_avg_values)}) values", avg_, min_, 
                   max_, avg_packet_loss, percentile, avg_coverage, avg_downtime])

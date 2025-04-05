@@ -407,7 +407,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
 
     # Table Header
     data = [["Date Time", "Traffic In(Mbit/s)", "Traffic In(MB)", 
-             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage", "Downtime"]]
+             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile(Mbit/s)", "Coverage(%)", "Downtime(%)"]]
 
     in_avg_values = []
     out_avg_values = []
@@ -460,7 +460,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     total_out_volumes = round(np.sum(out_volumes), 4)
     # Table Header
     data1 = [["Date Time", "Traffic In(Mbit/s)", "Traffic In(MB)", 
-             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile", "Coverage", "Downtime"]]
+             "Traffic Out(Mbit/s)", "Traffic Out(MB)", "Traffic Total(Mbit/s)", "Traffic Total(MB)", "Percentile(Mbit/s)", "Coverage(%)", "Downtime(%)"]]
 
     data1.append([f"Sums(of {len(total_volumes)}) values", " ", total_in_volumes, 
                   " ", total_out_volumes, " ", total_traffic, " " , " ", " "])
@@ -508,7 +508,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     datainfo.append(["Uptime stats:", f"UP:  {uptime_percentage}%  [{uptime_str}]  Down:  {avg_downtime}%"])
     datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
-    datainfo.append(["Percentile:", f"{str(percentile)}Mbit/s"])
+    datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
     columninfo_widths = [150, 300]
     tableinfo = Table(datainfo, colWidths=columninfo_widths)    
     # Add table styles
