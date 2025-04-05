@@ -2290,7 +2290,7 @@ def traffic_report(request):
                 trafficdatapdf = f.read()                    
             #os.system("rm -r traffic_data.pdf")            
             files_to_send = {
-                f"{data['intfcname']}_report.pdf": trafficdatapdf
+                data['filename']: trafficdatapdf
                 }
             # Create an in-memory ZIP buffer
             buffer = io.BytesIO()
