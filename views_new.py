@@ -60,6 +60,7 @@ import robustel_configure
 from decouple import config
 from datetime import timedelta
 import zabbix_gen_report
+import zabbix_ping_report
 newuser = False
 dummy_expiry_date = ""
 mongo_uri = config('DB_CONNECTION_STRING')
@@ -2268,7 +2269,14 @@ def traffic_report(request):
         print(data)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
-        report_status = zabbix_gen_report.traffic_report_gen(data)        
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        if "icmp" in data["intfcname"].lower():
+            data["intfcname"] = 'ICMP Response time'
+            data['filename'] = f"ping_report_{timestamp}.pdf"
+            report_status = zabbix_ping_report.ping_report_gen(data)
+        else:
+            data['filename'] = f"traffic_report_{timestamp}.pdf"
+            report_status = zabbix_gen_report.traffic_report_gen(data)        
         if not report_status["status"]:
             print("No relevant items found.")
             logger.error(f"Error: Get Traffic report: No relevant items found.")
@@ -2278,11 +2286,11 @@ def traffic_report(request):
             response1["Access-Control-Expose-Headers"] = "X-Message"
             return response1
         if report_status["status"]:
-            with open("traffic_data.pdf", "rb") as f:
+            with open(data['filename'], "rb") as f:
                 trafficdatapdf = f.read()                    
             #os.system("rm -r traffic_data.pdf")            
             files_to_send = {
-                "traffic_data.pdf": trafficdatapdf
+                f"{data['intfcname']}_report.pdf": trafficdatapdf
                 }
             # Create an in-memory ZIP buffer
             buffer = io.BytesIO()

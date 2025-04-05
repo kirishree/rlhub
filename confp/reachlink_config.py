@@ -135,7 +135,7 @@ def main():
             input()
             return
     except Exception as e:
-        print("Error while getting configuration: {e}")
+        print(f"Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
         return    
