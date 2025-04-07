@@ -469,7 +469,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     datainfo.append(["Average(Ping Time):", f"{str(avg_)} msec"])    
     #datainfo.append(["Percentile:", f"{str(percentile)} msec"])
     columninfo_widths = [150, 300]
-    tableinfo = Table(datainfo, colWidths=columninfo_widths, rowHeights=10)    
+    tableinfo = Table(datainfo, colWidths=columninfo_widths)    
     # Add table styles
     tableinfo.setStyle(TableStyle([       
  
