@@ -537,7 +537,10 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
     datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])
-    datainfo.append(["Uptime stats:", f"UP:  {uptime_percentage}% {uptime_bar}  [{uptime_str}]  Down:  {avg_downtime}%"])
+    
+    uptime_text = Paragraph(f"UP: {uptime_percentage}%  [{uptime_str}]<br/>Down: {avg_downtime}%", styles["Normal"])
+    uptime_bar = UptimeBar(uptime_percentage)
+    datainfo.append(["Uptime stats:", [f"UP:  {uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down:  {avg_downtime}%" ]])
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
