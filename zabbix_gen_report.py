@@ -544,8 +544,8 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     uptime_bar = UptimeBar(uptime_percentage)
 
     # Combine them in a row inside the cell
-    uptime_cell_content = [uptime_text1, Spacer(4, 0), uptime_bar, Spacer(4, 0), uptime_text2]
-    datainfo.append(["Uptime stats:", uptime_cell_content],)
+    datainfo.append(["Uptime stats:", uptime_text1, Spacer(4, 0), uptime_bar, Spacer(4, 0), uptime_text2])
+    #datainfo.append(["Uptime stats:", uptime_cell_content],)
     #datainfo.append(["Uptime stats:", [ f"UP:  {uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down:  {avg_downtime}%" ]])
     
     success_polls = total_polls - total_ping_loss
