@@ -577,7 +577,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
     elements.append(tableinfo)
 
-    datainfo.append= ["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]
+    datainfo = ["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
     elements.append(tableinfo)
