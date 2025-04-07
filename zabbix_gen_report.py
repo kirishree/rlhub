@@ -535,10 +535,30 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     uptime_percentage = round((100-avg_downtime), 4)
     # Table Header        
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
-    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])     
+    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"]) 
+
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
-    failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)    
+    failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4) 
+    # Create the bar
+    uptime_bar = UptimeBar(uptime_percentage, width=25, height=8)  # small horizontal bar
+    # Combine text and bar in a mini table (like an HBox)
+    mini_table = Table([[f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]])
+    mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")])    
+    #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
+    datainfo.append(["Uptime stats:", mini_table])
+
+    reqtime_bar = UptimeBar(good_stats) 
+    # Combine text and bar in a mini table (like an HBox)
+    mini_table1 = Table([[f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]])
+    mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
+    datainfo.append(["Request Stats:", mini_table1])
+
+    #datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
+    datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
+    datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
+    datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
+    tableinfo = Table(datainfo, rowHeights=25)    
     columninfo_widths = [150, 300]
     tableinfo = Table(datainfo, rowHeights=25)    
     # Add table styles
@@ -560,33 +580,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(subtitle)
     elements.append(Spacer(1, 12))  # Space
     tableinfo.hAlign = 'LEFT'  # Ensure image is aligned to the left
-    #elements.append(tableinfo)
-    # Combine them in a row inside the cell
-    # Texts as Paragraphs
-    #uptime_text1 = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
-    #uptime_text2 = Paragraph(f"[{uptime_str}]  Down: {avg_downtime}%", styles["Normal"])
-   
-    # Create the bar
-    uptime_bar = UptimeBar(uptime_percentage, width=25, height=8)  # small horizontal bar
-
-    # Create text as Paragraph
-    uptime_text = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
-
-    # Combine text and bar in a mini table (like an HBox)
-    mini_table = Table([[uptime_text, uptime_bar]], colWidths=[40*mm, 25*mm])
-    mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
-    
-    #uptime_bar = UptimeBar(uptime_percentage)    
-    #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
-    datainfo.append(["Uptime stats:", mini_table])
-    reqtime_bar = UptimeBar(good_stats) 
-    datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
-    datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
-    datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
-    datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
-    tableinfo = Table(datainfo, rowHeights=25) 
     elements.append(tableinfo)
-
     elements.append(Spacer(1, 12))  # More space before the image      
     try:
         graphimg = Image(graphname, width=500, height=200)  # Adjust size as needed
