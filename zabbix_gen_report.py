@@ -533,14 +533,21 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     ]))    
     uptime_percentage = round((100-avg_downtime), 4)
     # Table Header
-    uptime_bar = UptimeBar(uptime_percentage)
+    #uptime_bar = UptimeBar(uptime_percentage)
     
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
     datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])
     
-    uptime_text = Paragraph(f"UP: {uptime_percentage}%  [{uptime_str}]<br/>Down: {avg_downtime}%", styles["Normal"])
+    # Texts as Paragraphs
+    uptime_text1 = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
+    uptime_text2 = Paragraph(f"[{uptime_str}]  Down: {avg_downtime}%", styles["Normal"])
     uptime_bar = UptimeBar(uptime_percentage)
-    datainfo.append(["Uptime stats:", [f"UP:  {uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down:  {avg_downtime}%" ]])
+
+    # Combine them in a row inside the cell
+    uptime_cell_content = [uptime_text1, Spacer(4, 0), uptime_bar, Spacer(4, 0), uptime_text2]
+    datainfo.append(["Uptime stats:", uptime_cell_content],)
+    #datainfo.append(["Uptime stats:", [ f"UP:  {uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down:  {avg_downtime}%" ]])
+    
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
