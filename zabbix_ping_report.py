@@ -339,7 +339,7 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
 def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, branch_location, fromdate, todate, graphname, uptime_str, interval, interface_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
-    custom_width = 1000  # Example: Set to your desired width in points
+    custom_width = 730  # Example: Set to your desired width in points
     custom_height = 612  # Keep letter height or modify
     # Define PDF document with margins
     doc = SimpleDocTemplate(filename, pagesize=(custom_width, custom_height),
@@ -469,7 +469,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     datainfo.append(["Average(Ping Time):", f"{str(avg_)} msec"])    
     #datainfo.append(["Percentile:", f"{str(percentile)} msec"])
     columninfo_widths = [150, 300]
-    tableinfo = Table(datainfo, colWidths=columninfo_widths)    
+    tableinfo = Table(datainfo, colWidths=columninfo_widths, rowHeights=40)    
     # Add table styles
     tableinfo.setStyle(TableStyle([       
  

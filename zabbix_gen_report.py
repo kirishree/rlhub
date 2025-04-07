@@ -524,12 +524,12 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
     columninfo_widths = [150, 300]
-    tableinfo = Table(datainfo, colWidths=columninfo_widths)    
+    tableinfo = Table(datainfo, colWidths=columninfo_widths, rowHeights=40)    
     # Add table styles
     tableinfo.setStyle(TableStyle([       
  
-        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
-        #('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),  # Adjust font size for better fit
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('TOPPADDING', (0, 0), (-1, 0), 8),
         #('GRID', (0, 0), (-1, -1), 1, colors.whitesmoke),  # Grid for table
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
