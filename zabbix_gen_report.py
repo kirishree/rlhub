@@ -15,6 +15,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Flowable
+from reportlab.lib.units import mm
 import numpy as np  # For percentile calculation
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 auth_token = config('ZABBIX_API_TOKEN')
@@ -559,21 +560,28 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(subtitle)
     elements.append(Spacer(1, 12))  # Space
     tableinfo.hAlign = 'LEFT'  # Ensure image is aligned to the left
-    elements.append(tableinfo)
+    #elements.append(tableinfo)
     # Combine them in a row inside the cell
     # Texts as Paragraphs
     #uptime_text1 = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
     #uptime_text2 = Paragraph(f"[{uptime_str}]  Down: {avg_downtime}%", styles["Normal"])
    
-    uptime_bar = UptimeBar(uptime_percentage)    
-    datainfo = [["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]]   
+    # Create the bar
+    uptime_bar = UptimeBar(uptime_percentage, width=25, height=8)  # small horizontal bar
+
+    # Create text as Paragraph
+    uptime_text = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
+
+    # Combine text and bar in a mini table (like an HBox)
+    mini_table = Table([[uptime_text, uptime_bar]], colWidths=[40*mm, 25*mm])
+    mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
     
+    #uptime_bar = UptimeBar(uptime_percentage)    
+    #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
+    datainfo.append(["Uptime stats:", mini_table])
     reqtime_bar = UptimeBar(good_stats) 
     datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
-    tableinfo = Table(datainfo, rowHeights=25) 
-    elements.append(tableinfo)
-
-    datainfo = [["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]]
+    datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
     tableinfo = Table(datainfo, rowHeights=25) 
