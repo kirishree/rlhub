@@ -384,25 +384,31 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
         print(f"Failed to get History: {e}")
         return []
 
-# Custom flowable for colored rectangle
 class UptimeBar(Flowable):
-    def __init__(self, uptime_percent, width=15, height=10):
+    def __init__(self, percentage, width=8, height=25):
         Flowable.__init__(self)
-        self.uptime_percent = float(uptime_percent)
+        self.percentage = percentage
         self.width = width
         self.height = height
 
     def draw(self):
-        # Choose color based on uptime
-        if self.uptime_percent >= 100:
-            fill_color = colors.green
-        elif self.uptime_percent > 98:
-            fill_color = colors.yellow
-        else:
-            fill_color = colors.red
+        # Draw background (full bar)
+        self.canv.setStrokeColor(colors.black)
+        self.canv.setFillColor(colors.lightgrey)
+        self.canv.rect(0, 0, self.width, self.height, stroke=1, fill=1)
 
-        self.canv.setFillColor(fill_color)
-        self.canv.rect(0, 0, self.width, self.height, stroke=0, fill=1)
+        # Determine fill color based on thresholds
+        if self.percentage >= 99.0:
+            bar_color = colors.green
+        elif self.percentage >= 98.0:
+            bar_color = colors.yellow
+        else:
+            bar_color = colors.red
+
+        # Draw filled portion (from bottom up)
+        fill_height = self.height * (self.percentage / 100.0)
+        self.canv.setFillColor(bar_color)
+        self.canv.rect(0, 0, self.width, fill_height, stroke=0, fill=1)
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -541,14 +547,14 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4) 
     # Create the bar
-    uptime_bar = UptimeBar(uptime_percentage, width=25, height=8)  # small horizontal bar
+    uptime_bar = UptimeBar(uptime_percentage, width=8, height=25)  # small horizontal bar
     # Combine text and bar in a mini table (like an HBox)
     mini_table = Table([[f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]])
     mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")])    
     #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
     datainfo.append(["Uptime stats:", mini_table])
 
-    reqtime_bar = UptimeBar(good_stats) 
+    reqtime_bar = UptimeBar(good_stats, width=8, height=25) 
     # Combine text and bar in a mini table (like an HBox)
     mini_table1 = Table([[f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]])
     mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")])
@@ -560,7 +566,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
     tableinfo = Table(datainfo, rowHeights=25)    
     columninfo_widths = [150, 300]
-    tableinfo = Table(datainfo, rowHeights=25)    
+    tableinfo = Table(datainfo, colWidths=columninfo_widths, rowHeights=25)    
     # Add table styles
     tableinfo.setStyle(TableStyle([       
  
