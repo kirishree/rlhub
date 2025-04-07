@@ -556,8 +556,8 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
 
     reqtime_bar = UptimeBar(good_stats, width=8, height=25) 
     # Combine text and bar in a mini table (like an HBox)
-    mini_table1 = Table([[f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[40,10,40,40])
-    mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])
+    mini_table1 = Table([[f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[90,20,50,40])
+    #mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])
     datainfo.append(["Request Stats:", mini_table1])
 
     #datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
