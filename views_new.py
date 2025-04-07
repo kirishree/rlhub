@@ -2288,7 +2288,7 @@ def traffic_report(request):
         if report_status["status"]:
             with open(data['filename'], "rb") as f:
                 trafficdatapdf = f.read()                    
-            #os.system("rm -r traffic_data.pdf")            
+            os.system(f"rm -r {data['filename']}")            
             files_to_send = {
                 data['filename']: trafficdatapdf
                 }
