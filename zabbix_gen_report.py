@@ -318,6 +318,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
             total_percentile = 0
             coverage = 0  
             downtime = 0
+            packetloss = 0
             if itemidping:
                 get_trend = {
                     "jsonrpc": "2.0",
