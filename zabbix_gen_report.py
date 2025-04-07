@@ -575,11 +575,13 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     datainfo = ["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]    
     reqtime_bar = UptimeBar(good_stats) 
     datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
+    tableinfo = Table(datainfo, rowHeights=25) 
     elements.append(tableinfo)
 
     datainfo = ["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
+    tableinfo = Table(datainfo, rowHeights=25) 
     elements.append(tableinfo)
 
     elements.append(Spacer(1, 12))  # More space before the image      
