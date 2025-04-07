@@ -199,7 +199,6 @@ def graph_create_ping(itemid_ping, itemid_loss, itemid_responsetime, graphname):
         return False
   
 def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsamplesperinterval, no_icmpsamplesperinterval, interval, fromdate):     
-    global total_ping_loss
     get_history = {
         "jsonrpc": "2.0",
         "method": "history.get",
@@ -242,7 +241,6 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                         downtime_interval +=1
                     if int(float(history_los["value"])) == 100:
                         consecutive_loss += 1
-                        total_ping_loss += 1
                     else:
                         consecutive_loss = 0                   
 
@@ -364,7 +362,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
 
     # Table Header
     data = [["Date Time", "Ping Time(msec)", "Minimum(msec)", 
-             "Maximum(msec)", "Packet Loss(%)", "Coverage(%)", "Downtime(%)"]]
+             "Maximum(msec)", "Packet Loss(%)", "Percentile(msec)", "Coverage(%)", "Downtime(%)"]]
 
     response_avg_values = []
     response_max_values = []
@@ -377,14 +375,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     time_to = int(time.mktime(time.strptime(todate, "%Y-%m-%d %H:%M:%S")))
     no_intfcsamples_interval = round( ( (interface_samplesperhr * interval) / 3600 ) )
     no_icmpsamples_interval = no_intfcsamples_interval
-    # Polling interval in seconds (1 minute = 60 seconds)
-    polling_interval = 60
-
-    # Calculate total polls
-    total_polls = (time_to - time_from) // polling_interval
     # Add data rows
-    global total_ping_loss
-    total_ping_loss = 0
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
         percentile_output = get_percentile(itemid_ping, itemid_loss, itemid_reponsetime, no_intfcsamples_interval, no_icmpsamples_interval, interval, time_from)
@@ -404,7 +395,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
         total_coverages.append(coverage)         
         downtimes.append(downtime)
         packet_lossess.append(packet_loss)
-        row = [time_str, response_value_avg, response_value_min, response_value_max, packet_loss, coverage, downtime]
+        row = [time_str, response_value_avg, response_value_min, response_value_max, packet_loss, response_percentile, coverage, downtime]
         data.append(row)
 
     # Calculate 95th percentile
@@ -419,13 +410,13 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     
     # Table Header
     data1 = [["Date Time", "Ping Time(msec)", "Minimum(msec)", 
-             "Maximum(msec)", "Packet Loss(%)", "Coverage(%)", "Downtime(%)"]]
+             "Maximum(msec)", "Packet Loss(%)", "Percentile(msec)", "Coverage(%)", "Downtime(%)"]]
        
     data1.append([f"Averages(of {len(response_avg_values)}) values", avg_, min_, 
-                  max_, avg_packet_loss, avg_coverage, avg_downtime])
+                  max_, avg_packet_loss, percentile, avg_coverage, avg_downtime])
     
     # Set column widths to fit within the page
-    column_widths = [110, 90, 90, 90, 90, 90, 90]
+    column_widths = [110, 90, 90, 90, 90, 90, 90, 90]
 
     # Create the table with defined column widths
     table = Table(data, colWidths=column_widths)
@@ -461,13 +452,9 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     # Table Header
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
     datainfo.append(["Sensor Type:", f"Ping ({snmp_interval} interval)"])
-    datainfo.append(["Uptime Stats:", f"UP:        {uptime_percentage}%  [{uptime_str}]     Down:   {avg_downtime}%"])
-    success_polls = total_polls - total_ping_loss
-    good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
-    failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
-    datainfo.append(["Request Stats:", f"Good:     {good_stats}%  [{success_polls}]         Failed:  {failed_stats}% [{total_ping_loss}]"])
+    datainfo.append(["Uptime stats:", f"UP:  {uptime_percentage}%  [{uptime_str}]  Down:  {avg_downtime}%"])
     datainfo.append(["Average(Ping Time):", f"{str(avg_)} msec"])    
-    #datainfo.append(["Percentile:", f"{str(percentile)} msec"])
+    datainfo.append(["Percentile:", f"{str(percentile)} msec"])
     columninfo_widths = [150, 300]
     tableinfo = Table(datainfo, colWidths=columninfo_widths)    
     # Add table styles

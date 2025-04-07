@@ -236,6 +236,7 @@ def graph_create(itemid1, itemid2, itemidping, graphname):
         return False
     
 def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperinterval, no_icmpsamplesperinterval, interval, fromdate):     
+    global total_ping_loss
     get_history = {
         "jsonrpc": "2.0",
         "method": "history.get",
@@ -276,6 +277,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                         downtime_interval +=1
                     if int(float(history_los["value"])) == 100:
                         consecutive_loss += 1
+                        total_ping_loss += 1
                     else:
                         consecutive_loss = 0      
         history_results = response.json().get('result')        
@@ -424,6 +426,13 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     no_icmpsamples_interval = 60
     if icmp_samplesperhr:
         no_icmpsamples_interval = round( ( (icmp_samplesperhr * interval) / 3600 ) )
+     # Polling interval in seconds (1 minute = 60 seconds)
+    polling_interval = 60
+
+    # Calculate total polls
+    total_polls = (time_to - time_from) // polling_interval
+    global total_ping_loss
+    total_ping_loss = 0
     # Add data rows
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
@@ -505,8 +514,12 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     uptime_percentage = round((100-avg_downtime), 4)
     # Table Header
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
-    datainfo = [["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"]]
+    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])
     datainfo.append(["Uptime stats:", f"UP:  {uptime_percentage}%  [{uptime_str}]  Down:  {avg_downtime}%"])
+    success_polls = total_polls - total_ping_loss
+    good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
+    failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
+    datainfo.append(["Request Stats:", f"Good:     {good_stats}%  [{success_polls}]         Failed:  {failed_stats}% [{total_ping_loss}]"])
     datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
