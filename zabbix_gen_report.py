@@ -14,6 +14,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Flowable
 import numpy as np  # For percentile calculation
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 auth_token = config('ZABBIX_API_TOKEN')
@@ -382,6 +383,25 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
         print(f"Failed to get History: {e}")
         return []
 
+# Custom flowable for colored rectangle
+class UptimeBar(Flowable):
+    def __init__(self, uptime_percent, width=15, height=10):
+        Flowable.__init__(self)
+        self.uptime_percent = float(uptime_percent)
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Choose color based on uptime
+        if self.uptime_percent >= 100:
+            fill_color = colors.green
+        elif self.uptime_percent > 98:
+            fill_color = colors.yellow
+        else:
+            fill_color = colors.red
+
+        self.canv.setFillColor(fill_color)
+        self.canv.rect(0, 0, self.width, self.height, stroke=0, fill=1)
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -513,9 +533,11 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     ]))    
     uptime_percentage = round((100-avg_downtime), 4)
     # Table Header
+    uptime_bar = UptimeBar(uptime_percentage)
+    
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
     datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])
-    datainfo.append(["Uptime stats:", f"UP:  {uptime_percentage}%  [{uptime_str}]  Down:  {avg_downtime}%"])
+    datainfo.append(["Uptime stats:", f"UP:  {uptime_percentage}% {uptime_bar}  [{uptime_str}]  Down:  {avg_downtime}%"])
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
