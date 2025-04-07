@@ -549,7 +549,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     # Create the bar
     uptime_bar = UptimeBar(uptime_percentage, width=8, height=25)  # small horizontal bar
     # Combine text and bar in a mini table (like an HBox)
-    mini_table = Table([[f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[70,10,40,40])
+    mini_table = Table([[f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[70,10,90,40])
     mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])    
     #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
     datainfo.append(["Uptime stats:", mini_table])
