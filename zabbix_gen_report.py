@@ -532,15 +532,9 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Grid for table
     ]))    
     uptime_percentage = round((100-avg_downtime), 4)
-    # Table Header
-    #uptime_bar = UptimeBar(uptime_percentage)
-    
+    # Table Header        
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
-    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])   
-    
-    #datainfo.append(["Uptime stats:", uptime_cell_content],)
-    #datainfo.append(["Uptime stats:", [ f"UP:  {uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down:  {avg_downtime}%" ]])
-    
+    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])     
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)    
@@ -572,13 +566,14 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     #uptime_text2 = Paragraph(f"[{uptime_str}]  Down: {avg_downtime}%", styles["Normal"])
    
     uptime_bar = UptimeBar(uptime_percentage)    
-    datainfo = ["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]    
+    datainfo = [["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]]   
+    
     reqtime_bar = UptimeBar(good_stats) 
     datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
     tableinfo = Table(datainfo, rowHeights=25) 
     elements.append(tableinfo)
 
-    datainfo = ["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]
+    datainfo = [["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]]
     datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
     datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
     tableinfo = Table(datainfo, rowHeights=25) 
