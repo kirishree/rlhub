@@ -536,25 +536,14 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     #uptime_bar = UptimeBar(uptime_percentage)
     
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
-    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])
+    datainfo.append(["Sensor Type:", f"SNMP Traffic ({snmp_interval} interval)"])   
     
-    # Texts as Paragraphs
-    uptime_text1 = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
-    uptime_text2 = Paragraph(f"[{uptime_str}]  Down: {avg_downtime}%", styles["Normal"])
-    uptime_bar = UptimeBar(uptime_percentage)
-
-    # Combine them in a row inside the cell
-    datainfo.append(["Uptime stats:", uptime_text1, uptime_bar, uptime_text2])
     #datainfo.append(["Uptime stats:", uptime_cell_content],)
     #datainfo.append(["Uptime stats:", [ f"UP:  {uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down:  {avg_downtime}%" ]])
     
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
-    failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
-    datainfo.append(["Request Stats:", f"Good:     {good_stats}%  [{success_polls}]         Failed:  {failed_stats}% [{total_ping_loss}]"])
-    datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
-    datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
-    datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
+    failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)    
     columninfo_widths = [150, 300]
     tableinfo = Table(datainfo, rowHeights=25)    
     # Add table styles
@@ -577,8 +566,23 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(Spacer(1, 12))  # Space
     tableinfo.hAlign = 'LEFT'  # Ensure image is aligned to the left
     elements.append(tableinfo)
-    elements.append(Spacer(1, 12))  # More space before the image
-      
+    # Combine them in a row inside the cell
+    # Texts as Paragraphs
+    #uptime_text1 = Paragraph(f"UP: {uptime_percentage}%", styles["Normal"])
+    #uptime_text2 = Paragraph(f"[{uptime_str}]  Down: {avg_downtime}%", styles["Normal"])
+   
+    uptime_bar = UptimeBar(uptime_percentage)    
+    datainfo = ["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]    
+    reqtime_bar = UptimeBar(good_stats) 
+    datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
+    elements.append(tableinfo)
+
+    datainfo.append= ["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"]
+    datainfo.append(["Total(Traffic Total):", f"{str(total_traffic)} MB"])
+    datainfo.append(["Percentile:", f"{str(percentile)} Mbit/s"])
+    elements.append(tableinfo)
+
+    elements.append(Spacer(1, 12))  # More space before the image      
     try:
         graphimg = Image(graphname, width=500, height=200)  # Adjust size as needed
         graphimg.hAlign = 'LEFT'  # Ensure image is aligned to the left
