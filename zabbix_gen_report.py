@@ -457,6 +457,26 @@ class UptimeBar(Flowable):
         fill_height = self.height * (self.percentage / 100.0)
         self.canv.setFillColor(bar_color)
         self.canv.rect(0, 0, self.width, fill_height, stroke=0, fill=1)
+
+class summarytimeBar(Flowable):
+    def __init__(self, status, width=25, height=8):
+        Flowable.__init__(self)
+        self.status = str(status)
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Choose color based on uptime
+        if self.status == "Up":
+            fill_color = colors.green
+        elif self.status == "Unknown":
+            fill_color = colors.grey
+        elif self.status == "Down":
+            fill_color = colors.red
+
+        self.canv.setFillColor(fill_color)
+        self.canv.rect(0, 0, self.width, self.height, stroke=0, fill=1)
+
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -685,14 +705,22 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         noof_sec = remaining_secs % 60
 
         dayshrmins = f"{noof_days}d {noof_hours}h {noof_minutes}m {noof_sec}s"
-    
+
+        summarytime_bar = summarytimeBar(summary["status"], width=25, height=8) 
+        # Combine text and bar in a mini table (like an HBox)
+        mini_table1 = Table([ [f"{summarytime_from} - {summarytime_to} [{dayshrmins}]", summarytime_bar] ], colWidths=[200,40])
+        #mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])               
         summaryinfo.append([
             summary["status"],
-            f"{summarytime_from} - {summarytime_to} [{dayshrmins}]"
+            mini_table1           
         ])
-    summarytableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30) 
+    summarytableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30)
+    summarytableinfo.hAlign = 'LEFT'  # Ensure table is aligned to the left 
     summarytableinfo.setStyle(TableStyle([       
- 
+        #('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background color
+        #('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
+        #('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
