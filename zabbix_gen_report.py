@@ -318,6 +318,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
         for i in range(0,len(sentvalues)):
             total = sentvalues[i] + receivedvalues[i]
             totalvalues.append(total)
+        print("totalvalues", totalvalues)
         if len(totalvalues) > 0:
             in_value_avg = round(np.mean(sentvalues), 4)
             out_value_avg = round(np.mean(receivedvalues), 4)
