@@ -348,7 +348,7 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                 
             except Exception as e:
                 print("Error in trend data")    
-            if  in_value_avg == 0:
+            if  coverage == 0:
                 if len(summary_report) == 0:
                     summary_report.append({"status": "Unknown",
                                                     "time_from": int(fromdate),
@@ -490,15 +490,21 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
         coverage = percentile_output["coverage"]
         downtime = percentile_output["downtime"]
         packet_loss = percentile_output["packet_loss"]
-        
+        if coverage == 0:
+            response_value_avg = " "
+            response_value_min = " "
+            response_value_max = " "
+            packet_loss = " "
+            downtime = " "
+        else:
         # Store values for percentile calculation
-        response_avg_values.append(response_value_avg)
-        response_max_values.append(response_value_max)
-        response_min_values.append(response_value_min)
-        response_percentiles.append(response_percentile)
-        total_coverages.append(coverage)         
-        downtimes.append(downtime)
-        packet_lossess.append(packet_loss)
+            response_avg_values.append(response_value_avg)
+            response_max_values.append(response_value_max)
+            response_min_values.append(response_value_min)
+            response_percentiles.append(response_percentile)
+            total_coverages.append(coverage)         
+            downtimes.append(downtime)
+            packet_lossess.append(packet_loss)
         row = [time_str, response_value_avg, response_value_min, response_value_max, packet_loss, coverage, downtime]
         data.append(row)
 
