@@ -708,13 +708,13 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
 
         summarytime_bar = summarytimeBar(summary["status"], width=25, height=8) 
         # Combine text and bar in a mini table (like an HBox)
-        mini_table2 = Table([ [f"{summarytime_from} - {summarytime_to} [{dayshrmins}]", summarytime_bar] ], colWidths=[200,40])
+        mini_table2 = Table([ [f"{summarytime_from} - {summarytime_to} [{dayshrmins}]", summarytime_bar] ], colWidths=[300,40])
         #mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])               
         summaryinfo.append([
             summary["status"],
             mini_table2        
         ])
-    summarytableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30)
+    summarytableinfo = Table(summaryinfo, colWidths=[150, 400], rowHeights=30)
     summarytableinfo.hAlign = 'LEFT'  # Ensure table is aligned to the left 
     summarytableinfo.setStyle(TableStyle([       
         #('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background color
