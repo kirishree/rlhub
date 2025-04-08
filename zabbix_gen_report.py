@@ -317,8 +317,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                 receivedvalues.append(int(history_result["value"]))        
         for i in range(0,len(sentvalues)):
             total = sentvalues[i] + receivedvalues[i]
-            totalvalues.append(total)
-        print("totalvalues", totalvalues)
+            totalvalues.append(total)        
         if len(totalvalues) > 0:
             in_value_avg = round(np.mean(sentvalues), 4)
             out_value_avg = round(np.mean(receivedvalues), 4)
@@ -394,7 +393,19 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                 total_value_avg = in_value_avg + out_value_avg
                 total_percentile = in_percentile + out_percentile
             except Exception as e:
-                print(f"Error in trend data:{e}")                
+                print(f"Error in trend data:{e}")    
+            if  in_value_avg == 0:
+                if len(summary_report) == 0:
+                    summary_report.append({"status": "Unknown",
+                                                    "time_from": int(fromdate),
+                                                    "time_to": int(fromdate) + interval })
+                else:
+                    if summary_report[-1]["status"] == "Unknown":
+                        summary_report[-1]["time_to"] = int(fromdate) + interval
+                    else:
+                        summary_report.append({"status": "Unknown",
+                                                "time_from": int(fromdate),
+                                                "time_to": int(fromdate) + interval})
         percentile_result = {"in_avg":in_value_avg,
                              "in_percentile": in_percentile,
                              "out_avg": out_value_avg,
