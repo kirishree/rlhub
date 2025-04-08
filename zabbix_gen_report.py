@@ -477,6 +477,30 @@ class summarytimeBar(Flowable):
         self.canv.setFillColor(fill_color)
         self.canv.rect(0, 0, self.width, self.height, stroke=0, fill=1)
 
+class DowntimeBar(Flowable):
+    def __init__(self, percentage, width=8, height=25):
+        Flowable.__init__(self)
+        self.percentage = percentage
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Draw background (full bar)
+        self.canv.setStrokeColor(colors.black)
+        self.canv.setFillColor(colors.lightgrey)
+        self.canv.rect(0, 0, self.width, self.height, stroke=1, fill=1)
+
+        # Determine fill color based on thresholds
+        if self.percentage >= 0.0001:
+            bar_color = colors.red        
+        else:
+            bar_color = colors.green
+
+        # Draw filled portion (from bottom up)
+        fill_height = self.height * (self.percentage / 100.0)
+        self.canv.setFillColor(bar_color)
+        self.canv.rect(0, 0, self.width, fill_height, stroke=0, fill=1)
+
 def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_samplesperhr, icmp_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -627,16 +651,19 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4) 
     # Create the bar
     uptime_bar = UptimeBar(uptime_percentage, width=8, height=15)  # small horizontal bar
+    # Create the bar
+    downtime_bar = DowntimeBar(avg_downtime, width=8, height=15) 
     # Combine text and bar in a mini table (like an HBox)
-    mini_table = Table([[f"UP: {uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[70,10,90,40])
+    mini_table = Table([[f"UP: {uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%", downtime_bar]], colWidths=[70,10,90,70, 10])
     mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"), 
                          ('FONTSIZE', (0, 0), (-1, -1), 8)])  # Adjust font size for better fit   
     #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
     datainfo.append(["Uptime stats:", mini_table])
 
     reqtime_bar = UptimeBar(good_stats, width=8, height=15) 
+    failtime_bar = DowntimeBar(failed_stats, width=8, height=15) 
     # Combine text and bar in a mini table (like an HBox)
-    mini_table1 = Table([[f"Good: {good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[70,10,90,40])
+    mini_table1 = Table([[f"Good: {good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]", failtime_bar ]], colWidths=[70,10,90,70,10])
     mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
                           ('FONTSIZE', (0, 0), (-1, -1), 8)]) # Adjust font size for better fit
     datainfo.append(["Request Stats:", mini_table1])
