@@ -665,14 +665,31 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(Spacer(1, 12))  # More space before the table
     summaryinfo = [["Status", "Date Time"]]
     for summary in summary_report:
-        summarytime_from = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(summary["time_from"])))
-        summarytime_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(summary["time_to"])))
-        noof_days = int(summary["time_from"]) - int(summary["time_to"]) // 86400
-        noof_hours = (int(summary["time_from"]) - int(summary["time_to"]) % 86400) // 24
-        noof_minutes = ((int(summary["time_from"]) - int(summary["time_to"]) % 86400) % 24) //60
-        noof_sec = ((int(summary["time_from"]) - int(summary["time_to"]) % 86400) % 24) % 60
-        dayshrmins = str(noof_days) + "d " + str(noof_hours) + "h " + str(noof_minutes) + "m " +str(noof_sec) + "s "
-        summaryinfo.append([summary["status"], f"{summarytime_from} - {summarytime_to} [{dayshrmins}]"])
+        time_from = int(summary["time_from"])
+        time_to = int(summary["time_to"])
+    
+        summarytime_from = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time_from))
+        summarytime_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time_to))
+    
+        total_seconds = time_to - time_from
+        if total_seconds < 0:
+            total_seconds = -total_seconds  # make duration positive if needed
+    
+        noof_days = total_seconds // 86400
+        remaining_secs = total_seconds % 86400
+
+        noof_hours = remaining_secs // 3600
+        remaining_secs %= 3600
+
+        noof_minutes = remaining_secs // 60
+        noof_sec = remaining_secs % 60
+
+        dayshrmins = f"{noof_days}d {noof_hours}h {noof_minutes}m {noof_sec}s"
+    
+        summaryinfo.append([
+            summary["status"],
+            f"{summarytime_from} - {summarytime_to} [{dayshrmins}]"
+        ])
     summarytableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30) 
     summarytableinfo.setStyle(TableStyle([       
  
