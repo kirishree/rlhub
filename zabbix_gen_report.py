@@ -474,17 +474,26 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         total_percentile = convert_to_mbps(percentile_output["total_percentile"])
         downtime = percentile_output["downtime"]
         # Store values for percentile calculation
-        in_avg_values.append(in_speed)
-        out_avg_values.append(out_speed)
-        total_speed_values.append(total_speed)
-        total_volumes.append(total_volume)  
-        total_coverages.append(coverage) 
-        in_volumes.append(in_volume) 
-        out_volumes.append(out_volume)        
-        downtimes.append(downtime)
+        if coverage == 0:
+            in_speed = " "
+            in_volume = " "
+            out_speed = " "
+            out_volume = " "
+            total_speed = " "
+            total_volume = " "
+            total_percentile = " "
+            downtime = " "
+        else:
+            in_avg_values.append(in_speed)
+            out_avg_values.append(out_speed)
+            total_speed_values.append(total_speed)
+            total_volumes.append(total_volume)  
+            total_coverages.append(coverage) 
+            in_volumes.append(in_volume) 
+            out_volumes.append(out_volume)        
+            downtimes.append(downtime)      
         row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage, downtime]
         data.append(row)
-
     # Calculate 95th percentile
     avg_speed = round(np.mean(total_speed_values), 4)  # Average
     total_traffic = round(np.sum(total_volumes), 4)  # Total
