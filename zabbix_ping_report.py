@@ -30,7 +30,7 @@ login_payload = {
 
 # Create a session
 session = requests.Session()
-
+summary_report = []
 def get_pingresponse_item_id(host_id, name):
     """Fetch item IDs related to bits received/sent."""
     get_responseitem = {
@@ -201,6 +201,7 @@ def graph_create_ping(itemid_ping, itemid_loss, itemid_responsetime, graphname):
   
 def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsamplesperinterval, no_icmpsamplesperinterval, interval, fromdate):     
     global total_ping_loss
+    global summary_report
     get_history = {
         "jsonrpc": "2.0",
         "method": "history.get",
@@ -244,8 +245,30 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                     if int(float(history_los["value"])) == 100:
                         consecutive_loss += 1
                         total_ping_loss += 1
+                        if len(summary_report) == 0:
+                            summary_report.append({"status": "Down",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
+                        else:
+                            if summary_report[-1]["status"] == "Down":
+                                summary_report[-1]["time_to"] = int(history_los["clock"])
+                            else:
+                                summary_report.append({"status": "Down",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
                     else:
-                        consecutive_loss = 0                   
+                        consecutive_loss = 0   
+                        if len(summary_report) == 0:
+                            summary_report.append({"status": "Up",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
+                        else:
+                            if summary_report[-1]["status"] == "Up":
+                                summary_report[-1]["time_to"] = int(history_los["clock"])
+                            else:
+                                summary_report.append({"status": "Up",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })                
 
         history_results = response.json().get('result')    
         #print("historyresults", response.json())    
@@ -324,7 +347,31 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                         packetloss = downtime
                 
             except Exception as e:
-                print("Error in trend data")                
+                print("Error in trend data")    
+            if  in_value_avg == 0:
+                if len(summary_report) == 0:
+                    summary_report.append({"status": "Unknown",
+                                                    "time_from": int(fromdate),
+                                                    "time_to": int(fromdate) + interval })
+                else:
+                    if summary_report[-1]["status"] == "Unknown":
+                        summary_report[-1]["time_to"] = int(fromdate) + interval
+                    else:
+                        summary_report.append({"status": "Unknown",
+                                                "time_from": int(fromdate),
+                                                "time_to": int(fromdate) + interval})
+            else:
+                if len(summary_report) == 0:
+                    summary_report.append({"status": "Up",
+                                                    "time_from": int(fromdate),
+                                                    "time_to": int(fromdate) + interval })
+                else:
+                    if summary_report[-1]["status"] == "Up":
+                        summary_report[-1]["time_to"] = int(fromdate) + interval
+                    else:
+                        summary_report.append({"status": "Up",
+                                                "time_from": int(fromdate),
+                                                "time_to": int(fromdate) + interval})            
         percentile_result = {"response_value_avg": response_value_avg,
                              "response_value_max": response_value_max,
                              "response_value_min": response_value_min,
@@ -362,6 +409,26 @@ class UptimeBar(Flowable):
         fill_height = self.height * (self.percentage / 100.0)
         self.canv.setFillColor(bar_color)
         self.canv.rect(0, 0, self.width, fill_height, stroke=0, fill=1)
+
+class summarytimeBar(Flowable):
+    def __init__(self, status, width=25, height=8):
+        Flowable.__init__(self)
+        self.status = str(status)
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Choose color based on uptime
+        if self.status == "Up":
+            fill_color = colors.green
+        elif self.status == "Unknown":
+            fill_color = colors.grey
+        elif self.status == "Down":
+            fill_color = colors.red
+
+        self.canv.setFillColor(fill_color)
+        self.canv.rect(0, 0, self.width, self.height, stroke=0, fill=1)
+
 def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, branch_location, fromdate, todate, graphname, uptime_str, interval, interface_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -411,6 +478,8 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     # Add data rows
     global total_ping_loss
     total_ping_loss = 0
+    global summary_report
+    summary_report = []
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
         percentile_output = get_percentile(itemid_ping, itemid_loss, itemid_reponsetime, no_intfcsamples_interval, no_icmpsamples_interval, interval, time_from)
@@ -495,15 +564,17 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     # Create the bar
     uptime_bar = UptimeBar(uptime_percentage, width=8, height=15)  # small horizontal bar
     # Combine text and bar in a mini table (like an HBox)
-    mini_table = Table([[f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[70,10,90,40])
-    mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])    
+    mini_table = Table([[f"UP: {uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[100,10,90,40])
+    mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                         ('FONTSIZE', (0, 0), (-1, -1), 8)])  # Adjust font size for better fit    
     #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
     datainfo.append(["Uptime stats:", mini_table])
 
     reqtime_bar = UptimeBar(good_stats, width=8, height=15) 
     # Combine text and bar in a mini table (like an HBox)
-    mini_table1 = Table([[f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[70,10,40,40])
-    #mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])
+    mini_table1 = Table([[f"Good: {good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[100,10,40,40])
+    mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                          ('FONTSIZE', (0, 0), (-1, -1), 8)])  # Adjust font size for better fit
     datainfo.append(["Request Stats:", mini_table1])
 
     #datainfo.append(["Request Stats:", f"Good:     {good_stats}%  [{success_polls}]         Failed:  {failed_stats}% [{total_ping_loss}]"])
@@ -546,6 +617,59 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     elements.append(Spacer(1, 12))  # More space before the table
     table.hAlign = 'LEFT'  # Ensure table is aligned to the left
     elements.append(table)
+    elements.append(Spacer(1, 12))  # More space before the table
+    #summary
+    summarytitle = Paragraph(f"<b>Summary Status History</b>", styles["Normal"])
+    elements.append(summarytitle)
+    elements.append(Spacer(1, 12))  # More space before the table
+    summaryinfo = [["Status", "Date Time"]]
+    for summary in summary_report:
+        time_from = int(summary["time_from"])
+        time_to = int(summary["time_to"])
+    
+        summarytime_from = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time_from))
+        summarytime_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time_to))
+    
+        total_seconds = time_to - time_from
+        if total_seconds < 0:
+            total_seconds = -total_seconds  # make duration positive if needed
+    
+        noof_days = total_seconds // 86400
+        remaining_secs = total_seconds % 86400
+
+        noof_hours = remaining_secs // 3600
+        remaining_secs %= 3600
+
+        noof_minutes = remaining_secs // 60
+        noof_sec = remaining_secs % 60
+
+        dayshrmins = f"{noof_days}d {noof_hours}h {noof_minutes}m {noof_sec}s"
+
+        summarytime_bar = summarytimeBar(summary["status"], width=25, height=8) 
+        # Combine text and bar in a mini table (like an HBox)
+        mini_table2 = Table([ [f"{summarytime_from} - {summarytime_to} [{dayshrmins}]", summarytime_bar] ], colWidths=[300,40])
+        #mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])               
+        summaryinfo.append([
+            summary["status"],
+            mini_table2        
+        ])
+    summarytableinfo = Table(summaryinfo, colWidths=[150, 400], rowHeights=30)
+    summarytableinfo.hAlign = 'LEFT'  # Ensure table is aligned to the left 
+    summarytableinfo.setStyle(TableStyle([       
+        #('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background color
+        #('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
+        #('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        #('GRID', (0, 0), (-1, -1), 1, colors.whitesmoke),  # Grid for table
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('LINEBELOW', (0, 0), (-1, -1), 3, colors.whitesmoke),
+        
+    ]))
+    elements.append(summarytableinfo)
     # Build PDF
     doc.build(elements)
     print(f"Traffic data saved to {filename}")
