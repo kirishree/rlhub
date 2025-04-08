@@ -239,6 +239,7 @@ def graph_create(itemid1, itemid2, itemidping, graphname):
     
 def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperinterval, no_icmpsamplesperinterval, interval, fromdate):     
     global total_ping_loss
+    global summary_report
     get_history = {
         "jsonrpc": "2.0",
         "method": "history.get",
@@ -280,8 +281,31 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                     if int(float(history_los["value"])) == 100:
                         consecutive_loss += 1
                         total_ping_loss += 1
+                        if len(summary_report) == 0:
+                            summary_report.append({"status": "Down",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
+                        else:
+                            if summary_report[-1]["status"] == "Down":
+                                summary_report[-1]["time_to"] = int(history_los["clock"])
+                            else:
+                                summary_report.append({"status": "Down",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
                     else:
-                        consecutive_loss = 0      
+                        consecutive_loss = 0 
+                        if len(summary_report) == 0:
+                            summary_report.append({"status": "Up",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
+                        else:
+                            if summary_report[-1]["status"] == "Up":
+                                summary_report[-1]["time_to"] = int(history_los["clock"])
+                            else:
+                                summary_report.append({"status": "Up",
+                                                    "time_from": int(history_los["clock"]) - 60,
+                                                    "time_to": int(history_los["clock"]) })
+
         history_results = response.json().get('result')        
         sentvalues = []
         receivedvalues = []
@@ -460,6 +484,8 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     total_polls = (time_to - time_from) // polling_interval
     global total_ping_loss
     total_ping_loss = 0
+    global summary_report
+    summary_report = []
     # Add data rows
     for time_from in range(time_from, time_to, interval):
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time_from)))
@@ -608,6 +634,18 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(Spacer(1, 12))  # More space before the table
     elements.append(table)
     # Build PDF
+    elements.append(Spacer(1, 12))  # More space before the table
+    #summary
+    summarytitle = Paragraph(f"<b>Summary Status History</b>", styles["Normal"])
+    elements.append(summarytitle)
+    elements.append(Spacer(1, 12))  # More space before the table
+    summaryinfo = [["Status", "Date Time"]]
+    for summary in summary_report:
+        summarytime_from = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(summary["time_from"])))
+        summarytime_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(summary["time_to"])))
+        summaryinfo.append([summary["status"], f"{summarytime_from} - {summarytime_to}"])
+    tableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30)  
+    elements.append(tableinfo)
     doc.build(elements)
     print(f"Traffic data saved to {filename}")
 
