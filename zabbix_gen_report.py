@@ -628,7 +628,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     # Create the bar
     uptime_bar = UptimeBar(uptime_percentage, width=8, height=15)  # small horizontal bar
     # Combine text and bar in a mini table (like an HBox)
-    mini_table = Table([[f"UP: {uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[100,10,90,40])
+    mini_table = Table([[f"UP: {uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[70,10,90,40])
     mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"), 
                          ('FONTSIZE', (0, 0), (-1, -1), 8)])  # Adjust font size for better fit   
     #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
@@ -636,7 +636,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
 
     reqtime_bar = UptimeBar(good_stats, width=8, height=15) 
     # Combine text and bar in a mini table (like an HBox)
-    mini_table1 = Table([[f"Good: {good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[100,10,40,40])
+    mini_table1 = Table([[f"Good: {good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[70,10,90,40])
     mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
                           ('FONTSIZE', (0, 0), (-1, -1), 8)]) # Adjust font size for better fit
     datainfo.append(["Request Stats:", mini_table1])
