@@ -10,6 +10,7 @@ from datetime import timedelta
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
+from reportlab.platypus import Flowable
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,  KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
@@ -336,6 +337,31 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
         print(f"Failed to get History: {e}")
         return []
 
+class UptimeBar(Flowable):
+    def __init__(self, percentage, width=8, height=25):
+        Flowable.__init__(self)
+        self.percentage = percentage
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Draw background (full bar)
+        self.canv.setStrokeColor(colors.black)
+        self.canv.setFillColor(colors.lightgrey)
+        self.canv.rect(0, 0, self.width, self.height, stroke=1, fill=1)
+
+        # Determine fill color based on thresholds
+        if self.percentage >= 99.0:
+            bar_color = colors.green
+        elif self.percentage >= 98.0:
+            bar_color = colors.yellow
+        else:
+            bar_color = colors.red
+
+        # Draw filled portion (from bottom up)
+        fill_height = self.height * (self.percentage / 100.0)
+        self.canv.setFillColor(bar_color)
+        self.canv.rect(0, 0, self.width, fill_height, stroke=0, fill=1)
 def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, branch_location, fromdate, todate, graphname, uptime_str, interval, interface_samplesperhr, snmp_interval, filename, logo_path="logo.png"):
     """Generate a well-structured PDF report with logo, traffic data, and percentile details."""
 
@@ -461,11 +487,26 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     # Table Header
     datainfo = [["Report Time Span:", f"{fromdate} - {todate}"]]
     datainfo.append(["Sensor Type:", f"Ping ({snmp_interval} interval)"])
-    datainfo.append(["Uptime Stats:", f"UP:        {uptime_percentage}%  [{uptime_str}]     Down:   {avg_downtime}%"])
+    #datainfo.append(["Uptime Stats:", f"UP:        {uptime_percentage}%  [{uptime_str}]     Down:   {avg_downtime}%"])
     success_polls = total_polls - total_ping_loss
     good_stats = round( ( ( success_polls / total_polls ) * 100), 4)
     failed_stats = round( ( (total_ping_loss / total_polls) * 100), 4)
-    datainfo.append(["Request Stats:", f"Good:     {good_stats}%  [{success_polls}]         Failed:  {failed_stats}% [{total_ping_loss}]"])
+
+    # Create the bar
+    uptime_bar = UptimeBar(uptime_percentage, width=8, height=15)  # small horizontal bar
+    # Combine text and bar in a mini table (like an HBox)
+    mini_table = Table([[f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]", f"Down: {avg_downtime}%" ]], colWidths=[70,10,90,40])
+    mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])    
+    #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
+    datainfo.append(["Uptime stats:", mini_table])
+
+    reqtime_bar = UptimeBar(good_stats, width=8, height=15) 
+    # Combine text and bar in a mini table (like an HBox)
+    mini_table1 = Table([[f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]" ]], colWidths=[70,10,40,40])
+    #mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM")])
+    datainfo.append(["Request Stats:", mini_table1])
+
+    #datainfo.append(["Request Stats:", f"Good:     {good_stats}%  [{success_polls}]         Failed:  {failed_stats}% [{total_ping_loss}]"])
     datainfo.append(["Average(Ping Time):", f"{str(avg_)} msec"])    
     #datainfo.append(["Percentile:", f"{str(percentile)} msec"])
     columninfo_widths = [150, 300]
@@ -473,7 +514,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     # Add table styles
     tableinfo.setStyle(TableStyle([       
  
-        ('FONTSIZE', (0, 0), (-1, -1), 12),  # Adjust font size for better fit
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
         ('TOPPADDING', (0, 0), (-1, -1), 8),
         #('GRID', (0, 0), (-1, -1), 1, colors.whitesmoke),  # Grid for table
