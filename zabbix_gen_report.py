@@ -31,7 +31,7 @@ login_payload = {
 
 # Create a session
 session = requests.Session()
-
+summary_report = []
 def get_item_id(host_id, name):
     """Fetch item IDs related to bits received/sent."""
     get_item = {
@@ -406,6 +406,18 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                         summary_report.append({"status": "Unknown",
                                                 "time_from": int(fromdate),
                                                 "time_to": int(fromdate) + interval})
+            else:
+                if len(summary_report) == 0:
+                    summary_report.append({"status": "Up",
+                                                    "time_from": int(fromdate),
+                                                    "time_to": int(fromdate) + interval })
+                else:
+                    if summary_report[-1]["status"] == "Up":
+                        summary_report[-1]["time_to"] = int(fromdate) + interval
+                    else:
+                        summary_report.append({"status": "Up",
+                                                "time_from": int(fromdate),
+                                                "time_to": int(fromdate) + interval})
         percentile_result = {"in_avg":in_value_avg,
                              "in_percentile": in_percentile,
                              "out_avg": out_value_avg,
@@ -655,9 +667,25 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     for summary in summary_report:
         summarytime_from = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(summary["time_from"])))
         summarytime_to = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(summary["time_to"])))
-        summaryinfo.append([summary["status"], f"{summarytime_from} - {summarytime_to}"])
-    tableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30)  
-    elements.append(tableinfo)
+        noof_days = int(summary["time_from"]) - int(summary["time_to"]) // 86400
+        noof_hours = (int(summary["time_from"]) - int(summary["time_to"]) % 86400) // 24
+        noof_minutes = ((int(summary["time_from"]) - int(summary["time_to"]) % 86400) % 24) //60
+        noof_sec = ((int(summary["time_from"]) - int(summary["time_to"]) % 86400) % 24) % 60
+        dayshrmins = str(noof_days) + "d " + str(noof_hours) + "h " + str(noof_minutes) + "m " +str(noof_sec) + "s "
+        summaryinfo.append([summary["status"], f"{summarytime_from} - {summarytime_to} [{dayshrmins}]"])
+    summarytableinfo = Table(summaryinfo, colWidths=columninfo_widths, rowHeights=30) 
+    summarytableinfo.setStyle(TableStyle([       
+ 
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Adjust font size for better fit
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        #('GRID', (0, 0), (-1, -1), 1, colors.whitesmoke),  # Grid for table
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('LINEBELOW', (0, 0), (-1, -1), 3, colors.whitesmoke),
+        
+    ]))
+    elements.append(summarytableinfo)
     doc.build(elements)
     print(f"Traffic data saved to {filename}")
 
