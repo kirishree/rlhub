@@ -182,7 +182,8 @@ def graph_create_ping(itemid_ping, itemid_loss, itemid_responsetime, graphname):
                 {
                 "itemid": itemid_loss,
                 "color": "FF0000",
-                "drawtype": 2
+                "drawtype": 2,
+                "yaxisside": 1
                 }             
                 
             ]            
@@ -240,7 +241,7 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
             for history_los in history_loss:
                 if history_los["itemid"] == itemid_loss:                   
                     pingvalues.append(int(float(history_los["value"])))
-                    if consecutive_loss == 5:
+                    if consecutive_loss == 4:
                         downtime_interval +=1
                     if int(float(history_los["value"])) == 100:
                         consecutive_loss += 1
