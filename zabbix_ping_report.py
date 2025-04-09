@@ -271,7 +271,9 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                             else:
                                 summary_report.append({"status": "Up",
                                                     "time_from": int(history_los["clock"]) - 60,
-                                                    "time_to": int(history_los["clock"]) })                
+                                                    "time_to": int(history_los["clock"]) }) 
+                    if float(history_los["value"]) > 0.0:
+                        print("hi", history_los["value"] )               
 
         history_results = response.json().get('result')    
         #print("historyresults", response.json())    
