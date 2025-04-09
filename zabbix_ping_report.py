@@ -246,6 +246,8 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                     if int(float(history_los["value"])) == 100:
                         consecutive_loss += 1
                         total_ping_loss += 1
+                        print("loss")
+                        print("summary report", summary_report)
                         if len(summary_report) == 0:
                             summary_report.append({"status": "Down",
                                                     "time_from": int(history_los["clock"]) - 60,
