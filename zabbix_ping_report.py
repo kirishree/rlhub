@@ -243,7 +243,7 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                     pingvalues.append(int(float(history_los["value"])))
                     if consecutive_loss == 4:
                         downtime_interval +=1
-                    if int(float(history_los["value"])) == 100:
+                    if float(history_los["value"]) > 0.0:
                         consecutive_loss += 1
                         total_ping_loss += 1
                         print("loss")
@@ -271,9 +271,7 @@ def get_percentile(itemid_ping, itemid_loss, itemid_responsetime, no_intfcsample
                             else:
                                 summary_report.append({"status": "Up",
                                                     "time_from": int(history_los["clock"]) - 60,
-                                                    "time_to": int(history_los["clock"]) }) 
-                    if float(history_los["value"]) > 0.0:
-                        print("hi", history_los["value"] )               
+                                                    "time_to": int(history_los["clock"]) })              
 
         history_results = response.json().get('result')    
         #print("historyresults", response.json())    

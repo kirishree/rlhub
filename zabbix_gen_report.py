@@ -279,7 +279,7 @@ def get_percentile(itemidsent, itemidreceived, itemidping, no_intfcsamplesperint
                     pingvalues.append(int(float(history_los["value"])))
                     if consecutive_loss == 4:
                         downtime_interval +=1
-                    if int(float(history_los["value"])) == 100:
+                    if float(history_los["value"]) > 0.0:
                         consecutive_loss += 1
                         total_ping_loss += 1
                         if len(summary_report) == 0:
