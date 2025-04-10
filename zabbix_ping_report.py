@@ -532,9 +532,10 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
             packet_lossess.append(packet_loss)
         row = [time_str, response_value_avg, response_value_min, response_value_max, packet_loss, coverage, downtime]
         data.append(row)
-
-    # Calculate 95th percentile
+    if len(response_avg_values) == 0:
+        return False
     
+    # Calculate 95th percentile    
     avg_ = round(np.mean(response_avg_values), 4)  
     min_ = round(np.mean(response_min_values), 4)  
     max_ = round(np.mean(response_max_values), 4)  
@@ -707,6 +708,7 @@ def save_to_pdf_ping(intfcname, itemid_ping, itemid_loss, itemid_reponsetime, br
     # Build PDF
     doc.build(elements)
     print(f"Traffic data saved to {filename}")
+    return True
 
 def ping_report_gen(data):
     try:        
@@ -740,7 +742,7 @@ def ping_report_gen(data):
             download_graph_name = download_graph(graphid, fromdate, todate)
             if(download_graph_name):
                     uptime_str = get_item_id_uptime(hostid)                    
-                    save_to_pdf_ping(intfcname,
+                    report_status = save_to_pdf_ping(intfcname,
                                      itemid_icmpping, 
                                      itemid_icmploss, 
                                      itemid_responsetime,
@@ -751,7 +753,9 @@ def ping_report_gen(data):
                                      interval, 
                                      interface_sampesperhr, 
                                      snmp_interval, data['filename']
-                                     ) 
+                                     )                     
+                    if not report_status:
+                        return {"message": "Error: No data in selected duration pl check the Date Time", "status": False}
                     os.system(f"rm -r {download_graph_name}")     
                     return {"message": "Traffic data generated successfully.", "status": True}
             else:            
