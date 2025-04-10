@@ -590,6 +590,8 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
         row = [time_str, in_speed, in_volume, out_speed, out_volume, total_speed, total_volume, total_percentile, coverage, downtime]
         data.append(row)
     # Calculate 95th percentile
+    if len(in_avg_values) == 0:
+            return False
     avg_speed = round(np.mean(total_speed_values), 4)  # Average
     total_traffic = round(np.sum(total_volumes), 4)  # Total
     percentile = round(np.percentile(total_speed_values, 95), 4)
@@ -763,6 +765,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     elements.append(summarytableinfo)
     doc.build(elements)
     print(f"Traffic data saved to {filename}")
+    return True
 
 def traffic_report_gen(data):
     try:        
@@ -795,7 +798,9 @@ def traffic_report_gen(data):
             download_graph_name = download_graph(graphid, fromdate, todate)
             if(download_graph_name):
                     uptime_str = get_item_id_uptime(hostid)                    
-                    save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_sampesperhr, icmp_samplesperhr, snmp_interval, data['filename']) 
+                    report_status = save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_sampesperhr, icmp_samplesperhr, snmp_interval, data['filename']) 
+                    if not report_status:
+                        return {"message": "Error: No data in selected duration pl check the Date Time"}
                     os.system(f"rm -r {download_graph_name}")     
                     return {"message": "Traffic data generated successfully.", "status": True}
             else:            
