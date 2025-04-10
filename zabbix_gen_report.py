@@ -800,7 +800,7 @@ def traffic_report_gen(data):
                     uptime_str = get_item_id_uptime(hostid)                    
                     report_status = save_to_pdf(intfcname, branch_location, fromdate, todate, download_graph_name, itemidreceived, itemidsent, uptime_str, interval, itemidping, interface_sampesperhr, icmp_samplesperhr, snmp_interval, data['filename']) 
                     if not report_status:
-                        return {"message": "Error: No data in selected duration pl check the Date Time"}
+                        return {"message": "Error: No data in selected duration pl check the Date Time", "status": False}
                     os.system(f"rm -r {download_graph_name}")     
                     return {"message": "Traffic data generated successfully.", "status": True}
             else:            
