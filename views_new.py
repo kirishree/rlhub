@@ -15,6 +15,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django_ratelimit.decorators import ratelimit
+from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.hashers import make_password
@@ -1087,7 +1088,12 @@ def get_interface_details_spoke(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Get interface details: {request.method} {request.path} Requested ip: {public_ip}')
-        response = []
+        branch_id = tunnel_ip = data["tunnel_ip"].split("/")[0]
+        cache_key = f"interfaces_branch_{branch_id}"
+        interface_details = cache.get(cache_key)
+        if interface_details:
+            return JsonResponse(interface_details, safe=False)
+        interface_details = []
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1095,10 +1101,10 @@ def get_interface_details_spoke(request):
                 response = requests.get(url + "get_interface_details")                                
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    response = json.loads(get_response)
+                    interface_details = json.loads(get_response)
                     #print(response)      
                 else:
-                    response =[]
+                    interface_details =[]
             except requests.exceptions.RequestException as e:
                 print("disconnected")                
         elif "microtek" in data["uuid"]:     
@@ -1106,20 +1112,22 @@ def get_interface_details_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.interfacedetails(data)                 
-            return JsonResponse(interface_details,safe=False) 
+            #return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.get_interface_cisco(data)
+            interface_details = router_configure.get_interface_cisco(data)
         elif "robustel" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = robustel_configure.get_interface_robustel(data)
+            interface_details = robustel_configure.get_interface_robustel(data)
+        # Store in cache for 60 seconds
+        cache.set(cache_key, interface_details, timeout=60)
     except Exception as e:
         logger.error(f"Error: Get interafce details of spoke:{e}")
-    return JsonResponse(response, safe=False)
+    return JsonResponse(interface_details, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
