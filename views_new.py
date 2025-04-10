@@ -1088,7 +1088,7 @@ def get_interface_details_spoke(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Get interface details: {request.method} {request.path} Requested ip: {public_ip}')
-        branch_id = tunnel_ip = data["tunnel_ip"].split("/")[0]
+        branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         interface_details = cache.get(cache_key)
         if interface_details:
@@ -1404,6 +1404,11 @@ def get_routing_table_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Get routing table spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"routing_branch_{branch_id}"
+        routing_table = cache.get(cache_key)
+        if routing_table:
+            return JsonResponse(routing_table, safe=False)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"               
@@ -1411,33 +1416,33 @@ def get_routing_table_spoke(request):
                 response = requests.get(url + "get_routing_table")                                 
                 if response.status_code == 200:      
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    routing_table_response = json.loads(get_response)
-                    response = routing_table_response           
+                    routing_table = json.loads(get_response)                               
                 else:                    
-                    response =[]
+                    routing_table =[]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = []
+                routing_table = []
         elif "microtek" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            routing_table = microtek_configure.routingtable(data)                      
-            return JsonResponse(routing_table,safe=False) 
+            routing_table = microtek_configure.routingtable(data)                 
         elif "cisco" in data["uuid"]:       
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.get_routingtable_cisco(data)
+            routing_table = router_configure.get_routingtable_cisco(data)
         elif "robustel" in data["uuid"]:       
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = robustel_configure.get_routingtable_robustel(data)
+            routing_table = robustel_configure.get_routingtable_robustel(data)
+        # Store in cache for 60 seconds
+        cache.set(cache_key, routing_table, timeout=60)
     except Exception as e:
         logger.error(f"Error: Get routing table spoke:{e}")
-        response = []
-    return JsonResponse(response, safe=False)
+        routing_table = []
+    return JsonResponse(routing_table, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
@@ -1869,21 +1874,28 @@ def get_routing_table(request):
         data = json.loads(request.body) 
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for HUB routing table: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"routing_hub_{branch_id}"
+        routing_table = cache.get(cache_key)
+        if routing_table:
+            return JsonResponse(routing_table, safe=False)
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.get_routingtable_cisco(data)
+                routing_table = router_configure.get_routingtable_cisco(data)
             else:
-                response = []
+                routing_table = []
         elif data["hub_wan_ip"] == hub_ip:
-            response  =ubuntu_info.get_routing_table_ubuntu()        
+            routing_table =ubuntu_info.get_routing_table_ubuntu() 
+        # Store in cache for 60 seconds
+        cache.set(cache_key, routing_table, timeout=60)       
     except Exception as e:
         logger.error(f"Error: Get hub routing table:{e}")
-        response = []
-    return JsonResponse(response, safe=False)
+        routing_table = []
+    return JsonResponse(routing_table, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
@@ -1961,21 +1973,28 @@ def get_interface_details_hub(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Gte interafce details HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"interfaces_hub_{branch_id}"
+        interface_details = cache.get(cache_key)
+        if interface_details:
+            return JsonResponse(interface_details, safe=False)
         if "_ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.get_interface_cisco(data)
+                interface_details = router_configure.get_interface_cisco(data)
             else:
-                response = []
+                interface_details = []
         elif data["hub_wan_ip"] == hub_ip:            
-            response = ubuntu_info.get_interface_details_ubuntu(data)            
+            interface_details = ubuntu_info.get_interface_details_ubuntu(data)
+        # Store in cache for 60 seconds
+        cache.set(cache_key, interface_details, timeout=60)            
     except Exception as e:
         logger.error(f"Error: Get Interface_details of HUB:{e}")
-        response = []    
-    return JsonResponse(response, safe=False)
+        interface_details = []    
+    return JsonResponse(interface_details, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
