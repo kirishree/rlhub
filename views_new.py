@@ -1137,6 +1137,9 @@ def create_vlan_interface_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for create VLAN Interface: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"interfaces_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1183,6 +1186,9 @@ def create_sub_interface_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Create Sub-interface: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"interfaces_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1225,6 +1231,9 @@ def create_loopback_interface_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for create Loopback interface: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"interfaces_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1267,6 +1276,9 @@ def create_tunnel_interface_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for create Tunnel Interface spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"interfaces_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1311,6 +1323,9 @@ def interface_config_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Interface config Spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"interfaces_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1361,6 +1376,9 @@ def vlan_interface_delete_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for delete interface spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"interfaces_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1452,6 +1470,9 @@ def add_route_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for add route spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"routing_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1497,6 +1518,9 @@ def del_staticroute_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for del static route spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"routing_branch_{branch_id}"
+        cache.delete(cache_key)
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1906,6 +1930,9 @@ def addstaticroute_hub(request: HttpRequest):
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for add static route HUB: {request.method} {request.path} Requested ip: {public_ip}')
         routes = data["routes_info"]    
+        branch_id = data["hub_wan_ip"] 
+        cache_key = f"routing_hub_{branch_id}"
+        cache.delete(cache_key)
         for route in routes:
             if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
                 response = {"message":"Error Invalid destination"}
@@ -1942,6 +1969,9 @@ def delstaticroute_hub(request: HttpRequest):
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Delete static route in HUB: {request.method} {request.path} Requested ip: {public_ip}')
+    branch_id = data["hub_wan_ip"]
+    cache_key = f"routing_hub_{branch_id}"
+    cache.delete(cache_key)
     try:         
         data = json.loads(request.body)      
         print("delstatichub",data)
@@ -2003,6 +2033,9 @@ def create_vlan_interface_hub(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Create VLAN interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"interfaces_hub_{branch_id}"
+        cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
@@ -2024,6 +2057,9 @@ def create_sub_interface_hub(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for create SUb Interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"interfaces_hub_{branch_id}"
+        cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
@@ -2045,6 +2081,9 @@ def create_loopback_interface_hub(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for create Loopback Interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"interfaces_hub_{branch_id}"
+        cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
@@ -2066,6 +2105,9 @@ def create_tunnel_interface_hub(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for create Tunnel Interface: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"interfaces_hub_{branch_id}"
+        cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
@@ -2088,6 +2130,9 @@ def vlan_interface_delete_hub(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Delete interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"]
+        cache_key = f"interfaces_hub_{branch_id}"
+        cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
             if data["intfc_name"].lower() == "loopback1":
                 response = [{"message": f"Error Don't try to modify interface interface {data['intfc_name']}"}] 
@@ -2145,6 +2190,9 @@ def interface_config_hub(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for configure Interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        branch_id = data["hub_wan_ip"] 
+        cache_key = f"interfaces_hub_{branch_id}"
+        cache.delete(cache_key)
         if data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.interface_config(data)                
         elif "microtekhub" in data["uuid"]:
