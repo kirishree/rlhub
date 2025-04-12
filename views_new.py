@@ -2130,7 +2130,7 @@ def vlan_interface_delete_hub(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Delete interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
-        branch_id = data["hub_wan_ip"]
+        branch_id = data["hub_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
