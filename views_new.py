@@ -327,6 +327,7 @@ def login(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
     data = json.loads(request.body)  
+    data['branch_location'] = data['branch_location'].lower()
     global newuser
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
@@ -783,9 +784,13 @@ def homepage_info(request: HttpRequest):
     try:        
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for Home page info: {request.method} {request.path} Requested ip: {public_ip}')
-        response = {}
+        response = {}        
         total_no_branches = 0
-        organization_id = str(request.GET.get('organization_id'))
+        organization_id = str(request.GET.get('organization_id'))        
+        cache_key = f"home_page_{organization_id}"
+        home_page_details = cache.get(cache_key)
+        if home_page_details:
+            return JsonResponse(home_page_details, safe=False)
         with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
@@ -824,6 +829,8 @@ def homepage_info(request: HttpRequest):
                             "bandwidth_info":bandwidth_info,                         
                             "organization_id": organization_id
                             }
+                # Store in cache for 60 seconds
+                cache.set(cache_key, response, timeout=60)
                 return JsonResponse(response, safe=False)
     except Exception as e:
         logger.error(f"Error: Home Page info:{e}")   
@@ -859,6 +866,8 @@ def homepage_info(request: HttpRequest):
                             "bandwidth_info": bandwidth_info,                             
                             "organization_id": organization_id
                             }
+    # Store in cache for 60 seconds
+    cache.set(cache_key, response, timeout=60)
     return JsonResponse(response, safe=False)
 
 @api_view(['GET'])
