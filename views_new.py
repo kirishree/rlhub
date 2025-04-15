@@ -164,7 +164,7 @@ def setass(response, devicename):
     try:
         connected_spoke =[]
         try:
-            time.sleep(40)   
+            time.sleep(60)   
         except Exception as e:
             print(e)
         newspokedevicename = response[0]["spokedevice_name"]        
@@ -239,7 +239,7 @@ def setass(response, devicename):
                 os.system("systemctl restart reachlink_test")                           
         if not newspokeconnstatus:
             print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
-            setass(response, devicename)
+            #setass(response, devicename)
         else:
             print(f"GRE tunnel created successfully for this {newspokedevicename}.")
     except Exception as e:
@@ -403,10 +403,10 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                background_thread = threading.Thread(target=setass, args=(response, "robustel",))
-                background_thread.start() 
-                os.system(f"python3 {reachlink_zabbix_path}")
-                os.system("systemctl restart reachlink_test") 
+                #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
+                #background_thread.start() 
+                #os.system(f"python3 {reachlink_zabbix_path}")
+                #os.system("systemctl restart reachlink_test") 
             else:
                 response1 = HttpResponse(content_type='text/plain')
                 response1['X-Message'] = json.dumps(response)    
@@ -647,6 +647,7 @@ def add_cisco_device(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
+    data['branch_location'] = data['branch_location'].lower()
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     print(f"requested ip of add cisco hub:{public_ip}")
     logger.debug(f'Received request for configure HUB: {request.method} {request.path} Requested ip: {public_ip}')
@@ -2275,6 +2276,27 @@ def get_microtekspoke_config(request: HttpRequest):
                         "snmpcommunitystring": snmpcommunitystring
                         }
         background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+        background_thread.start()
+    else:
+        spokedetails= {"message": response[0]["message"]}
+    
+    return JsonResponse(spokedetails, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_robustelspoke_config(request: HttpRequest):
+    global newuser
+    data = json.loads(request.body) 
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
+    response, newuser = onboarding.check_user(data, newuser)
+    if "This Robustel Spoke is already Registered" in response[0]["message"]:
+        #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
+        spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],                        
+                        "message": response[0]["message"],
+                        "snmpcommunitystring": snmpcommunitystring
+                        }
+        background_thread = threading.Thread(target=setass, args=(response, "robustel",))
         background_thread.start()
     else:
         spokedetails= {"message": response[0]["message"]}

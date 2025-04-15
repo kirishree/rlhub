@@ -11,6 +11,7 @@ router_ip = "192.168.0.1"
 username = "admin"
 password = "admin"
 urllogin = "https://reachlink.cloudetel.com/auth"
+url = "https://reachlink.cloudetel.com/get_robustelspoke_config"
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
     time.sleep(wait_time)  # Wait for the command to be processed  
@@ -119,7 +120,11 @@ def main():
         else:
             print("❌ Invalid email format. Please enter a valid email.")
     print(f"Enter the password of {username}:")
-    password = getpass.getpass()    
+    password = getpass.getpass()   
+    print(f"Enter the registered device(branch) location:")
+    branch_location = input()
+    bl = branch_location.lower()
+    branch_uuid = bl +  "_robustel.net"    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -133,11 +138,9 @@ def main():
                 print("Enter a key to exit...")
                 input()
                 return
-            else:
-                print(json_authresponse)
+            else:                
                 access_token = json_authresponse["access"]
-                set_openvpn_client() 
-                return
+                
         else:
             print("Error while authenticating data")
             print("Enter a key to exit...")
@@ -147,7 +150,35 @@ def main():
         print("Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
-    return
+        return
+    # Set the headers to indicate that you are sending JSON data
+    headers = {"Content-Type": "application/json",
+               "Authorization": f"Bearer {access_token}"}
+    userinfo = {"username": username,
+                "password": password,
+                "uuid": branch_uuid
+                } 
+    json_data = json.dumps(userinfo)
+    try:
+        response = requests.post(url, data=json_data, headers=headers)  # Timeout set to 5 seconds
+        response.raise_for_status()
+        if response.status_code == 200:           
+            json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+            spokeinfo = json.loads(json_response)
+            if  "This Robustel Spoke is already Registered" not in spokeinfo["message"]:
+                print(spokeinfo["message"])                
+            else:
+                print(spokeinfo["message"]) 
+                print("Start to configure")                
+                set_openvpn_client() 
+                return          
+        else:
+            print("Error while authenticating data")            
+    except Exception as e:
+        print(f"Error while getting configuration: {e}")
+    print("Enter a key to exit...")
+    input()
+    return   
 
 if __name__ == "__main__":
     main()
