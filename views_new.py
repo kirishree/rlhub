@@ -427,7 +427,7 @@ def add_cisco_device(request: HttpRequest):
             print("response", response)     
             if newuser:
                 userStatus = onboarding.authenticate_user(data)
-                print(userStatus)
+                #print(userStatus)
                 if userStatus:
                     response, newuser = onboarding.check_user(data, newuser)
                 else:
@@ -469,10 +469,9 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-                #background_thread.start() 
                 os.system(f"python3 {reachlink_zabbix_path}")
-                os.system("systemctl restart reachlink_test")   
+                os.system("systemctl restart reachlink_test")  
+                return response1 
             else:
                 logger.error(f"Error: Configure Microtek Spoke:{response[0]['message']}")
                 response = [{"message": response[0]['message'], "expiry_date": response[0]['expiry_date']}]                 
