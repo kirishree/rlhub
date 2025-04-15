@@ -103,7 +103,7 @@ def get_organization_id(data):
         user_response = requests.get(url+"users/me", headers=headers)
         if user_response.status_code == 200:
             userjson_response = user_response.json()
-            print("user me info", userjson_response)
+            #print("user me info", userjson_response)
             user_info = userjson_response["data"]["user"]
             if user_info["status"] == "ACTIVE":
                 data["username"] = user_info["email"]

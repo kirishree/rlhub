@@ -331,8 +331,7 @@ def login(request: HttpRequest):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
-    data = json.loads(request.body)  
-    print(data)
+    data = json.loads(request.body)    
     data['branch_location'] = data['branch_location'].lower()
     global newuser
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
@@ -421,12 +420,12 @@ def add_cisco_device(request: HttpRequest):
             response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1    
     if "microtik" in data["device"].lower():        
-        data["uuid"] = data['branch_location'] + "_microtek.net"
-        print(data)
+        data["uuid"] = data['branch_location'] + "_microtek.net"        
         data["username"] = "none"
         data["password"] = "none"        
         try:
-            response, newuser = onboarding.check_user(data, newuser)        
+            response, newuser = onboarding.check_user(data, newuser)   
+            print("response", response)     
             if newuser:
                 userStatus = onboarding.authenticate_user(data)
                 print(userStatus)
@@ -437,7 +436,7 @@ def add_cisco_device(request: HttpRequest):
             if "spokedevice_name" in response[0]:
                 client_name = response[0]["spokedevice_name"]
                 # Path configuration
-                output_file = os.path.expanduser(f"~/{client_name}.ovpn")
+                output_file = os.path.expanduser(f"/root/{client_name}.ovpn")
                 if not os.path.exists(output_file):
                     print("Generating new client")
                     new_client(client_name)    
