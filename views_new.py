@@ -123,7 +123,8 @@ def new_client(client_name):
 
         # Output .ovpn file path
         output_file = os.path.expanduser(f"~/{client_name}.ovpn")
-
+        if not os.path.exist(client_cert_file):
+            return False
         with open(output_file, "w") as ovpn:
             # Append client-common.txt
             with open(client_common_file, "r") as common:
@@ -153,8 +154,10 @@ def new_client(client_name):
                 ovpn.write(client_key.read())
             ovpn.write("</key>\n")
         print(f"Client configuration generated at: {output_file}")
+        return True
     except Exception as e:
         print(e)
+        return False
 
 def setass(response, devicename):    
     try:
@@ -352,7 +355,13 @@ def add_cisco_device(request: HttpRequest):
                 output_file = os.path.expanduser(f"~/{client_name}.ovpn")
                 if not os.path.exists(output_file):
                     print("Generating new client")
-                    new_client(client_name)    
+                    if not(new_client(client_name)):
+                        logger.error(f"Error: Configure Robustel Spoke: Issue with client certificate generation")
+                        response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+                        response1 = HttpResponse(content_type='text/plain')
+                        response1['X-Message'] = json.dumps(response)
+                        response1["Access-Control-Expose-Headers"] = "X-Message"
+                        return response1  
                 else:
                     print("Client already available")
                 base_path = "/etc/openvpn/server"
