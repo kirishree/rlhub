@@ -419,7 +419,7 @@ def add_cisco_device(request: HttpRequest):
             response1['X-Message'] = json.dumps(response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1    
-    if data["device"].lower() == "mikrotek":        
+    if data["device"].lower() == "microtik":        
         data["uuid"] = data['branch_location'] + "_microtek.net"
         print(data)
         data["username"] = "none"
