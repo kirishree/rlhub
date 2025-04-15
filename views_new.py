@@ -331,6 +331,7 @@ def login(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
     data = json.loads(request.body)  
+    print(data)
     data['branch_location'] = data['branch_location'].lower()
     global newuser
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
