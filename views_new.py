@@ -89,6 +89,7 @@ ubuntu_dialerclient_ip = config('UBUNTU_DIALER_CLIENT_IP')
 device_info_path = config('DEVICE_INFO_PATH')
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 robustel_exe_path = config('ROBUSTEL_EXE_PATH')
+microtik_exe_path = config('MICROTIK_EXE_PATH')
 # Zabbix API URL
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 # Api key
@@ -449,7 +450,7 @@ def add_cisco_device(request: HttpRequest):
                 with open(output_file, "r") as f:
                     ovpnfile = f.read()
                     f.close()                
-                with open("/root/reachlink/reachlink_microtek_config.exe", "rb") as f:
+                with open(microtik_exe_path, "rb") as f:
                     microtekexe = f.read()
                     f.close()
                 files_to_send = {                    
