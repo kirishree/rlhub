@@ -881,7 +881,9 @@ def get_dialer_ip(devicename):
                     return ({"dialerip":dialerip,
                              "dialerpassword": dialerpassword,
                              "dialerusername": devicename,
-                             "message": "olduser"})                    
+                             "message": "olduser",
+                             "hub_dialer_network":ubuntu_dialer_network,
+                             "hub_dialer_netmask":ubuntu_dialer_netmask})                    
                 dialer_ips.append(sec.strip().split(" ")[-1])
         #newdialerip = generate_dialerip(dialer_ips)
         newdialerip = generate_dialerip_cisco(ubuntu_dialer_network, ubuntu_dialer_netmask, dialer_ips)

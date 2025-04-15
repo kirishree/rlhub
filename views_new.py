@@ -511,13 +511,26 @@ def add_cisco_device(request: HttpRequest):
                 devicename = response[0]["spokedevice_name"]
                 devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
                 dialer_ip = data.get("dialer_ip", "")
-                if not devicedialerinfo:
+                if not devicedialerinfo: #New device
+                    routerpassword = hub_config.generate_router_password_cisco()
                     if data.get("dialer_ip", "") != hub_ip:
                         newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
                     else:
                         newdialerinfo = ubuntu_info.get_dialer_ip(devicename)
-                    routerpassword = hub_config.generate_router_password_cisco()
-                    if newdialerinfo:
+                else:
+                    routerpassword = devicedialerinfo["router_password"]
+                    if devicedialerinfo["dialer_hub_ip"] == dialer_ip: #same hub
+                        newdialerinfo= {"dialerip": devicedialerinfo["dialerip"],
+                                        "dialerpassword": devicedialerinfo["dialerpassword"],
+                                        "dialerusername": devicedialerinfo["dialerinfo"],
+                                        "hub_dialer_network":devicedialerinfo["hub_dialer_network"],
+                                        "hub_dialer_netmask":devicedialerinfo["hub_dialer_netmask"]}
+                    else:
+                        if data.get("dialer_ip", "") != hub_ip:
+                            newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                        else:
+                            newdialerinfo = ubuntu_info.get_dialer_ip(devicename)                 
+                if newdialerinfo:
                         newdialerinfo["router_username"] = devicename.lower()
                         newdialerinfo["router_password"] = routerpassword
                         newdialerinfo["spokedevice_name"] = devicename
@@ -526,22 +539,26 @@ def add_cisco_device(request: HttpRequest):
                         newdialerinfo["router_wan_ip_only"] = data["router_wan_ip"].split("/")[0]
                         subnet = ipaddress.IPv4Network(data["router_wan_ip"], strict=False)  # Allow non-network addresses
                         newdialerinfo["router_wan_ip_netmask"] = str(subnet.netmask) 
-                        coll_dialer_ip.insert_one({"uuid": data["uuid"],
-                                                "router_username": devicename.lower(),
-                                                "router_password": newdialerinfo["router_password"],
-                                                "spokedevice_name": devicename,
-                                                "dialerip":newdialerinfo["dialerip"],
-                                                "dialerpassword": newdialerinfo["dialerpassword"],
-                                                "dialerusername": devicename,
-                                                "dialer_hub_ip":dialer_ip,
-                                                "router_wan_ip_only": newdialerinfo["router_wan_ip_only"],
-                                                "router_wan_ip_netmask": newdialerinfo["router_wan_ip_netmask"],
-                                                "router_wan_ip_gateway": data["router_wan_gateway"],
-                                                "hub_dialer_network": newdialerinfo["hub_dialer_network"],
-                                                "hub_dialer_netmask":newdialerinfo["hub_dialer_netmask"],
-                                                "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
-                                                "branch_location": data["branch_location"]
-                                                }) 
+                        coll_dialer_ip.update_one({"uuid": data["uuid"]}, #filter
+                                                  {"$set":{"uuid": data["uuid"],
+                                                            "router_username": devicename.lower(),
+                                                            "router_password": newdialerinfo["router_password"],
+                                                            "spokedevice_name": devicename,
+                                                            "dialerip":newdialerinfo["dialerip"],
+                                                            "dialerpassword": newdialerinfo["dialerpassword"],
+                                                            "dialerusername": devicename,
+                                                            "dialer_hub_ip":dialer_ip,
+                                                            "router_wan_ip_only": newdialerinfo["router_wan_ip_only"],
+                                                            "router_wan_ip_netmask": newdialerinfo["router_wan_ip_netmask"],
+                                                            "router_wan_ip_gateway": data["router_wan_gateway"],
+                                                            "hub_dialer_network": newdialerinfo["hub_dialer_network"],
+                                                            "hub_dialer_netmask":newdialerinfo["hub_dialer_netmask"],
+                                                            "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
+                                                            "branch_location": data["branch_location"]
+                                                            }
+                                                    }, #update
+                                                    upsert=True                  # this enables "insert if not found"
+                                                ) 
                         organizationid = response[0]["organization_id"]
                         regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
                         if data.get("dialer_ip", "") != hub_ip:
@@ -592,14 +609,13 @@ def add_cisco_device(request: HttpRequest):
                         coll_registered_organization.update_many(query, update_data)                                          
                         dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
                         coll_tunnel_ip.insert_one(dialerinfo)                    
-                    else:
+                else:
                         json_response = [{"message": f"Error:while generating dialerip"}]
                         response = HttpResponse(content_type='application/zip')
                         response['X-Message'] = json.dumps(json_response)
                         response["Access-Control-Expose-Headers"] = "X-Message"
-                        return response
-                else:
-                    newdialerinfo = devicedialerinfo                 
+                        return response                  
+
                 # Create a buffer for the ZIP file
                 buffer = io.BytesIO()
                 if data.get("dialer_ip", "") != hub_ip:
