@@ -123,7 +123,8 @@ def new_client(client_name):
 
         # Output .ovpn file path
         output_file = os.path.expanduser(f"~/{client_name}.ovpn")
-        if not os.path.exist(client_cert_file):
+        if not os.path.exists(client_cert_file):
+            print("path not exist")
             return False
         with open(output_file, "w") as ovpn:
             # Append client-common.txt
