@@ -409,15 +409,14 @@ def add_cisco_device(request: HttpRequest):
                 #os.system(f"python3 {reachlink_zabbix_path}")
                 #os.system("systemctl restart reachlink_test") 
             else:
-                response1 = HttpResponse(content_type='text/plain')
-                response1['X-Message'] = json.dumps(response)    
-                response1["Access-Control-Expose-Headers"] = "X-Message"    
+                logger.error(f"Error: Configure Robustel Spoke:{response[0]['message']}")
+                response = [{"message": response[0]['message'], "expiry_date": response[0]['expiry_date']}] 
         except Exception as e:
             logger.error(f"Error: Configure Robustel Spoke: {e}")
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
-            response1 = HttpResponse(content_type='text/plain')
-            response1['X-Message'] = json.dumps(response)
-            response1["Access-Control-Expose-Headers"] = "X-Message"
+        response1 = HttpResponse(content_type='text/plain')
+        response1['X-Message'] = json.dumps(response)
+        response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1    
     if "microtik" in data["device"].lower():        
         data["uuid"] = data['branch_location'] + "_microtek.net"        
@@ -475,16 +474,15 @@ def add_cisco_device(request: HttpRequest):
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")   
             else:
-                response1 = HttpResponse(content_type='text/plain')
-                response1['X-Message'] = json.dumps(response)    
-                response1["Access-Control-Expose-Headers"] = "X-Message"    
+                logger.error(f"Error: Configure Microtek Spoke:{response[0]['message']}")
+                response = [{"message": response[0]['message'], "expiry_date": response[0]['expiry_date']}]                 
         except Exception as e:
             print(f"Error: Configure Microtek Spoke:{e}")
             logger.error(f"Error: Configure Microtek Spoke:{e}")
             response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
-            response1 = HttpResponse(content_type='text/plain')
-            response1['X-Message'] = json.dumps(response)
-            response1["Access-Control-Expose-Headers"] = "X-Message"
+        response1 = HttpResponse(content_type='text/plain')
+        response1['X-Message'] = json.dumps(response)
+        response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1
     if data["device"].lower() == "cisco":     
         if  data.get("dialer_ip", "") != hub_ip:
