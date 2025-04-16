@@ -698,21 +698,24 @@ def add_cisco_hub(request: HttpRequest):
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco HUB is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicename = devicename   
-            devicehubinfo = coll_hub_info.find_one({"hub_wan_ip_only":data["hub_ip"].split("/")[0]})            
-            coll_tunnel_ip.delete_many({"uuid":data["uuid"]})
-            if not devicehubinfo:
-                devicehubinfo = {}
-                devicehubinfo["router_username"] = devicename.lower()
-                devicehubinfo["router_password"] = hub_config.generate_router_password_cisco() 
-                devicehubinfo["hub_dialer_ip"] = data["hub_dialer_ip"].split("/")[0]
-                devicehubinfo["hub_dialer_netmask"] = hub_dialer_netmask
-                # Extract the network address
-                devicehubinfo["hub_dialer_network"] = hub_dialer_network                   
-                data["hub_wan_ip"] = data["hub_ip"]                
-                devicehubinfo["hub_wan_ip_only"] = data["hub_wan_ip"].split("/")[0]
-                wansubnet = ipaddress.IPv4Network(data["hub_wan_ip"], strict=False)  # Allow non-network addresses
-                devicehubinfo["hub_wan_ip_netmask"] = str(wansubnet.netmask)          
-                coll_hub_info.insert_one({"uuid": data["uuid"],
+            configuredhubinfo = coll_hub_info.find_one({"hub_wan_ip_only":data["hub_ip"].split("/")[0]})            
+            coll_tunnel_ip.delete_many({"uuid":data["uuid"]}) 
+            devicehubinfo = {}           
+            if  configuredhubinfo: #old HUB
+                devicehubinfo["router_password"] = configuredhubinfo["router_password"]                
+            else:
+                devicehubinfo["router_password"] = hub_config.generate_router_password_cisco()
+            devicehubinfo["router_username"] = devicename.lower()             
+            devicehubinfo["hub_dialer_ip"] = data["hub_dialer_ip"].split("/")[0]
+            devicehubinfo["hub_dialer_netmask"] = hub_dialer_netmask
+            # Extract the network address
+            devicehubinfo["hub_dialer_network"] = hub_dialer_network                   
+            data["hub_wan_ip"] = data["hub_ip"]                
+            devicehubinfo["hub_wan_ip_only"] = data["hub_wan_ip"].split("/")[0]
+            wansubnet = ipaddress.IPv4Network(data["hub_wan_ip"], strict=False)  # Allow non-network addresses
+            devicehubinfo["hub_wan_ip_netmask"] = str(wansubnet.netmask)          
+            coll_hub_info.update_one({"uuid": data["uuid"]}, #query
+                                     {"$set": {"uuid": data["uuid"],
                                                 "router_username": devicename.lower(),
                                                 "router_password": devicehubinfo["router_password"],
                                                 "hubdevice_name": devicename,
@@ -725,12 +728,15 @@ def add_cisco_hub(request: HttpRequest):
                                                 "hub_wan_ip_gateway": data["hub_wan_ip_gateway"],
                                                 'branch_location': data["branch_location"],
                                                 "hub_dialer_ip_cidr": data["hub_dialer_ip"]
-                                                }) 
-                organizationid = response[0]["organization_id"]
-                regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
-                for dev in regdevices["registered_devices"]:                    
-                    if "cisco_hub_info" in dev:
-                        if data["uuid"] == dev["cisco_hub_info"]["uuid"]:
+                                                }
+                                        }, #update
+                                        upsert=True                  # this enables "insert if not found"
+                                        ) 
+            organizationid = response[0]["organization_id"]
+            regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+            for dev in regdevices["registered_devices"]:                    
+                if "cisco_hub_info" in dev:
+                    if data["uuid"] == dev["cisco_hub_info"]["uuid"]:
                             dev["cisco_hub_info"]["router_username"] = devicename.lower()
                             dev["cisco_hub_info"]["router_password"] = devicehubinfo["router_password"]
                             dev["cisco_hub_info"]["hubdevice_name"] = devicename
@@ -742,39 +748,38 @@ def add_cisco_hub(request: HttpRequest):
                             dev["cisco_hub_info"]["hub_wan_ip_netmask"] = devicehubinfo["hub_wan_ip_netmask"]
                             dev["cisco_hub_info"]["hub_wan_ip_gateway"] = data["hub_wan_ip_gateway"]                      
                             dev["cisco_hub_info"]["hub_dialer_ip_cidr"] = data["hub_dialer_ip"]
-                query = {"organization_id": organizationid}
-                update_data = {"$set": {
+            query = {"organization_id": organizationid}
+            update_data = {"$set": {
                                         "registered_devices": regdevices["registered_devices"]                                                                           
                                         }
                                        }
-                coll_registered_organization.update_many(query, update_data)
-                network = ipaddress.ip_network(data["hub_dialer_ip"], strict=False)
-                first_ip = list(network.hosts())[0]
-                if str(first_ip) == devicehubinfo["hub_dialer_ip"]:
-                    first_ip = list(network.hosts())[1]
-                unitno = len([f for f in os.listdir("/etc/ppp/peers/") if os.path.isfile(os.path.join("/etc/ppp/peers/", f))])
-                list1 = ["{hub_ip}",
+            coll_registered_organization.update_many(query, update_data)
+            network = ipaddress.ip_network(data["hub_dialer_ip"], strict=False)
+            first_ip = list(network.hosts())[0]
+            if str(first_ip) == devicehubinfo["hub_dialer_ip"]:
+                first_ip = list(network.hosts())[1]
+            unitno = len([f for f in os.listdir("/etc/ppp/peers/") if os.path.isfile(os.path.join("/etc/ppp/peers/", f))])
+            list1 = ["{hub_ip}",
                          "{dialer_ubuntu_ip}",
                          "{dialer_hub_ip}",
                          "{unitno}"
                          ] 
                 
-                list2 = [devicehubinfo["hub_wan_ip_only"],
+            list2 = [devicehubinfo["hub_wan_ip_only"],
                          str(first_ip),
                          devicehubinfo["hub_dialer_ip"],
                          str(unitno)
                          ]
-                with open("pon.txt", "r") as f:
-                    data1 = f.read()
-                    f.close()
-                for i in range(0, len(list1)):
-                    data1 = data1.replace(list1[i], list2[i]) 
-                with open(f"/etc/ppp/peers/{devicename.lower()}", "w") as f:
-                    f.write(data1)
-                    f.close()
-                os.system(f"python3 {reachlink_zabbix_path}")                
-                os.system("systemctl restart reachlink_test")  
-            
+            with open("pon.txt", "r") as f:
+                data1 = f.read()
+                f.close()
+            for i in range(0, len(list1)):
+                data1 = data1.replace(list1[i], list2[i]) 
+            with open(f"/etc/ppp/peers/{devicename.lower()}", "w") as f:
+                f.write(data1)
+                f.close()
+            os.system(f"python3 {reachlink_zabbix_path}")                
+            os.system("systemctl restart reachlink_test")              
             # Create a buffer for the ZIP file
             buffer = io.BytesIO()
             # Create a ZIP archive
