@@ -522,7 +522,7 @@ def add_cisco_device(request: HttpRequest):
                     if devicedialerinfo["dialer_hub_ip"] == dialer_ip: #same hub
                         newdialerinfo= {"dialerip": devicedialerinfo["dialerip"],
                                         "dialerpassword": devicedialerinfo["dialerpassword"],
-                                        "dialerusername": devicedialerinfo["dialerinfo"],
+                                        "dialerusername": devicedialerinfo["dialerusername"],
                                         "hub_dialer_network":devicedialerinfo["hub_dialer_network"],
                                         "hub_dialer_netmask":devicedialerinfo["hub_dialer_netmask"]}
                     else:
