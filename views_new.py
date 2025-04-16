@@ -513,12 +513,14 @@ def add_cisco_device(request: HttpRequest):
                 dialer_ip = data.get("dialer_ip", "")
                 if not devicedialerinfo: #New device
                     routerpassword = hub_config.generate_router_password_cisco()
+                    routerusername = devicename.lower()
                     if data.get("dialer_ip", "") != hub_ip:
                         newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
                     else:
                         newdialerinfo = ubuntu_info.get_dialer_ip(devicename)
                 else:
                     routerpassword = devicedialerinfo["router_password"]
+                    routerusername = devicedialerinfo["router_username"]
                     if devicedialerinfo["dialer_hub_ip"] == dialer_ip: #same hub
                         newdialerinfo= {"dialerip": devicedialerinfo["dialerip"],
                                         "dialerpassword": devicedialerinfo["dialerpassword"],
@@ -531,7 +533,7 @@ def add_cisco_device(request: HttpRequest):
                         else:
                             newdialerinfo = ubuntu_info.get_dialer_ip(devicename)                 
                 if newdialerinfo:
-                        newdialerinfo["router_username"] = devicename.lower()
+                        newdialerinfo["router_username"] = routerusername
                         newdialerinfo["router_password"] = routerpassword
                         newdialerinfo["spokedevice_name"] = devicename
                         newdialerinfo["uuid"] = data["uuid"]
@@ -541,7 +543,7 @@ def add_cisco_device(request: HttpRequest):
                         newdialerinfo["router_wan_ip_netmask"] = str(subnet.netmask) 
                         coll_dialer_ip.update_one({"uuid": data["uuid"]}, #filter
                                                   {"$set":{"uuid": data["uuid"],
-                                                            "router_username": devicename.lower(),
+                                                            "router_username": routerusername,
                                                             "router_password": newdialerinfo["router_password"],
                                                             "spokedevice_name": devicename,
                                                             "dialerip":newdialerinfo["dialerip"],
@@ -567,7 +569,7 @@ def add_cisco_device(request: HttpRequest):
                                     if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
                                         for cispoke in  dev["cisco_spokes_info"]:                         
                                             if data["uuid"] == cispoke["uuid"]:
-                                                cispoke["router_username"] = devicename.lower()
+                                                cispoke["router_username"] = routerusername
                                                 cispoke["router_password"] = newdialerinfo["router_password"]
                                                 cispoke["spokedevice_name"] = devicename
                                                 cispoke["dialerip"] =  newdialerinfo["dialerip"]
@@ -587,7 +589,7 @@ def add_cisco_device(request: HttpRequest):
                                     if data["dialer_ip"] == dev["reachlink_hub_info"]["hub_ip"]: 
                                         for cispoke in  dev["cisco_spokes_info"]:                         
                                             if data["uuid"] == cispoke["uuid"]:
-                                                cispoke["router_username"] = devicename.lower()
+                                                cispoke["router_username"] = routerusername
                                                 cispoke["router_password"] = newdialerinfo["router_password"]
                                                 cispoke["spokedevice_name"] = devicename
                                                 cispoke["dialerip"] =  newdialerinfo["dialerip"]
@@ -703,9 +705,10 @@ def add_cisco_hub(request: HttpRequest):
             devicehubinfo = {}           
             if  configuredhubinfo: #old HUB
                 devicehubinfo["router_password"] = configuredhubinfo["router_password"]                
+                devicehubinfo["router_username"] = configuredhubinfo["router_username"]
             else:
                 devicehubinfo["router_password"] = hub_config.generate_router_password_cisco()
-            devicehubinfo["router_username"] = devicename.lower()             
+                devicehubinfo["router_username"] = devicename.lower()             
             devicehubinfo["hub_dialer_ip"] = data["hub_dialer_ip"].split("/")[0]
             devicehubinfo["hub_dialer_netmask"] = hub_dialer_netmask
             # Extract the network address
@@ -716,7 +719,7 @@ def add_cisco_hub(request: HttpRequest):
             devicehubinfo["hub_wan_ip_netmask"] = str(wansubnet.netmask)          
             coll_hub_info.update_one({"uuid": data["uuid"]}, #query
                                      {"$set": {"uuid": data["uuid"],
-                                                "router_username": devicename.lower(),
+                                                "router_username": devicehubinfo["router_username"],
                                                 "router_password": devicehubinfo["router_password"],
                                                 "hubdevice_name": devicename,
                                                 "hub_dialer_ip": devicehubinfo["hub_dialer_ip"],
@@ -737,7 +740,7 @@ def add_cisco_hub(request: HttpRequest):
             for dev in regdevices["registered_devices"]:                    
                 if "cisco_hub_info" in dev:
                     if data["uuid"] == dev["cisco_hub_info"]["uuid"]:
-                            dev["cisco_hub_info"]["router_username"] = devicename.lower()
+                            dev["cisco_hub_info"]["router_username"] = devicehubinfo["router_username"]
                             dev["cisco_hub_info"]["router_password"] = devicehubinfo["router_password"]
                             dev["cisco_hub_info"]["hubdevice_name"] = devicename
                             dev["cisco_hub_info"]["hub_dialer_ip"] =  devicehubinfo["hub_dialer_ip"]
