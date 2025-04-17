@@ -134,7 +134,7 @@ def get_routing_table_ubuntu():
         print(e)
     return response 
 
-def deactivate(data):
+def deactivate_gre(data):
     try:
         
         response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
@@ -166,7 +166,41 @@ def deactivate(data):
         response = {"message":f"Error:while deactivating data['tunnel_ip']"}                  
     return response
 
+def deactivate(data):
+    try:
+        
+        response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
+        tunnel_ip = data["tunnel_ip"].split("/")[0]
+        try:
+                command = f"sudo iptables -I INPUT -s {tunnel_ip} -j DROP"                
+                subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+                os.system("sudo netfilter-persistent save")           
+        except:
+                print(f"Error occured while deactivating {tunnel_ip}:", e)
+                response = {"message":f"Error occured while deactivating {tunnel_ip}"} 
+    except Exception as e:
+        print(e)
+        response = {"message":f"Error:while deactivating {tunnel_ip}"}                  
+    return response
+
 def activate(data):
+    try:       
+        response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
+        tunnel_ip = data["tunnel_ip"].split("/")[0]   
+        if True:
+            try:
+                    command = f"sudo iptables -D INPUT -s {tunnel_ip} -j DROP"
+                    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+                    os.system("sudo netfilter-persistent save")
+            except Exception as e:
+                    print(f"Error occured while activating {tunnel_ip}:", e)
+                    response = {"message":f"Error occured while activating {tunnel_ip}"}                
+    except Exception as e:
+        print(e)
+        response = {"message":f"Error: {e}"}
+    return response
+
+def activate_gre(data):
     try:       
         response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
         tunnel_ip = data["tunnel_ip"].split("/")[0]   

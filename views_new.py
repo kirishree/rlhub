@@ -980,7 +980,6 @@ def hub_info(request: HttpRequest):
 def deactivate(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     data = json.loads(request.body) 
-    print(data)
     logger.debug(f'Received request for Deactivation: {request.method} {request.path} Requested ip: {public_ip}')
     if ".net" not in data.get("uuid", ""):         
         response = ubuntu_info.deactivate(data)
@@ -1008,8 +1007,7 @@ def deactivate(request: HttpRequest):
         else:
             response = {"message": "Error HUB IP is missed"}
     if "microtek" in data.get("uuid", ""):
-        response = ubuntu_info.deactivate(data)
-    print(response)
+        response = ubuntu_info.deactivate(data)    
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])
