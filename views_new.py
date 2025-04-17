@@ -407,7 +407,8 @@ def add_cisco_device(request: HttpRequest):
                 #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
                 #background_thread.start() 
                 #os.system(f"python3 {reachlink_zabbix_path}")
-                #os.system("systemctl restart reachlink_test") 
+                os.system("systemctl restart reachlink_test") 
+                return response1   
             else:
                 logger.error(f"Error: Configure Robustel Spoke:{response[0]['message']}")
                 response = [{"message": response[0]['message'], "expiry_date": response[0]['expiry_date']}] 
