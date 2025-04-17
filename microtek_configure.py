@@ -603,6 +603,7 @@ def createtunnelinterface(data):
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    greintfcname = "gretunnel" + data["tunnel_intfc_name"] 
     try:
         # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
@@ -637,14 +638,13 @@ def createtunnelinterface(data):
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while creating Tunnel interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
-                    return response     
-       
-        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={data["tunnel_intfc_name"]} local-address={local_address} remote-address={data["destination_ip"]}')  
-        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={data["tunnel_intfc_name"]}')  
-        response = [{"message": f"Successfully created the Tunnel interface {data['tunnel_intfc_name']} "}]
+                    return response             
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
+        response = [{"message": f"Successfully created the Tunnel interface {greintfcname} "}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while creating Tunnel interface in Microtek Spoke {data['tunnel_intfc_name']}"}]
+        response = [{"message": f"Error while creating Tunnel interface in Microtek Spoke {greintfcname}"}]
           
     finally:
         # Close the SSH connection
@@ -698,6 +698,57 @@ def deletevlaninterface(data):
     except Exception as e:
         print(f"An error occurred: {e}")
         response = [{"message": f"Error while deleting VLAN interface in Microtek Spoke {data['intfc_name']}"}]
+          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def deletetunnelinterface(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        gre_info = output.split("\n")   
+        for addr in gre_info:
+            if "name=" in addr:
+                    tunnelname = addr.split("name=")[1].split(" ")[0].split('"')[1]                    
+                    print("tunnelname", tunnelname)
+                    print(data["intfc_name"])
+                    if tunnelname == data['intfc_name']:                            
+                            removeitemno = addr.split(" ")[1]                            
+                            stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre remove {removeitemno}')
+                            response = [{"message": f"Successfully deleted Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
+                            ssh_client.close()       
+                            return response
+        response = [{"message": f"Error no such Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = [{"message": f"Error while deleting Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
           
     finally:
         # Close the SSH connection
