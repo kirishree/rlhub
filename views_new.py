@@ -2181,6 +2181,9 @@ def vlan_interface_delete_hub(request):
             if data["intfc_name"].lower() == "loopback1":
                 response = [{"message": f"Error Don't try to modify interface interface {data['intfc_name']}"}] 
                 return JsonResponse(response, safe=False)
+            if "virtual-template" in data["intfc_name"].lower():
+                response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
+                return JsonResponse(response, safe=False)
             hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_ip"]
