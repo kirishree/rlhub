@@ -1297,7 +1297,7 @@ def create_loopback_interface_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             #interface_details = microtek_configure.createvlaninterface(data)   
-            response = [{"message": "Loopback Interface created successfully"}]              
+            response = [{"message": "Error: This device doesn't support Loopback Interface"}]              
             return JsonResponse(response,safe=False) 
         elif "cisco" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
@@ -1446,6 +1446,9 @@ def vlan_interface_delete_spoke(request):
             interface_details = microtek_configure.deletevlaninterface(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
+            if "virtual-template" in data["intfc_name"].lower():
+                response = {"message": f"Error: Deleting {data['intfc_name']} is prohibited"}
+                return JsonResponse(response, safe=False)
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
@@ -2133,7 +2136,7 @@ def create_loopback_interface_hub(request):
                 data["router_password"] = hub_info["router_password"]
                 response = router_configure.createloopbackinterface(data) 
         elif data["hub_wan_ip"] == hub_ip:
-            response = [{"message":"Loopback interface created successfully"}] 
+            response = [{"message":"Error: This device doesn't support Loopback interface"}] 
     except Exception as e:
         logger.error(f"Error: Create Loopback Interface HUB:{e}")
         response = [{"message": f"Error: {e}"}]

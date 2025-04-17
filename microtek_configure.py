@@ -594,6 +594,62 @@ def createvlaninterface(data):
         ssh_client.close()       
         return response
 
+def createtunnelinterface(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data               
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")  
+        interface_addresses = [] 
+        for addr in addresses_info:
+            if "address=" in addr:
+                    if " I " in addr:
+                        continue
+                    intfcaddress = addr.split("address=")[1].split(" ")[0]  
+                    interface_addresses.append(intfcaddress) 
+        for int_addr in data["addresses"]:
+            for address in interface_addresses:                   
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])                
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
+                    ssh_client.close()            
+                    return response
+        vlan_int_name = f"{data['link']}.{data['vlan_id']}"
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={data["tunnel_intfc_name"]} local-addres={} interface={data["link"]}')  
+        for newaddr in data["addresses"]:
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
+        response = [{"message": f"Successfully created the VLAN interface {vlan_int_name} "}]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = [{"message": f"Error while creating VLAN interface in Microtek Spoke {data['link']}"}]
+          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
 def deletevlaninterface(data):   
    # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
