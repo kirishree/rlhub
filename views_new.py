@@ -1443,13 +1443,15 @@ def vlan_interface_delete_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            if "." in data['intfc_name']:
-                interface_details = microtek_configure.deletevlaninterface(data) 
+            if "overlay" in data['intfc_name'].lower():
+                response = {"message": f"Error: Deleting {data['intfc_name']} is prohibited"}                
+            elif "." in data['intfc_name']:
+                response = microtek_configure.deletevlaninterface(data) 
             else:
-                interface_details = microtek_configure.deletetunnelinterface(data)             
-            return JsonResponse(interface_details,safe=False) 
+                response = microtek_configure.deletetunnelinterface(data)             
+            return JsonResponse(response,safe=False) 
         elif "cisco" in data["uuid"]:
-            if "virtual-template" in data["intfc_name"].lower():
+            if "virtual-template" in data["intfc_name"].lower() or "dialer1" in data["intfc_name"].lower():
                 response = {"message": f"Error: Deleting {data['intfc_name']} is prohibited"}
                 return JsonResponse(response, safe=False)
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
