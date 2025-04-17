@@ -1341,8 +1341,8 @@ def create_tunnel_interface_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            #interface_details = microtek_configure.createtunnelinterface(data)   
-            interface_details = [{"message":"Tunnel interface created successfully"}]              
+            interface_details = microtek_configure.createtunnelinterface(data)   
+            #interface_details = [{"message":"Tunnel interface created successfully"}]              
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
             print("vlan data", data)

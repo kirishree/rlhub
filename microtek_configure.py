@@ -626,24 +626,25 @@ def createtunnelinterface(data):
             if "address=" in addr:
                     if " I " in addr:
                         continue
-                    intfcaddress = addr.split("address=")[1].split(" ")[0]  
+                    intfcaddress = addr.split("address=")[1].split(" ")[0] 
+                    if data["link"] == addr.split("interface=")[1].split(" ")[0]:
+                        local_address = intfcaddress.split("/")[0]
                     interface_addresses.append(intfcaddress) 
         for int_addr in data["addresses"]:
             for address in interface_addresses:                   
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
                 ip_obj = ipaddress.ip_address(int_addr.split("/")[0])                
                 if ip_obj in corrected_subnet:  
-                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
+                    response = [{"message": f"Error while creating Tunnel interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
-                    return response
-        vlan_int_name = f"{data['link']}.{data['vlan_id']}"
-        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={data["tunnel_intfc_name"]} local-addres={} interface={data["link"]}')  
-        for newaddr in data["addresses"]:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
-        response = [{"message": f"Successfully created the VLAN interface {vlan_int_name} "}]
+                    return response     
+       
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={data["tunnel_intfc_name"]} local-address={local_address} remote-address={data["destination_ip"]}')  
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={data["tunnel_intfc_name"]}')  
+        response = [{"message": f"Successfully created the Tunnel interface {data['tunnel_intfc_name']} "}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while creating VLAN interface in Microtek Spoke {data['link']}"}]
+        response = [{"message": f"Error while creating Tunnel interface in Microtek Spoke {data['tunnel_intfc_name']}"}]
           
     finally:
         # Close the SSH connection
