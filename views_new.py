@@ -1258,7 +1258,12 @@ def create_sub_interface_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createsubinterface(data)      
+            response = router_configure.createsubinterface(data)   
+        elif "robustel" in data["uuid"]:
+            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = robustel_configure.createvlaninterface(data)    
     except Exception as e:
         response = [{"message": f"Error: while creating Sub interface"}]
         logger.error(f"Error: Create Sub Interface spoke:{e}")
@@ -1293,17 +1298,18 @@ def create_loopback_interface_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #data["router_username"] = router_info["router_username"]
+            #data["router_password"] = router_info["router_password"]
             #interface_details = microtek_configure.createvlaninterface(data)   
-            response = [{"message": "Error: This device doesn't support Loopback Interface"}]              
-            return JsonResponse(response,safe=False) 
+            response = [{"message": "Error: This device doesn't support Loopback Interface"}]           
         elif "cisco" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createloopbackinterface(data)      
+            response = router_configure.createloopbackinterface(data) 
+        elif "robustel" in data["uuid"]:      
+            response = [{"message": "Error: This device doesn't support Loopback Interface"}]              
     except Exception as e:
         logger.error(f"Error: Create Loopback Interface Spoke:{e}")
         response = [{"message": f"Error: while creating Loopback Intreface"}]
@@ -1349,7 +1355,9 @@ def create_tunnel_interface_spoke(request):
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createtunnelinterface(data)      
+            response = router_configure.createtunnelinterface(data)   
+        elif "robustel" in data["uuid"]:
+            response = [{"message": "Error: This device doesn't support Tunnel Interface"}]                 
     except Exception as e:
         logger.error(f"Error: Create Tunnel Interface Spoke:{e}")
         response = [{"message": f"Error: While craeting Tunnel interface"}]
