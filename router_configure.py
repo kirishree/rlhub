@@ -659,7 +659,11 @@ def deletevlaninterface(data):
             send_command_wo(shell, password)
         send_command(shell, 'configure terminal')
         send_command(shell, f'no interface {data["intfc_name"]}')
-        send_command(shell, 'end')
+        deleteoutput = send_command_wo(shell, 'end')
+        if " not be deleted" in deleteoutput:
+            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]   
+        else:
+            response = [{"message": f"Succesfully interface {data['intfc_name']} deleted"}]
    
         # Save the configuration
         send_command(shell, 'write memory')    
@@ -667,7 +671,7 @@ def deletevlaninterface(data):
         ssh_client.close()
     except Exception as e:
         print(e)
-    return [{"message": f"Succesfully interface {data['intfc_name']} deleted"}]
+    return response
 
 def createtunnelinterface(data):
     try:
