@@ -717,7 +717,7 @@ def add_cisco_hub(request: HttpRequest):
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco HUB is already Registered":
             devicename = response[0]["spokedevice_name"]
             devicename = devicename   
-            configuredhubinfo = coll_hub_info.find_one({"hub_wan_ip_only":data["hub_ip"].split("/")[0]})            
+            configuredhubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})            
             coll_tunnel_ip.delete_many({"uuid":data["uuid"]}) 
             devicehubinfo = {}           
             if  configuredhubinfo: #old HUB
@@ -2497,21 +2497,24 @@ def adminhomepage_info(request: HttpRequest):
         response = {}        
         total_no_branches = 0
         #organization_id = str(request.GET.get('organization_id'))        
-        cache_key = f"admin_home_page_"
+        cache_key = f"admin_home_page_info"
         home_page_details = cache.get(cache_key)
         if home_page_details:
             return JsonResponse(home_page_details, safe=False)
         with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
-        organization_registered = False
+        org_list = []
+        org_info = []
         for device in total_devices:
-            if device["organization_id"] == organization_id:
-                organization_registered = True
-                total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
-                hub_info = []
-                bandwidth_info = []
-                for hubs in device["hub_info"]:
+            organization_id = device["organization_id"]
+            org_list.append({"organization_name": device["organization_name"],
+                             "organization_id": device["organization_id"]})
+                
+            total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
+            hub_info = []
+            bandwidth_info = []
+            for hubs in device["hub_info"]:
                     hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
                                                             "no_of_active_branches": len(hubs["active_spokes"]),
                                                             "no_of_inactive_branches": len(hubs["inactive_spokes"]),
@@ -2526,56 +2529,25 @@ def adminhomepage_info(request: HttpRequest):
                                                             "hub_data": hubs["bandwidth_info_hub"]                                                     
                                                             }
                                     })
-                response = {
-                            "total_no_hubs": device["no_of_hubs"],
-                            "active_no_hubs": device["no_active_hubs"],
-                            "inactive_no_hubs": device["no_inactive_hubs"],
-                            "hub_summary": str(device["no_active_hubs"]) + "/" + str(device["no_of_hubs"]),
-                            "total_no_branches": total_no_branches,
-                            "active_no_branches": device["total_no_active_spokes"],
-                            "inactive_no_branches": device["total_no_inactive_spokes"],
-                            "branch_summary": str(device["total_no_active_spokes"]) + "/" + str(total_no_branches),
-                            "hub_info": hub_info,  
-                            "bandwidth_info":bandwidth_info,                         
-                            "organization_id": organization_id
-                            }
-                # Store in cache for 60 seconds
-                cache.set(cache_key, response, timeout=60)
-                return JsonResponse(response, safe=False)
+            org_info.append({device["organization_name"]: {
+                                        "total_no_hubs": device["no_of_hubs"],
+                                        "active_no_hubs": device["no_active_hubs"],
+                                        "inactive_no_hubs": device["no_inactive_hubs"],
+                                        "hub_summary": str(device["no_active_hubs"]) + "/" + str(device["no_of_hubs"]),
+                                        "total_no_branches": total_no_branches,
+                                        "active_no_branches": device["total_no_active_spokes"],
+                                        "inactive_no_branches": device["total_no_inactive_spokes"],
+                                        "branch_summary": str(device["total_no_active_spokes"]) + "/" + str(total_no_branches),
+                                        "hub_info": hub_info,  
+                                        "bandwidth_info":bandwidth_info,                         
+                                        "organization_id": organization_id
+                                        }
+                                })         
     except Exception as e:
-        logger.error(f"Error: Home Page info:{e}")   
-    for device in total_devices:
-        hub_info = []
-        bandwidth_info = []
-        for hubs in device["hub_info"]:
-            if hubs["hub_location"] == "Reachlink_server":
-                hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
-                                                            "no_of_active_branches": 0,
-                                                            "no_of_inactive_branches": 0,
-                                                            "active_branches": [],
-                                                            "inactive_branches": []
-                                                            }
-                                    })
-                bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
-                                                            "no_of_active_branches": 0,
-                                                            "no_of_inactive_branches": 0,
-                                                            "branch_data": [],
-                                                            "hub_data": hubs["bandwidth_info_hub"]                                                     
-                                                            }
-                                    })
-                response = {
-                            "total_no_hubs": 1,
-                            "active_no_hubs": 1,
-                            "inactive_no_hubs": 0,
-                            "hub_summary": "1/1",
-                            "total_no_branches": 0,
-                            "active_no_branches": 0,
-                            "inactive_no_branches": 0,
-                            "branch_summary": "0/0",
-                            "hub_info": hub_info, 
-                            "bandwidth_info": bandwidth_info,                             
-                            "organization_id": organization_id
-                            }
+        logger.error(f"Error: Admin Home Page info:{e}")   
+    response = {"no_of_registered_organization":len(total_devices),
+                    "list_of_organization": org_list,
+                    "organization_info":org_info}            
     # Store in cache for 60 seconds
     cache.set(cache_key, response, timeout=60)
     return JsonResponse(response, safe=False)

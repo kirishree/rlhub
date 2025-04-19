@@ -142,6 +142,7 @@ def main():
         for org in registered_organization:
             org_info = {}
             org_info['organization_id'] = org["organization_id"]
+            org_info['organization_name'] = org["organization_name"]
             org_info["hub_info"] = []
             org_info["no_of_hubs"] = 0
             org_info["no_active_hubs"] = 0
