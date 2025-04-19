@@ -21,7 +21,9 @@ hub_tunnel_endpoint = config('HUB_GRE_END_POINT')
 dummy_expiry_date = ""
 gretunnelnetworkip = config('HUB_GRE_NETWORKIP')
 hub_ip = config('HUB_IP')
-
+hub_host_id = config('HUB_HOSTID')
+hub_item_id_sent = config('HUB_ITEM_ID_SENT')
+hub_item_id_received = config('HUB_ITEM_ID_RECEIVED')
 def organization_name(data):
     try:
         if "access_token" not in data:
@@ -98,7 +100,20 @@ def authenticate_user(data):
                     "subscription_to":to_date,                        
                         "total_users": subsjson_response["data"]["users"],
                         "remaining_users": subsjson_response["data"]["users"],
-                        "registered_devices":[],
+                        "registered_devices":[{"reachlink_hub_info": {
+                                                "uuid": "reachlinkserver.net",
+                                                "host_id": hub_host_id,
+                                                "itemid_received": hub_item_id_received,
+                                                "itemid_sent": hub_item_id_sent,
+                                                "branch_location": "Reachlink_server",
+                                                "hub_ip": hub_ip
+                                                },
+                                                "microtek_spokes_info":[],
+                                                "robustel_spokes_info": [],
+                                                "cisco_spokes_info": [],
+                                                "ubuntu_spokes_info": []
+                                                }
+                                                ],
                         "organization_name": organization_name                                           
                 })
                 return True
