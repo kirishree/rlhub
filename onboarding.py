@@ -21,6 +21,36 @@ hub_tunnel_endpoint = config('HUB_GRE_END_POINT')
 dummy_expiry_date = ""
 gretunnelnetworkip = config('HUB_GRE_NETWORKIP')
 hub_ip = config('HUB_IP')
+
+def organization_name(data):
+    try:
+        if "access_token" not in data:
+            data_login = {
+                    "email": data["username"],
+                    "password": data["password"]
+                 }
+            # Send a POST request with the data
+            login_response = requests.post(url+"auth/login", json=data_login)
+            if login_response.status_code == 200:
+            # Parse the JSON response
+                loginjson_response = login_response.json()
+                access_token = loginjson_response["data"]["access_token"]
+            else:
+                 return 'Invalid Login & password', False
+        else:
+            access_token = data["access_token"]
+        headers = {
+                    "Authorization": f"Bearer {access_token}"
+                  }
+        get_organization_name = requests.get(url+"org/", headers=headers)
+        org_response = get_organization_name.json()
+        organization_name = org_response["data"]["company_name"]
+        return organization_name, True
+    except Exception as e:
+        print(e)
+        return 'Internal Server Error', False
+
+
 def authenticate_user(data):
     try:
         if "access_token" not in data:
@@ -103,7 +133,7 @@ def get_organization_id(data):
         user_response = requests.get(url+"users/me", headers=headers)
         if user_response.status_code == 200:
             userjson_response = user_response.json()
-            #print("user me info", userjson_response)
+            print("user me info", userjson_response)
             user_info = userjson_response["data"]["user"]
             if user_info["status"] == "ACTIVE":
                 data["username"] = user_info["email"]

@@ -337,8 +337,16 @@ def add_cisco_device(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     print(f"requested ip of add cisco device spoke:{public_ip}") 
+    orgname, orgstatus = onboarding.organization_name(data)
+    if not orgstatus:
+        logger.error(f"Error: Configure cisco HUB: Error in getting organization name ")
+        json_response = [{"message": f"Error:Error in getting organization name"}]
+        response = HttpResponse(content_type='application/zip')
+        response['X-Message'] = json.dumps(json_response)
+        response["Access-Control-Expose-Headers"] = "X-Message"
+        return response
     if data["device"].lower() == "robustel":        
-        data["uuid"] = data['branch_location'] + "_robustel.net"
+        data["uuid"] = data['branch_location'] + f"_{orgname}_robustel.net"
         print(data)
         data["username"] = "none"
         data["password"] = "none"        
@@ -420,7 +428,7 @@ def add_cisco_device(request: HttpRequest):
         response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1    
     if "microtik" in data["device"].lower():        
-        data["uuid"] = data['branch_location'] + "_microtek.net"        
+        data["uuid"] = data['branch_location'] + f"_{orgname}_microtek.net"        
         data["username"] = "none"
         data["password"] = "none"        
         try:
@@ -493,9 +501,9 @@ def add_cisco_device(request: HttpRequest):
                 response['X-Message'] = json.dumps(json_response)
                 response["Access-Control-Expose-Headers"] = "X-Message"
                 return response
-            data["uuid"] = data['branch_location'] + "_" + data["dialer_ip"] + "_ciscodevice.net"
+            data["uuid"] = data['branch_location'] + f"_{orgname}_ciscodevice.net"
         else:
-            data["uuid"] = data['branch_location'] + "_" + data["dialer_ip"] + "_cisco_ubuntu.net"
+            data["uuid"] = data['branch_location'] + f"_{orgname}_cisco_ubuntu.net"
         print(data)
         data["username"] = "none"
         data["password"] = "none" 
@@ -681,7 +689,15 @@ def add_cisco_hub(request: HttpRequest):
                 response['X-Message'] = json.dumps(json_response)
                 response["Access-Control-Expose-Headers"] = "X-Message"
                 return response
-    data["uuid"] = data['branch_location'] + "_ciscohub.net"
+    orgname, orgstatus = onboarding.organization_name(data)
+    if not orgstatus:
+        logger.error(f"Error: Configure cisco HUB: Error in getting organization name ")
+        json_response = [{"message": f"Error:Error in getting organization name"}]
+        response = HttpResponse(content_type='application/zip')
+        response['X-Message'] = json.dumps(json_response)
+        response["Access-Control-Expose-Headers"] = "X-Message"
+        return response
+    data["uuid"] = data['branch_location'] + f"_{orgname}_ciscohub.net"
     print(data)
     data["username"] = "none"
     data["password"] = "none" 
@@ -2470,3 +2486,96 @@ def traffic_report(request):
     response1['X-Message'] = json.dumps(response)
     response1["Access-Control-Expose-Headers"] = "X-Message"
     return response1
+
+#Admin Dashboard
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def adminhomepage_info(request: HttpRequest):
+    try:        
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f'Received request for Home page info: {request.method} {request.path} Requested ip: {public_ip}')
+        response = {}        
+        total_no_branches = 0
+        #organization_id = str(request.GET.get('organization_id'))        
+        cache_key = f"admin_home_page_"
+        home_page_details = cache.get(cache_key)
+        if home_page_details:
+            return JsonResponse(home_page_details, safe=False)
+        with open(device_info_path, "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        organization_registered = False
+        for device in total_devices:
+            if device["organization_id"] == organization_id:
+                organization_registered = True
+                total_no_branches = device["total_no_active_spokes"] + device["total_no_inactive_spokes"]
+                hub_info = []
+                bandwidth_info = []
+                for hubs in device["hub_info"]:
+                    hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": len(hubs["active_spokes"]),
+                                                            "no_of_inactive_branches": len(hubs["inactive_spokes"]),
+                                                            "active_branches": hubs["active_spokes"],
+                                                            "inactive_branches": hubs["inactive_spokes"]
+                                                            }
+                                    })
+                    bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": len(hubs["active_spokes"]),
+                                                            "no_of_inactive_branches": len(hubs["inactive_spokes"]),
+                                                            "branch_data": hubs["bandwidth_info"],
+                                                            "hub_data": hubs["bandwidth_info_hub"]                                                     
+                                                            }
+                                    })
+                response = {
+                            "total_no_hubs": device["no_of_hubs"],
+                            "active_no_hubs": device["no_active_hubs"],
+                            "inactive_no_hubs": device["no_inactive_hubs"],
+                            "hub_summary": str(device["no_active_hubs"]) + "/" + str(device["no_of_hubs"]),
+                            "total_no_branches": total_no_branches,
+                            "active_no_branches": device["total_no_active_spokes"],
+                            "inactive_no_branches": device["total_no_inactive_spokes"],
+                            "branch_summary": str(device["total_no_active_spokes"]) + "/" + str(total_no_branches),
+                            "hub_info": hub_info,  
+                            "bandwidth_info":bandwidth_info,                         
+                            "organization_id": organization_id
+                            }
+                # Store in cache for 60 seconds
+                cache.set(cache_key, response, timeout=60)
+                return JsonResponse(response, safe=False)
+    except Exception as e:
+        logger.error(f"Error: Home Page info:{e}")   
+    for device in total_devices:
+        hub_info = []
+        bandwidth_info = []
+        for hubs in device["hub_info"]:
+            if hubs["hub_location"] == "Reachlink_server":
+                hub_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": 0,
+                                                            "no_of_inactive_branches": 0,
+                                                            "active_branches": [],
+                                                            "inactive_branches": []
+                                                            }
+                                    })
+                bandwidth_info.append({hubs["hub_location"]: {"hub_status":hubs["hub_status"],
+                                                            "no_of_active_branches": 0,
+                                                            "no_of_inactive_branches": 0,
+                                                            "branch_data": [],
+                                                            "hub_data": hubs["bandwidth_info_hub"]                                                     
+                                                            }
+                                    })
+                response = {
+                            "total_no_hubs": 1,
+                            "active_no_hubs": 1,
+                            "inactive_no_hubs": 0,
+                            "hub_summary": "1/1",
+                            "total_no_branches": 0,
+                            "active_no_branches": 0,
+                            "inactive_no_branches": 0,
+                            "branch_summary": "0/0",
+                            "hub_info": hub_info, 
+                            "bandwidth_info": bandwidth_info,                             
+                            "organization_id": organization_id
+                            }
+    # Store in cache for 60 seconds
+    cache.set(cache_key, response, timeout=60)
+    return JsonResponse(response, safe=False)
