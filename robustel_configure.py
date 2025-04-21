@@ -173,7 +173,7 @@ def traceroute(data):
             return []    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
-        output = get_command_output(shell, f'ping {data["trace_ip"]}')
+        output = get_command_output(shell, f'traceroute {data["trace_ip"]}')
         
     except Exception as e:
         print(e)
