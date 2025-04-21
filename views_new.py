@@ -1828,7 +1828,7 @@ def ping_spoke(request: HttpRequest):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             ping_result = microtek_configure.pingspoke(data)          
-            if ping_result == "0":
+            if ping_result == "-1":
                 response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
             else:                
                 response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}"}
@@ -1848,6 +1848,14 @@ def ping_spoke(request: HttpRequest):
                 rtt = last_line.split(" ")[9].split("/")[1]
                 print(rtt)
                 response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}
+        elif "robustel" in data["uuid"]:
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            ping_result = robustel_configure.pingspoke(data)
+            if ping_result == "-1":
+                response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
+            else:                
+                response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}ms"}
     except Exception as e:    
         logger.error(f"Error: Ping from Spoke:{e}")
         response = {"message": f"Error: Subnet {data['subnet']} Not Reachable" }   

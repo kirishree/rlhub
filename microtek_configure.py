@@ -41,7 +41,7 @@ def pingspoke(data):
     if "avg-rtt=" in final_output:
         avg_rtt = final_output.split(" ")[4].split("=")[1]        
     elif "packet-loss=100%" in final_output:
-        avg_rtt = "0"
+        avg_rtt = "-1"
     else:
         avg_rtt = "0"
     return avg_rtt
