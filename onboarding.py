@@ -503,12 +503,14 @@ def check_subscription_renewed(data, organization_id):
                 to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
                 details = coll_registered_organization.find_one({"organization_id":organization_id})
                 if details:
-                    if details["subscription_to"] != to_date:
+                    new_remaining_users = int(subsjson_response["data"]["users"]) - details["total_users"] + details["remaining_users"]
+                    if details["subscription_to"] != to_date or new_remaining_users > 0:
                         query = {"organization_id": organization_id }
                         update_data = {"$set": 
                                        {"subscription_from": from_date, 
                                         "subscription_to": to_date,
-                                        "total_users": subsjson_response["data"]["users"]                                        
+                                        "total_users": subsjson_response["data"]["users"],
+                                        "remaining_users": new_remaining_users                                    
                                         }
                                        }
                         coll_registered_organization.update_many(query, update_data)

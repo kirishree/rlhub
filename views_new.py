@@ -2399,7 +2399,7 @@ def vlan_interface_delete_hub(request):
                 print(response) 
         elif data["hub_ip"] == hub_ip:
             response = [] 
-            intfc_name = data["intfc_name"]
+            intfc_name = data["intfc_name"]            
             if os.path.exists("/etc/netplan/00-installer-config.yaml"):
                 # Open and read the Netplan configuration
                 with open("/etc/netplan/00-installer-config.yaml", "r") as f:
@@ -2414,6 +2414,15 @@ def vlan_interface_delete_hub(request):
                         if intfc_name in network_config["network"]["vlans"]:
                             del network_config["network"]["vlans"][intfc_name]          
                         response = [{"message": f"Successfully deleted the VLAN Interface: {intfc_name}"}]                                              
+                if "tunnel" in data["intfc_name"]:
+                    # Ensure the `vlans` section exists
+                    if "tunnels" not in network_config["network"]:
+                        response = [{"message": f"No such VLAN available"}]
+                    # Add VLAN configuration
+                    else:
+                        if intfc_name in network_config["network"]["tunnels"]:
+                            del network_config["network"]["tunnels"][intfc_name]          
+                        response = [{"message": f"Successfully deleted the Tunnel Interface: {intfc_name}"}]
                 # Write the updated configuration back to the file
                 with open("/etc/netplan/00-installer-config.yaml", "w") as f:
                     yaml.dump(network_config, f, default_flow_style=False)
