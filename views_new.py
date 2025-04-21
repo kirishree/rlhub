@@ -422,7 +422,7 @@ def add_cisco_device(request: HttpRequest):
                 json_response = [{"message": f"Error:{response[0]['message']}"}]
         except Exception as e:
             logger.error(f"Error: Configure Robustel Spoke: {e}")
-            json_response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+            json_response = [{"message": f"Error:{response[0]['message']}"}]
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(json_response)
         response1["Access-Control-Expose-Headers"] = "X-Message"
@@ -487,7 +487,7 @@ def add_cisco_device(request: HttpRequest):
         except Exception as e:
             print(f"Error: Configure Microtek Spoke:{e}")
             logger.error(f"Error: Configure Microtek Spoke:{e}")
-            json_response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+            json_response = [{"message": f"Error:{response[0]['message']}"}]
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(json_response)
         response1["Access-Control-Expose-Headers"] = "X-Message"
