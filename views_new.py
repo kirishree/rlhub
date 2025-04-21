@@ -1152,6 +1152,13 @@ def get_interface_details_spoke(request):
         if interface_details:
             return JsonResponse(interface_details, safe=False)
         interface_details = []
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )      
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1165,19 +1172,18 @@ def get_interface_details_spoke(request):
                     interface_details =[]
             except requests.exceptions.RequestException as e:
                 print("disconnected")                
-        elif "microtek" in data["uuid"]:     
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        elif "microtek" in data["uuid"]:           
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.interfacedetails(data)                 
             #return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = router_configure.get_interface_cisco(data)
         elif "robustel" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = robustel_configure.get_interface_robustel(data)
