@@ -1204,6 +1204,13 @@ def create_vlan_interface_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1222,18 +1229,18 @@ def create_vlan_interface_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.createvlaninterface(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.createvlaninterface(data)   
         elif "robustel" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.createvlaninterface(data) 
@@ -1253,6 +1260,13 @@ def create_sub_interface_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1271,19 +1285,19 @@ def create_sub_interface_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.createvlaninterface(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            print("vlan data", data)
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #print("vlan data", data)
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.createsubinterface(data)   
         elif "robustel" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.createvlaninterface(data)    
@@ -1303,6 +1317,13 @@ def create_loopback_interface_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1327,7 +1348,7 @@ def create_loopback_interface_spoke(request):
             #interface_details = microtek_configure.createvlaninterface(data)   
             response = [{"message": "Error: This device doesn't support Loopback Interface"}]           
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.createloopbackinterface(data) 
@@ -1349,6 +1370,13 @@ def create_tunnel_interface_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1367,15 +1395,14 @@ def create_tunnel_interface_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.createtunnelinterface(data)   
             #interface_details = [{"message":"Tunnel interface created successfully"}]              
             return JsonResponse(interface_details,safe=False) 
-        elif "cisco" in data["uuid"]:
-            print("vlan data", data)
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.createtunnelinterface(data)   
@@ -1398,6 +1425,13 @@ def interface_config_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1415,21 +1449,19 @@ def interface_config_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.interfaceconfig(data)                 
             return JsonResponse(interface_details,safe=False) 
-        elif "cisco" in data["uuid"]:
-            print(data)
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.interfaceconfig(data)
             print(response)
-        elif "robustel" in data["uuid"]:
-            print(data)
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.interface_config(data)
@@ -1451,6 +1483,13 @@ def vlan_interface_delete_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1471,7 +1510,7 @@ def vlan_interface_delete_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             if "overlay" in data['intfc_name'].lower():
@@ -1485,7 +1524,7 @@ def vlan_interface_delete_spoke(request):
             if "virtual-template" in data["intfc_name"].lower() or "dialer1" in data["intfc_name"].lower():
                 response = {"message": f"Error: Deleting {data['intfc_name']} is prohibited"}
                 return JsonResponse(response, safe=False)
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = router_configure.deletevlaninterface(data)
@@ -1505,6 +1544,13 @@ def get_routing_table_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"routing_branch_{branch_id}"
         routing_table = cache.get(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if routing_table:
             return JsonResponse(routing_table, safe=False)
         if ".net" not in data.get("uuid", ""):            
@@ -1521,17 +1567,17 @@ def get_routing_table_spoke(request):
                 print("disconnected")
                 routing_table = []
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             routing_table = microtek_configure.routingtable(data)                 
         elif "cisco" in data["uuid"]:       
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             routing_table = router_configure.get_routingtable_cisco(data)
         elif "robustel" in data["uuid"]:       
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             routing_table = robustel_configure.get_routingtable_robustel(data)
@@ -1553,6 +1599,13 @@ def add_route_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"routing_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1570,13 +1623,13 @@ def add_route_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             route_details = microtek_configure.addroute(data)                 
             return JsonResponse(route_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             status = router_configure.addroute(data)
@@ -1601,6 +1654,13 @@ def del_staticroute_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"routing_branch_{branch_id}"
         cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -1618,13 +1678,13 @@ def del_staticroute_spoke(request):
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             route_details = microtek_configure.delstaticroute(data)                 
             return JsonResponse(route_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             for subnet in data["routes_info"]:
@@ -1649,6 +1709,13 @@ def get_pbr_info_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for get pbr info spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"                   
@@ -1663,13 +1730,13 @@ def get_pbr_info_spoke(request):
                 print("disconnected")
                 response = []
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             interface_details = microtek_configure.getconfigurepbr(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             #status = router_configure.addroute(data)
@@ -1688,8 +1755,14 @@ def diagnostics(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for ping HUB: {request.method} {request.path} Requested ip: {public_ip}')  
     try:
-        if "cisco" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        if "cisco" in data["uuid"]:                   
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -1722,6 +1795,13 @@ def ping_spoke(request: HttpRequest):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for ping spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
         if ".net" not in data["uuid"]:       
             print(data)
             route_add = {"subnet": data["subnet"]}
@@ -1744,7 +1824,7 @@ def ping_spoke(request: HttpRequest):
                 print("error response", response)
                 response =  {"message": f"Error: Subnet {data['subnet']} Not Reachable" }
         elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             ping_result = microtek_configure.pingspoke(data)          
@@ -1753,7 +1833,7 @@ def ping_spoke(request: HttpRequest):
             else:                
                 response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}"}
         elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             ping_result = router_configure.pingspoke(data)
@@ -1781,19 +1861,26 @@ def traceroute_spoke(request):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for traceroute spoke: {request.method} {request.path} Requested ip: {public_ip}')
     host_ip = data.get('trace_ip', None)
+    if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
     if "microtek" in data["uuid"]:
-        router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
         data["router_username"] = router_info["router_username"]
         data["router_password"] = router_info["router_password"]
         trace_result = microtek_configure.traceroute(data)   
         response_msg = {"message": trace_result}            
         return JsonResponse(response_msg,safe=False) 
     if "ciscodevice" in data["uuid"]:        
-        device_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
-        if device_info:
+        #device_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})        
+        if router_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
-                data["router_username"] = device_info["router_username"]
-                data["router_password"] = device_info["router_password"]        
+                data["router_username"] = router_info["router_username"]
+                data["router_password"] = router_info["router_password"]        
                 trace_result = router_configure.traceroute(data)   
                 response_msg = {"message": trace_result}   
                 print("traceroute spoke",response_msg)    
@@ -1837,7 +1924,13 @@ def traceroute_hub(request):
     logger.debug(f'Received request for Trachroute HUB: {request.method} {request.path} Requested ip: {public_ip}')
     host_ip = data.get('trace_ip', None)
     if "cisco" in data["uuid"]:
-        hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+        cache1_key = f"HUB_details_{data['uuid']}"
+        hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+        #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
         if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -1950,7 +2043,13 @@ def activate(request: HttpRequest):
     if ".net" not in data.get("uuid", ""):         
         response = ubuntu_info.activate(data)
     if "ciscodevice" in data.get("uuid", ""):
-        hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
+        cache1_key = f"HUB_details_{data['uuid']}"
+        hubinfo = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]}),
+                        timeout=300
+                        )    
+        #hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
         if hubinfo:
             dialerinfo = coll_dialer_ip.find_one({"dialerip":data.get("tunnel_ip", "")})
             if dialerinfo:
@@ -1984,7 +2083,13 @@ def get_routing_table(request):
         if routing_table:
             return JsonResponse(routing_table, safe=False)
         if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2022,7 +2127,13 @@ def addstaticroute_hub(request: HttpRequest):
                 return JsonResponse(response, safe=False) 
         if "ciscohub" in data["uuid"]:
             print("hiciscohub")
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2056,7 +2167,13 @@ def delstaticroute_hub(request: HttpRequest):
         data = json.loads(request.body)      
         print("delstatichub",data)
         if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2089,7 +2206,13 @@ def get_interface_details_hub(request):
         if interface_details:
             return JsonResponse(interface_details, safe=False)
         if "_ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2117,7 +2240,13 @@ def create_vlan_interface_hub(request):
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2141,7 +2270,13 @@ def create_sub_interface_hub(request):
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2165,7 +2300,13 @@ def create_loopback_interface_hub(request):
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2189,7 +2330,13 @@ def create_tunnel_interface_hub(request):
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if "ciscohub" in data["uuid"]:
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2220,7 +2367,13 @@ def vlan_interface_delete_hub(request):
             if "virtual-template" in data["intfc_name"].lower():
                 response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
                 return JsonResponse(response, safe=False)
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_ip"]
                 data["router_username"] = hub_info["router_username"]
@@ -2288,7 +2441,13 @@ def interface_config_hub(request):
                 response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
                 print(response)
                 return JsonResponse(response, safe=False)
-            hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
