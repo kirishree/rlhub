@@ -419,12 +419,12 @@ def add_cisco_device(request: HttpRequest):
                 return response1   
             else:
                 logger.error(f"Error: Configure Robustel Spoke:{response[0]['message']}")
-                response = [{"message": response[0]['message'], "expiry_date": response[0]['expiry_date']}] 
+                json_response = [{"message": f"Error:{response[0]['message']}"}]
         except Exception as e:
             logger.error(f"Error: Configure Robustel Spoke: {e}")
-            response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+            json_response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
         response1 = HttpResponse(content_type='text/plain')
-        response1['X-Message'] = json.dumps(response)
+        response1['X-Message'] = json.dumps(json_response)
         response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1    
     if "microtik" in data["device"].lower():        
@@ -482,14 +482,14 @@ def add_cisco_device(request: HttpRequest):
                 os.system("systemctl restart reachlink_test")  
                 return response1 
             else:
-                logger.error(f"Error: Configure Microtek Spoke:{response[0]['message']}")
-                response = [{"message": response[0]['message'], "expiry_date": response[0]['expiry_date']}]                 
+                logger.error(f"Error: Configure Microtek Spoke:{response[0]['message']}")              
+                json_response = [{"message": f"Error:{response[0]['message']}"}]
         except Exception as e:
             print(f"Error: Configure Microtek Spoke:{e}")
             logger.error(f"Error: Configure Microtek Spoke:{e}")
-            response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+            json_response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
         response1 = HttpResponse(content_type='text/plain')
-        response1['X-Message'] = json.dumps(response)
+        response1['X-Message'] = json.dumps(json_response)
         response1["Access-Control-Expose-Headers"] = "X-Message"
         return response1
     if data["device"].lower() == "cisco":     
