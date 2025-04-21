@@ -2156,6 +2156,7 @@ def addstaticroute_hub(request: HttpRequest):
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def delstaticroute_hub(request: HttpRequest):
+    data = json.loads(request.body)
     response = [{"message":"Successfully deleted"}]
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
