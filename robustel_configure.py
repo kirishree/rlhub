@@ -152,6 +152,37 @@ def pingspoke(data):
         ssh_client.close()
     return avg_ms
 
+def traceroute(data):
+    """
+    Connects to a Robustel router via SSH and retrieves the output of 'status route'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []    
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+        output = get_command_output(shell, f'ping {data["trace_ip"]}')
+        
+    except Exception as e:
+        print(e)
+        output = "Error while traceroute"      
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return output
+
 def get_interface_robustel(data):
     """
     Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.

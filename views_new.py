@@ -1883,6 +1883,13 @@ def traceroute_spoke(request):
         trace_result = microtek_configure.traceroute(data)   
         response_msg = {"message": trace_result}            
         return JsonResponse(response_msg,safe=False) 
+    if "robustel" in data["uuid"]:
+        #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+        data["router_username"] = router_info["router_username"]
+        data["router_password"] = router_info["router_password"]
+        trace_result = robustel_configure.traceroute(data)   
+        response_msg = {"message": trace_result}            
+        return JsonResponse(response_msg,safe=False) 
     if "ciscodevice" in data["uuid"]:        
         #device_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})        
         if router_info:
