@@ -15,7 +15,7 @@ def get_organization_id(data):
                     "password": data['password']
                  }
             # Send a POST request with the data
-            login_response = requests.post(url+"auth/login", json=data_login)
+            login_response = requests.post(url+"admin/login", json=data_login)
             if login_response.status_code == 200:
             # Parse the JSON response
                 loginjson_response = login_response.json()

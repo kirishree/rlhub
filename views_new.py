@@ -1640,6 +1640,11 @@ def add_route_spoke(request):
             else:
                 response = {"message":"Error in adding route"}
             print("check",response)
+        elif "robustel" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            status = robustel_configure.addstaticroute(data)         
     except Exception as e:
         logger.error(f"Error: Adding route in Spoke:{e}")
         response = {"message": f"Error: while adding route"}

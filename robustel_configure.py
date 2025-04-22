@@ -401,38 +401,41 @@ def addstaticroute(data):
             return []    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
-        output = get_command_output(shell, 'show lan all')
-        interfacedetails = output.split("\n")
-        vlanpresent = False
-        for intfc in interfacedetails:
+        output = get_command_output(shell, 'show route all')
+        routedetails = output.split("\n")
+        staticroutepresent = False
+        for intfc in routedetails:
             intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
-            if "vlan {" in intfc:
-                vlanpresent =True
+            if "static_route {" in intfc:
+                staticroutepresent =True
             if "id =" in intfc and "v" not in intfc:
-                vlan_no = intfc.split(" ")[3]
-        if vlanpresent:
-            vlan_no = int(vlan_no) + 1
+                staticroute_no = intfc.split(" ")[3]
+        if staticroutepresent:
+            if int(staticroute_no) == 40:
+                response = [{"message": "Error: Robustel device allows upto 40 static route only"}] 
+                ssh_client.close()
+                return response
+            staticroute_no = int(staticroute_no) + 1
         else:
-            vlan_no = 1    
-        print(vlan_no)
-        output = send_command_wo(shell, f'add lan vlan {vlan_no}')
-        response = [{"message": "Error while creating vlan interface"}]
-        if "OK" in output:
-            output = send_command_wo(shell, f'set lan vlan {vlan_no} enable true')
-            if "OK" in output:
-                output = send_command_wo(shell, f'set lan vlan {vlan_no} interface lan0')
+            staticroute_no = 1  
+        subnets = data["subnet_info"]  
+        for subnet in subnets:        
+            subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
+            if subnet_key:
+                destination = subnet[subnet_key].split("/")[0]
+                dst_netmask = str(ipaddress.IPv4Network(subnet[subnet_key]).netmask)
+                output = send_command_wo(shell, f'add route static_route {staticroute_no}')
+                response = [{"message": "Error while creating vlan interface"}]               
                 if "OK" in output:
-                    vlan_ip = data["addresses"][0].split("/")[0]
-                    subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-                    netmask = str(subnet.netmask)
-                    output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
+                    output = send_command_wo(shell, f'set route static_route {staticroute_no} destination {destination}')
                     if "OK" in output:
-                        output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
-                        if "OK" in output:
-                            output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')
-                            if "OK" in output:
-                                output = send_command_config(shell, f'config save_and_apply')
-                                response = [{"message": "Successfully vlan interface created"}]                         
+                        output = send_command_wo(shell, f'set route static_route {staticroute_no} netmask {dst_netmask}')
+                        if "OK" in output:                   
+                            output = send_command_wo(shell, f'set route static_route {staticroute_no} gateway {subnet["gateway"]}')
+                            response = [{"message": "Successfully added the route"}]   
+            if staticroute_no == 40:
+                break
+            staticroute_no += 1                      
     except Exception as e:
         print(e)
     finally:
