@@ -339,6 +339,49 @@ def createvlaninterface(data):
         ssh_client.close()
     return response
 
+def deletevlaninterface(data):
+    """
+    Connects to a Robustel router via SSH and retrieves the output of 'status route'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []    
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+        output = get_command_output(shell, 'show lan all')
+        interfacedetails = output.split("\n")
+        vlanpresent = False
+        for intfc in interfacedetails:
+            intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+            if "vlan {" in intfc:
+                vlanpresent =True
+            if "id =" in intfc and "v" not in intfc:
+                vlan_no = intfc.split(" ")[3]
+            if "interface =" in intfc:
+                if data["intfc_name"] == intfc.split(" ")[3]
+                    break
+        if vlanpresent:
+            output = send_command_wo(shell, f'del lan vlan {vlan_no}')
+        response = [{"message": f"Error while deleting vlan interface {data['intfc_name']}"}]
+        if "OK" in output:            
+            response = [{"message": f"Successfully vlan interface {data['intfc_name']} deleted"}]                         
+    except Exception as e:
+        print(e)
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return response
+
 def addstaticroute(data):
     """
     Connects to a Robustel router via SSH and retrieves the output of 'status route'.
