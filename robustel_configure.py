@@ -110,6 +110,31 @@ def get_routingtable_robustel(data):
                                 "metric":distance,
                                 "outgoint_interface_name": interface,
                                 "table_id": "main"})
+        # Send the command and get the output
+        output = get_command_output(shell, 'show route all')
+        routedetails = output.split("\n")
+        staticroutepresent = False
+        for intfc in routedetails:
+            intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+            if "static_route {" in intfc:
+                staticroutepresent =True
+            if "id =" in intfc and "v" not in intfc:
+                staticroute_no = intfc.split(" ")[3]
+            if "destination =" in intfc:
+                destination = intfc.split(" ")[3]
+            if "netmask =" in intfc:
+                dst_netmask = intfc.split(" ")[3]
+                network = f"{destination}/{dst_netmask}"
+                # Create an IPv4Network object
+                ipintf = ipaddress.IPv4Interface(network)
+                destination = ipintf.with_prefixlen
+            if "interface =" in intfc:
+                routing_table.append({"protocol":"static",
+                                "destination": destination,
+                                "gateway": gateway,
+                                "metric":"-",
+                                "outgoint_interface_name": intfc.split(" ")[3],
+                                "table_id": "main"})
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -331,7 +356,7 @@ def createvlaninterface(data):
                             output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')
                             if "OK" in output:
                                 output = send_command_config(shell, f'config save_and_apply')
-                                response = [{"message": "Successfully vlan interface created"}]                         
+                                response = [{"message": f"Successfully vlan interface created lan0.{data['vlan_id']}"}]                         
     except Exception as e:
         print(e)
     finally:
@@ -436,6 +461,55 @@ def addstaticroute(data):
             if staticroute_no == 40:
                 break
             staticroute_no += 1                      
+    except Exception as e:
+        print(e)
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return response
+
+def delstaticroute(data):
+    """
+    Connects to a Robustel router via SSH and retrieves the output of 'status route'.
+    """
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+        except Exception as e:
+            print(f"SSH Connection Error: {e}")
+            return []    
+        shell = ssh_client.invoke_shell()
+        # Send the command and get the output
+        output = get_command_output(shell, 'show route all')
+        staticroutedetails = output.split("\n")        
+        subnets = data["routes_info"]
+        for subnet in subnets:
+            subnet_ip = subnet["destination"]
+            for intfc in staticroutedetails:
+                intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
+                
+                if "id =" in intfc and "v" not in intfc:
+                    staticroute_no = intfc.split(" ")[3]
+                if "destination =" in intfc:
+                    destination = intfc.split(" ")[3]
+                if "netmask =" in intfc:
+                    dst_netmask = intfc.split(" ")[3]
+                    network = f"{destination}/{dst_netmask}"
+                    # Create an IPv4Network object
+                    ipintf = ipaddress.IPv4Interface(network)
+                    destination = str(ipintf.with_prefixlen)
+                    if destination == subnet_ip:                 
+                        output = send_command_wo(shell, f'del route static_route {staticroute_no}')
+                        response = [{"message": "Error while deleting route "}]
+                        if "OK" in output:            
+                            response = [{"message": f"Successfully deleted the route {subnet_ip}"}]                         
     except Exception as e:
         print(e)
     finally:
