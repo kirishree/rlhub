@@ -306,6 +306,10 @@ def createvlaninterface(data):
             if "id =" in intfc and "v" not in intfc:
                 vlan_no = intfc.split(" ")[3]
         if vlanpresent:
+            if int(vlan_no) == 10:
+                response = [{"message": "Error: This device allows only 10 VLAN interface"}]   
+                ssh_client.close()
+                return response 
             vlan_no = int(vlan_no) + 1
         else:
             vlan_no = 1    
