@@ -1601,6 +1601,7 @@ def add_route_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"routing_branch_{branch_id}"
         cache.delete(cache_key)
+        response = {"message":"Error in adding route"}
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -1644,7 +1645,7 @@ def add_route_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            status = robustel_configure.addstaticroute(data)         
+            response = robustel_configure.addstaticroute(data)         
     except Exception as e:
         logger.error(f"Error: Adding route in Spoke:{e}")
         response = {"message": f"Error: while adding route"}

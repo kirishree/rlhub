@@ -425,14 +425,14 @@ def addstaticroute(data):
                 destination = subnet[subnet_key].split("/")[0]
                 dst_netmask = str(ipaddress.IPv4Network(subnet[subnet_key]).netmask)
                 output = send_command_wo(shell, f'add route static_route {staticroute_no}')
-                response = [{"message": "Error while creating vlan interface"}]               
+                response = {"message": "Error while adding static route"}              
                 if "OK" in output:
                     output = send_command_wo(shell, f'set route static_route {staticroute_no} destination {destination}')
                     if "OK" in output:
                         output = send_command_wo(shell, f'set route static_route {staticroute_no} netmask {dst_netmask}')
                         if "OK" in output:                   
                             output = send_command_wo(shell, f'set route static_route {staticroute_no} gateway {subnet["gateway"]}')
-                            response = [{"message": "Successfully added the route"}]   
+                            response = {"message": "Successfully added the route"}
             if staticroute_no == 40:
                 break
             staticroute_no += 1                      
