@@ -368,7 +368,7 @@ def deletevlaninterface(data):
             if "id =" in intfc and "v" not in intfc:
                 vlan_no = intfc.split(" ")[3]
             if "interface =" in intfc:
-                if data["intfc_name"] == intfc.split(" ")[3]
+                if data["intfc_name"] == intfc.split(" ")[3]:
                     break
         if vlanpresent:
             output = send_command_wo(shell, f'del lan vlan {vlan_no}')
