@@ -16,7 +16,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django_ratelimit.decorators import ratelimit
 from django.core.cache import cache
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
@@ -260,6 +262,8 @@ def login_or_register(request):
     if user:
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
+        # Manually add custom claim for 'role'
+        refresh['role'] = user.role  # Assuming 'role' is a field on your user model
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
@@ -268,13 +272,19 @@ def login_or_register(request):
 
     # Perform your custom validation before creating a new user (add logic here)
     # Example: Check if username meets your policy, etc.
-    onboard_status = onboarding.check_onboarding(username, password)
+    onboard_status, onuser_role = onboarding.check_onboarding(username, password)
     if onboard_status == "True":
+        if onuser_role == "ADMIN":
+            onuser_role = "org-admin"
+        else:
+            onuser_role = "org-user"
         # Create new user
-        user = User.objects.create_user(username=username, password=password)
+        user = User.objects.create_user(username=username, password=password, role=onuser_role)
 
         # Generate JWT tokens for new user
         refresh = RefreshToken.for_user(user)
+        # Manually add custom claim for 'role'
+        refresh['role'] = user.role  # Assuming 'role' is a field on your user model
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),

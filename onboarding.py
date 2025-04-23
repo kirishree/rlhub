@@ -539,6 +539,11 @@ def check_onboarding(username, password):
         headers = {
                     "Authorization": f"Bearer {access_token}"
                   }
+        user_response = requests.get(url+"users/me", headers=headers)
+        if user_response.status_code == 200:
+            userjson_response = user_response.json()            
+            user_info = userjson_response["data"]["user"]
+            user_role = user_info["role"]
         service_response = requests.get(url+"services/", headers=headers)
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
@@ -557,11 +562,11 @@ def check_onboarding(username, password):
                 # Add Duration to get to_date
                 to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
                 if current_datetime < to_date:
-                    return 'True'
+                    return 'True', user_role
             else:
-                    return 'Not Subscribed for Reach WAN'
+                    return 'Not Subscribed for Reach WAN', False
         else:
-                return 'Not Subscribed for any services'
+                return 'Not Subscribed for any services', False
     except:
-        return 'Internal Server Error'
+        return 'Internal Server Error', False
 
