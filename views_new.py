@@ -262,8 +262,7 @@ def login_or_register(request):
     if user:
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
-        # Manually add custom claim for 'role'
-        refresh['role'] = user.role  # Assuming 'role' is a field on your user model
+        refresh['role'] = getattr(user, 'role', 'guest')  # or 'unknown', or any safe fallback
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
