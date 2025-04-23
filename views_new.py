@@ -262,7 +262,7 @@ def login_or_register(request):
     if user:
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
-        refresh['role'] = getattr(user, 'role', 'guest')  # or 'unknown', or any safe fallback
+        refresh['role'] = getattr(user, 'role', 'org-user')  # or 'unknown', or any safe fallback
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
