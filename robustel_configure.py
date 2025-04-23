@@ -63,7 +63,6 @@ def get_routingtable_robustel(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
         try:
             # Connect to the router
@@ -95,6 +94,7 @@ def get_routingtable_robustel(data):
             if "netmask =" in route:
                 netmask = route.split(" ")[3]
                 network = f"{destination}/{netmask}"
+                print("net", network)
                 # Create an IPv4Network object
                 ipintf = ipaddress.IPv4Interface(network)
                 destination = ipintf.with_prefixlen
@@ -125,6 +125,7 @@ def get_routingtable_robustel(data):
             if "netmask =" in intfc:
                 dst_netmask = intfc.split(" ")[3]
                 network = f"{destination}/{dst_netmask}"
+                print("net1", network)
                 # Create an IPv4Network object
                 ipintf = ipaddress.IPv4Interface(network)
                 destination = ipintf.with_prefixlen
