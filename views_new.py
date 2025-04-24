@@ -955,9 +955,14 @@ def branch_info(request: HttpRequest):
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
         organization_id = str(request.GET.get('organization_id'))
         if organization_id == "admin":
-            adminbranch_info = adminbranch_info()
-            logger.debug(f'Received request for Admin Branch info: {request.method} {request.path} Requested ip: {public_ip}')
-            return JsonResponse(adminbranch_info, safe=False)
+            try:
+                adminbranchinfo = []
+                adminbranchinfo = adminbranch_info()
+                logger.debug(f'Received request for Admin Branch info: {request.method} {request.path} Requested ip: {public_ip}')                
+            except Exception as e:
+                logger.error(f"Error: Getting Admin Branch info:{e}")
+            return JsonResponse(adminbranchinfo, safe=False)
+        
         logger.debug(f'Received request for Branch info: {request.method} {request.path} Requested ip: {public_ip}')
         response = {}
         data = []     
