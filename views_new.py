@@ -64,6 +64,7 @@ from decouple import config
 from datetime import timedelta
 import zabbix_gen_report
 import zabbix_ping_report
+from .tasks import setass_task 
 newuser = False
 dummy_expiry_date = ""
 mongo_uri = config('DB_CONNECTION_STRING')
@@ -421,9 +422,6 @@ def add_cisco_device(request: HttpRequest):
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
                 response1["Access-Control-Expose-Headers"] = "X-Message"
-                #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
-                #background_thread.start() 
-                #os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test") 
                 return response1   
             else:
@@ -2608,8 +2606,9 @@ def get_microtekspoke_config(request: HttpRequest):
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
                         }
-        background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-        background_thread.start()
+        #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
+        #background_thread.start()
+        setass_task.delay(response, "microtek")
     else:
         spokedetails= {"message": response[0]["message"]}
     
