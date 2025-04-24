@@ -991,12 +991,40 @@ def branch_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 
+def adminhub_info(request: HttpRequest):
+    try:        
+        response = []
+        with open(device_info_path, "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        for device in total_devices:
+            response.append({device["organization_name"]: 
+                                    {    
+                                    "data":device["hub_info_only"],
+                                    "total_hubs":device["no_of_hubs"],
+                                    "inactive_hubs":device["no_inactive_hubs"],
+                                    "active_hubs": device["no_active_hubs"],
+                                    "organization_id": device["organization_id"]
+                                    }
+                                })
+    except Exception as e:
+        logger.error(f"Error: get Admin hub info Spoke:{e}")
+    return response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def hub_info(request: HttpRequest):
     try:        
-        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
+        organization_id = str(request.GET.get('organization_id'))
+        if organization_id == "admin":
+            try:
+                adminhubinfo = []
+                adminhubinfo = adminhub_info()
+                logger.debug(f'Received request for Admin Hub info: {request.method} {request.path} Requested ip: {public_ip}')                
+            except Exception as e:
+                logger.error(f"Error: Getting Admin Hub info:{e}")
+            return JsonResponse(adminhubinfo, safe=False)        
         logger.debug(f'Received request for Hub info: {request.method} {request.path} Requested ip: {public_ip}')
         response = {}
         data = []        
