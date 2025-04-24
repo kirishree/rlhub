@@ -991,7 +991,7 @@ def branch_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 
-def adminhub_info(request: HttpRequest):
+def adminhub_info():
     try:        
         response = []
         with open(device_info_path, "r") as f:
