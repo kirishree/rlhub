@@ -80,8 +80,7 @@ def main():
     password = getpass.getpass() 
     print(f"Enter the registered device(branch) location:")
     branch_location = input()
-    bl = branch_location.lower()
-    branch_uuid = bl +  "_microtek.net"    
+    branch_loc = branch_location.lower()    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -112,7 +111,7 @@ def main():
                "Authorization": f"Bearer {access_token}"}
     userinfo = {"username": username,
                 "password": password,
-                "uuid": branch_uuid
+                "branch_loc":branch_loc
                 } 
     json_data = json.dumps(userinfo)
     try:
