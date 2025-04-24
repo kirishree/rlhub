@@ -929,18 +929,41 @@ def homepage_info(request: HttpRequest):
     cache.set(cache_key, response, timeout=60)
     return JsonResponse(response, safe=False)
 
+def adminbranch_info():
+    try: 
+        with open(device_info_path, "r") as f:
+            total_devices = json.load(f)
+            f.close()
+        adminbranch_info = []
+        for device in total_devices:            
+                adminbranch_info.append({device["organization_name"]:
+                                                {"data":device["branch_info_only"],
+                                                "total_branches":device["total_no_active_spokes"] + device["total_no_inactive_spokes"],
+                                                "inactive_branches":device["total_no_active_spokes"],
+                                                "active_branches": device["total_no_inactive_spokes"],
+                                                "organization_id": device["organization_id"]
+                                                }
+                                        })
+    except Exception as e:
+        logger.error(f"Error: Getting Branch info:{e}")
+    return adminbranch_info
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
     try:       
-        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
+        organization_id = str(request.GET.get('organization_id'))
+        if organization_id == "admin":
+            adminbranch_info = adminbranch_info()
+            logger.debug(f'Received request for Admin Branch info: {request.method} {request.path} Requested ip: {public_ip}')
+            return JsonResponse(adminbranch_info, safe=False)
         logger.debug(f'Received request for Branch info: {request.method} {request.path} Requested ip: {public_ip}')
         response = {}
         data = []     
         active_branches = 0
         inactive_branches = 0
         total_no_branches = 0
-        organization_id = str(request.GET.get('organization_id'))
         with open(device_info_path, "r") as f:
             total_devices = json.load(f)
             f.close()
@@ -962,6 +985,7 @@ def branch_info(request: HttpRequest):
                         "organization_id": organization_id
                     }
     return JsonResponse(response, safe=False)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
