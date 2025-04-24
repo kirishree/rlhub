@@ -3,6 +3,8 @@ import time
 import ipaddress
 import re
 port_number = 3366
+import logging
+logger = logging.getLogger('reachlink')
 # Function to send a command and wait for the router's prompt
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
@@ -418,6 +420,7 @@ def addstaticroute(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    response = {"message": "Error while adding static route"}    
     try:
         try:
             # Connect to the router
@@ -463,7 +466,7 @@ def addstaticroute(data):
                 break
             staticroute_no += 1                      
     except Exception as e:
-        print(e)
+        logger.error(f"Error: Adding route in Robustel Spoke:{e}")
     finally:
         # Close the SSH connection
         ssh_client.close()
