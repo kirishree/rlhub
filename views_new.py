@@ -2536,6 +2536,12 @@ def get_microtekspoke_config(request: HttpRequest):
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
+    orgname, orgstatus = onboarding.organization_name(data)
+    if not orgstatus:
+        logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name"}
+        return JsonResponse(json_response, safe=False)
+    data["uuid"] = data['branch_loc'] + f"_{orgname}_microtek.net"
     response, newuser = onboarding.check_user(data, newuser)
     if "This Microtek Spoke is already Registered" in response[0]["message"]:
         #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
@@ -2559,6 +2565,12 @@ def get_robustelspoke_config(request: HttpRequest):
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
+    orgname, orgstatus = onboarding.organization_name(data)
+    if not orgstatus:
+        logger.error(f"Error: Get Configure Robustel HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name"}
+        return JsonResponse(json_response, safe=False)
+    data["uuid"] = data['branch_loc'] + f"_{orgname}_robustel.net"
     response, newuser = onboarding.check_user(data, newuser)
     if "This Robustel Spoke is already Registered" in response[0]["message"]:
         #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
