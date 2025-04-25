@@ -180,6 +180,12 @@ def pingspoke(data):
         ssh_client.close()
     return avg_ms
 
+def clean_traceroute_output(raw_output):
+    # This regex matches ANSI escape sequences
+    ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+    cleaned_output = ansi_escape.sub('', raw_output)
+    return cleaned_output
+
 def traceroute(data):
     """
     Connects to a Robustel router via SSH and retrieves the output of 'status route'.
@@ -202,14 +208,15 @@ def traceroute(data):
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, f'traceroute {data["trace_ip"]}')
+        cleaned_output = clean_traceroute_output(output)
         
     except Exception as e:
         print(e)
-        output = "Error while traceroute"      
+        cleaned_output = "Error while traceroute"      
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return output
+    return cleaned_output
 
 def get_interface_robustel(data):
     """
