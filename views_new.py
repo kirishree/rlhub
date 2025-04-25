@@ -1110,7 +1110,9 @@ def deactivate(request: HttpRequest):
         else:
             response = {"message": "Error HUB IP is missed"}
     if "microtek" in data.get("uuid", ""):
-        response = ubuntu_info.deactivate(data)    
+        response = ubuntu_info.deactivate(data)  
+    if "robustel" in data.get("uuid", ""):
+        response = ubuntu_info.deactivate(data)  
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])
@@ -2181,6 +2183,8 @@ def activate(request: HttpRequest):
                 else:
                     response = {"message":f"Error:while activating data['tunnel_ip']"}     
     if "microtek" in data.get("uuid", ""):
+        response = ubuntu_info.activate(data)
+    if "robustel" in data.get("uuid", ""):
         response = ubuntu_info.activate(data)
     return JsonResponse(response, safe=False)
 
