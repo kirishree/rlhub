@@ -2608,7 +2608,7 @@ def get_microtekspoke_config(request: HttpRequest):
                         }
         #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
         #background_thread.start()
-        setass_task.delay(response, "microtek")
+        setass_task.apply_async(args=[response, "microtek"], countdown=60)
     else:
         spokedetails= {"message": response[0]["message"]}
     

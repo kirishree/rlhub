@@ -1,5 +1,4 @@
 from celery import shared_task
-import time
 import pymongo
 from decouple import config
 mongo_uri = config('DB_CONNECTION_STRING')
@@ -11,14 +10,10 @@ import os
 import subprocess
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 
-@shared_task
-def setass_task(response, devicename):   
+@shared_task(bind=True, max_retries=10, default_retry_delay=60)
+def setass_task(self, response, devicename):   
     try:
         connected_spoke =[]
-        try:
-            time.sleep(60)   
-        except Exception as e:
-            print(e)
         newspokedevicename = response[0]["spokedevice_name"]        
         newspokeconnstatus = False
         with open(r'/etc/openvpn/server/openvpn-status.log','r') as f:
@@ -91,7 +86,7 @@ def setass_task(response, devicename):
                 os.system("systemctl restart reachlink_test")                           
         if not newspokeconnstatus:
             print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
-            #setass(response, devicename)
+            raise self.retry(exc=Exception("Spoke not connected yet"))
         else:
             print(f"GRE tunnel created successfully for this {newspokedevicename}.")
     except Exception as e:
