@@ -195,9 +195,10 @@ def activate(data):
                     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
                     os.system("sudo netfilter-persistent save")
             except Exception as e:
-                    print(f"Error occured while activating {tunnel_ip}:", e)
-                    logger.error(f"Error: Get hub routing table:{e}")
-                    response = {"message":f"Error occured while activating {tunnel_ip}"}                
+                    if not " returned non-zero exit status 1" in e:
+                        print(f"Error occured while activating {tunnel_ip}:", e)
+                        logger.error(f"Error: Get hub routing table:{e}")
+                        response = {"message":f"Error occured while activating {tunnel_ip}"}                
     except Exception as e:
         print(e)
         response = {"message":f"Error: {e}"}
