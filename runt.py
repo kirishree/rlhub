@@ -2,7 +2,7 @@ import os
 import pymongo
 from pymongo.server_api import ServerApi
 import json
-#os.system("cp robustel_configure.py /root/reachlink/")
+os.system("cp robustel_configure.py /root/reachlink/")
 #os.system("cp onboarding.py /root/reachlink/")
 #os.system("cp microtek_configure.py /root/reachlink/")
 #os.system("cp ubuntu_info.py /root/reachlink/")
