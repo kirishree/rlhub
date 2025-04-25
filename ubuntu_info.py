@@ -16,6 +16,8 @@ import pymongo
 import yaml
 import random
 import string
+import logging
+logger = logging.getLogger('reachlink')
 ipr = IPRoute()
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
@@ -194,6 +196,7 @@ def activate(data):
                     os.system("sudo netfilter-persistent save")
             except Exception as e:
                     print(f"Error occured while activating {tunnel_ip}:", e)
+                    logger.error(f"Error: Get hub routing table:{e}")
                     response = {"message":f"Error occured while activating {tunnel_ip}"}                
     except Exception as e:
         print(e)

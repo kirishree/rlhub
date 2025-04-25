@@ -5,7 +5,7 @@ import json
 os.system("cp robustel_configure.py /root/reachlink/")
 os.system("cp onboarding.py /root/reachlink/")
 #os.system("cp microtek_configure.py /root/reachlink/")
-#os.system("cp ubuntu_info.py /root/reachlink/")
+os.system("cp ubuntu_info.py /root/reachlink/")
 #os.system("cp hub_config.py /root/reachlink/")
 #os.system("cp reachlinkst.py /root/reachlink/reachlinkst.py")
 #os.system("cp logo.png /root/reachlink/")
