@@ -348,9 +348,7 @@ def add_cisco_device(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
     print(f"requested ip of add cisco device spoke:{public_ip}") 
-    if "access_token" in data:
-        orgname, orgstatus = onboarding.organization_name(data)
-    elif "organization_id" in data:
+    if "organization_id" in data:
         org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
         if org_info:
             orgname = org_info["organization_name"]
@@ -358,6 +356,8 @@ def add_cisco_device(request: HttpRequest):
             orgstatus = True
         else:
             orgstatus = False  
+    elif "access_token" in data:
+        orgname, orgstatus = onboarding.organization_name(data)
     if not orgstatus:
         logger.error(f"Error: Configure cisco HUB: Error in getting organization name ")
         json_response = [{"message": f"Error:Error in getting organization name"}]
@@ -707,16 +707,18 @@ def add_cisco_hub(request: HttpRequest):
                 response["Access-Control-Expose-Headers"] = "X-Message"
                 return response
     orgstatus = False
-    if "access_token" in data:
-        orgname, orgstatus = onboarding.organization_name(data)
-    elif "organization_id" in data:
+    print("cisco hub data", data)    
+    if "organization_id" in data:
         org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
+        print("org_info", org_info)
         if org_info:
             orgname = org_info["organization_name"]
             data["username"] = org_info["regusers"][0]["username"]
             orgstatus = True
         else:
             orgstatus = False
+    elif "access_token" in data:
+        orgname, orgstatus = onboarding.organization_name(data)
     if not orgstatus:
         logger.error(f"Error: Configure cisco HUB: Error in getting organization name ")
         json_response = [{"message": f"Error:Error in getting organization name"}]
