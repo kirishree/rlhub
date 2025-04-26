@@ -260,7 +260,8 @@ def setass(response, devicename):
                 os.system("systemctl restart reachlink_test")                           
         if not newspokeconnstatus:
             print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
-            #setass(response, devicename)
+            
+            setass(response, devicename)
         else:
             print(f"GRE tunnel created successfully for this {newspokedevicename}.")
     except Exception as e:
