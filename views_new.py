@@ -259,8 +259,8 @@ def setass(response, devicename):
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")                           
         if not newspokeconnstatus:
-            print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
-            
+            print(f"New spoke is not connected yet({newspokedevicename}). Trying again")  
+            logger.info(f"New spoke is not connected yet({newspokedevicename}). Trying again")          
             setass(response, devicename)
         else:
             print(f"GRE tunnel created successfully for this {newspokedevicename}.")
