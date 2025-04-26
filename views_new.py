@@ -164,6 +164,23 @@ def new_client(client_name):
         print(e)
         return False
 
+def validate_ip(ip_address):
+    octet = ip_address.split(".")
+    prefix_len = ip_address.split("/")[1]
+    if prefix_len == 32:
+        return False
+    if 0 < int(octet[0]) < 127:
+        if 7 < int(prefix_len) < 33:
+            return True
+    if int(octet[0]) == 169 and int(octet[1]) == 254:
+        return False
+    if 127 < int(octet[0]) < 192:
+        if 15 < int(prefix_len) < 33 :
+            return True
+    if 191 < int(octet[0]) < 224:
+        if 23< int(prefix_len) < 33:
+            return True    
+    return False
 def setass(response, devicename):    
     try:
         connected_spoke =[]
@@ -1292,6 +1309,12 @@ def create_vlan_interface_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
+        for int_addr in data["addresses"]:
+            if (validate_ip(int_addr)):
+                continue
+            else:
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                return JsonResponse(response, safe=False)
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -1348,6 +1371,12 @@ def create_sub_interface_spoke(request):
         if "robustel" in data["uuid"]:
             response = [{"message": f"Error: This Robustel device doesn't support Sub Interface"}]            
             return JsonResponse(response, safe=False)
+        for int_addr in data["addresses"]:
+            if (validate_ip(int_addr)):
+                continue
+            else:
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                return JsonResponse(response, safe=False)
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1404,6 +1433,12 @@ def create_loopback_interface_spoke(request):
         if "robustel" in data["uuid"] or "microtek" in data["uuid"]:
             response = [{"message": "Error: This device doesn't support Loopback Interface"}]
             return JsonResponse(response, safe=False)
+        for int_addr in data["addresses"]:
+            if (validate_ip(int_addr)):
+                continue
+            else:
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                return JsonResponse(response, safe=False)
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1427,7 +1462,7 @@ def create_loopback_interface_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)     
                 else:
-                    response = {"message":"Error while configuring VLAN interface in spoke"}
+                    response = {"message":"Error while configuring Loopback interface in spoke"}
             except requests.exceptions.RequestException as e:
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}            
@@ -1438,7 +1473,7 @@ def create_loopback_interface_spoke(request):
             response = router_configure.createloopbackinterface(data)                       
     except Exception as e:
         logger.error(f"Error: Create Loopback Interface Spoke:{e}")
-        response = [{"message": f"Error: while creating Loopback Intreface"}]
+        response = [{"message": f"Error: while creating Loopback Interface"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1452,6 +1487,12 @@ def create_tunnel_interface_spoke(request):
         if "robustel" in data["uuid"]:
             response = [{"message": "Error: This device doesn't support Tunnel Interface"}]
             return JsonResponse(response, safe=False)
+        for int_addr in data["addresses"]:
+            if (validate_ip(int_addr)):
+                continue
+            else:
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                return JsonResponse(response, safe=False)
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -2660,9 +2701,9 @@ def get_robustelspoke_config(request: HttpRequest):
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
                         }
-        #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
-        #background_thread.start()
-        setass_task.apply_async(args=[response, "robustel"], countdown=60)
+        background_thread = threading.Thread(target=setass, args=(response, "robustel",))
+        background_thread.start()
+        #setass_task.apply_async(args=[response, "robustel"], countdown=60)
     else:
         spokedetails= {"message": response[0]["message"]}
     

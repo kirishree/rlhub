@@ -176,7 +176,12 @@ def deactivate(data):
         try:
                 command = f"sudo iptables -I INPUT -s {tunnel_ip} -j DROP"                
                 subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                os.system("sudo netfilter-persistent save")           
+                os.system("sudo netfilter-persistent save")                     
+                os.system("systemctl restart reachlink_test")   
+                coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
+                                      "tunnel_ip": data["tunnel_ip"],
+                                      "uuid":data["uuid"]                                     
+                                        })        
         except:
                 print(f"Error occured while deactivating {tunnel_ip}:", e)
                 response = {"message":f"Error occured while deactivating {tunnel_ip}"} 

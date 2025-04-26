@@ -71,7 +71,12 @@ def get_routingtable_robustel(data):
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'status route')
@@ -161,7 +166,12 @@ def pingspoke(data):
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []      
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, f'ping {data["subnet"]}')
@@ -204,7 +214,12 @@ def traceroute(data):
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []      
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, f'traceroute {data["trace_ip"]}')
@@ -232,10 +247,15 @@ def get_interface_robustel(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return intfcdetails
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []  
 
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -325,10 +345,15 @@ def createvlaninterface(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []      
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')
@@ -387,10 +412,15 @@ def deletevlaninterface(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')
@@ -431,10 +461,15 @@ def addstaticroute(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []  
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show route all')
@@ -492,10 +527,15 @@ def delstaticroute(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []  
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show route all')
@@ -542,10 +582,15 @@ def interface_config(data):
     try:
         try:
             # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, port=port_number, timeout=30, banner_timeout=60)
+            ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return []    
+            # Connect to the router
+            try:
+                ssh_client.connect(hostname=router_ip, username=username, port=22, password=password, timeout=30, banner_timeout=60)
+            except Exception as e:
+                print(f"SSH Connection Error: {e}")
+                return []    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
 
