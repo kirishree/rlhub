@@ -10,7 +10,7 @@ import os
 import subprocess
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 
-@shared_task(bind=True, max_retries=10, default_retry_delay=60)
+@shared_task(bind=True, max_retries=20, default_retry_delay=60)
 def setass_task(self, response, devicename):   
     try:
         connected_spoke =[]

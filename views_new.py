@@ -2702,9 +2702,9 @@ def get_robustelspoke_config(request: HttpRequest):
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
                         }
-        background_thread = threading.Thread(target=setass, args=(response, "robustel",))
-        background_thread.start()
-        #setass_task.apply_async(args=[response, "robustel"], countdown=60)
+        #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
+        #background_thread.start()
+        setass_task.apply_async(args=[response, "robustel"], countdown=60)
     else:
         spokedetails= {"message": response[0]["message"]}
     

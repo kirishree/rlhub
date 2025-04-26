@@ -658,13 +658,3 @@ def interface_config(data):
         # Close the SSH connection
         ssh_client.close()
     return response
-                     
-          
-
-
-
-        
-#data = {"tunnel_ip":"10.8.0.9",
-#       "router_username": "etelriyad",
-#       "router_password": "Reachlink@08"}
-#print(get_interface_robustel(data))
