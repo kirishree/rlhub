@@ -71,7 +71,8 @@ def set_openvpn_client():
                             "set firewall remote_https_access false",
                             "set firewall remote_ssh_access false",
                             "set firewall local_ssh_access true",
-                            "set firewall local_telnet_access true"                                                        
+                            "set firewall local_telnet_access true",
+                            "set ssh port 3366"                                                       
                             ]
         for command in config_commands:
             output = send_command_wo(shell, command)
