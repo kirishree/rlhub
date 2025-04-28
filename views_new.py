@@ -1823,9 +1823,14 @@ def del_staticroute_spoke(request):
             return JsonResponse(route_details,safe=False) 
         elif "robustel" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            subnets = data["routes_info"]
+            for subnet in subnets:
+                if "8.8." in subnet["destination"]:
+                    route_details = response = {"message":f"Error: Deletion of this route ({subnet}) is prohibited"}
+                    break
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            route_details = robustel_configure.delstaticroute(data)                 
+            #route_details = robustel_configure.delstaticroute(data)                 
             return JsonResponse(route_details,safe=False) 
         elif "cisco" in data["uuid"]:
             #router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
