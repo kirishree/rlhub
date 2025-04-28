@@ -54,7 +54,7 @@ def set_openvpn_client():
                             "set openvpn tunnel 1 auth_type x509ca",
                             "set openvpn tunnel 1 encryption aes_256",
                             "set openvpn tunnel 1 authentication sha1",
-                            "set openvpn tunnel 1 compress_enable false",
+                            "set openvpn tunnel 1 compress_enable false",                            
                             "add lan multi_ip 1",
                             "set lan multi_ip 1 ip 192.168.2.1",
                             "set lan multi_ip 1 netmask 255.255.255.0",
@@ -71,8 +71,19 @@ def set_openvpn_client():
                             "set firewall remote_https_access false",
                             "set firewall remote_ssh_access false",
                             "set firewall local_ssh_access true",
-                            "set firewall local_telnet_access true",
-                            "set ssh port 3366"                                                       
+                            "set firewall local_telnet_access true",                            
+                            "add route static_route 1",
+                            "set route static_route 1 desc secdnsroute",
+                            "set route static_route 1 destination 8.8.4.4",
+                            "set route static_route 1 netmask 255.255.255.255",
+                            "set route static_route 1 interface wwan", 
+                            "add route static_route 2",
+                            "set route static_route 2 desc pridnsroute",
+                            "set route static_route 2 destination 8.8.8.8",
+                            "set route static_route 2 netmask 255.255.255.255",
+                            "set route static_route 2 interface wwan",  
+                            "set openvpn tunnel 1 mtu 1500",
+                            "set ssh port 3366"                                              
                             ]
         for command in config_commands:
             output = send_command_wo(shell, command)
