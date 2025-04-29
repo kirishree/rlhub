@@ -22,7 +22,7 @@ from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_in
 from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get_ciscohub_config
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
-from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info
+from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
 urlpatterns = [
     path('token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('homepage_info', homepage_info, name='homepage_info'),
@@ -79,4 +79,5 @@ urlpatterns = [
     path('get_microtekspoke_config', get_microtekspoke_config, name='get_microtekspoke_config'),
     path('traffic_report',traffic_report, name='traffic_report'),
     path('get_robustelspoke_config', get_robustelspoke_config, name='get_robustelspoke_config'),
+    path('logfile_content', logfile_content, name='logfile_content'),
 ]

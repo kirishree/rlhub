@@ -2906,3 +2906,16 @@ def adminhomepage_info(request: HttpRequest):
     # Store in cache for 60 seconds
     cache.set(cache_key, response, timeout=60)
     return JsonResponse(response, safe=False)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def logfile_content(request):
+    logfile_content = ["ReachLink is not configured yet"]
+    log_file_path = "/var/log/reachlink/reach_request.log"
+
+    if os.path.exists(log_file_path):
+        with open(log_file_path, "r") as file:
+            logfile_content = file.readlines()
+
+    logfile_content.reverse()
+    content = ''.join(logfile_content)  # Convert list to string
+    return HttpResponse(content, content_type="text/plain")
