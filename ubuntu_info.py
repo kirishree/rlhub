@@ -27,6 +27,7 @@ coll_spoke_active = db_tunnel["spoke_active"]
 coll_spoke_inactive = db_tunnel["spoke_inactive"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
 vrf1_ip = config('VRF_IP')
+hub_ip = config('HUB_IP')
 ubuntu_dialer_network = "10.17.17.0"
 ubuntu_dialer_netmask = "255.255.255.0"
 routes_protocol_map = {
@@ -132,8 +133,16 @@ def get_routing_table_ubuntu():
                                   "protocol":routes_protocol_map.get(protocol, "unknown"),
                                   "table_id": table
                                 })  
-    except Exception as e:
-        print(e)
+    except Exception as e:        
+        logger.error(
+            f"Failed to fetch Routing table",
+            extra={
+                "device_type": "ReachlinkServer",
+                "device_ip": hub_ip,
+                "api_endpoint": "get_routing_table",
+                "exception": str(e)
+            }
+            )        
     return response 
 
 def deactivate_gre(data):
@@ -182,11 +191,19 @@ def deactivate(data):
                                       "tunnel_ip": data["tunnel_ip"],
                                       "uuid":data["uuid"]                                     
                                         })        
-        except:
+        except Exception as e:
                 print(f"Error occured while deactivating {tunnel_ip}:", e)
                 response = {"message":f"Error occured while deactivating {tunnel_ip}"} 
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Failed to deactivate",
+            extra={
+                "device_type": "ReachlinkServer",
+                "device_ip": hub_ip,
+                "api_endpoint": "deactivate",
+                "exception": str(e)
+            }
+            ) 
         response = {"message":f"Error:while deactivating {tunnel_ip}"}                  
     return response
 

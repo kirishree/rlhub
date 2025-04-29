@@ -1,5 +1,7 @@
 import ipaddress
 import requests
+import subprocess
+import os
 url = "https://dev-api.cloudetel.com/api/v1/"
 addr = "192.168.23.149/30"
 corrected_subnet = ipaddress.ip_network(addr, strict=False)
@@ -49,4 +51,11 @@ data = {}
 #data["username"] = "cejavak731@wermink.com"
 #data['password'] = "cejavak731@wermink.com"
 data = {'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMThlMWY2NjJhNzU0ODgzODhmN2E2YWMzODQyODRhNCIsInVzZXJfaWQiOiI5NTZjNTYwY2FlYjE0Y2U4ODY0NzcxMDFkZWUwM2QxYSIsImNsYWltcyI6WyJsb2dpbiIsInVzZXIiXSwidG9rZW5faWQiOiI1ZGJkNTc2ZC03ZmFiLTRhNzYtODg3My0zODc2NzM4MGE1Y2MiLCJleHAiOjE3NDUxNDEwNTYsImlzcyI6Imh0dHBzOi8vY2xvdWRldGVsLmNvbSIsImlhdCI6MTc0NTA1NDY1Nn0.LynIDV_3q5ROVwg2FC2V_tEZgW8-lZQ1Ew5Her6MWKc'}
-get_organization_id(data)
+#get_organization_id(data)
+
+try:
+    command = f"sudo iptables -D INPUT -s 10.8.0.3 -j DROP"
+    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+    os.system("sudo netfilter-persistent save")
+except Exception as e:
+    print(e)
