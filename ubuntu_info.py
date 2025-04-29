@@ -178,22 +178,77 @@ def deactivate_gre(data):
     return response
 
 def deactivate(data):
-    try:
-        
+    try:        
         response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
-        tunnel_ip = data["tunnel_ip"].split("/")[0]
+        tunnel_ip = data["tunnel_ip"].split("/")[0]  
+        already_availble = False      
         try:
-                command = f"sudo iptables -I INPUT -s {tunnel_ip} -j DROP"                
-                subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                os.system("sudo netfilter-persistent save")                     
-                os.system("systemctl restart reachlink_test")   
-                coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
+            command = f"sudo iptables -D INPUT -s {tunnel_ip} -j DROP"
+            subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+            logger.info(
+                        f"Deleted DROP rule for {tunnel_ip}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "deactivate",
+                            "exception": ""
+                        }
+            ) 
+            already_availble = True
+        except Exception as e:                    
+            if " returned non-zero exit status 1" in str(e): 
+                logger.info(
+                        f"No DROP rule found for {tunnel_ip}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "deactivate",
+                            "exception": str(e)
+                        }
+                ) 
+            else:
+                    # If it's another kind of exception, re-raise or log
+                logger.error(
+                            f"Unexpected error while deleting DROP rule for {tunnel_ip}",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "deactivate",
+                                "exception": str(e)
+                            }
+                )
+        try:                    
+            command = f"sudo iptables -I INPUT -s {tunnel_ip} -j DROP"                
+            subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+            os.system("sudo netfilter-persistent save")                     
+            os.system("systemctl restart reachlink_test")   
+            coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
                                       "tunnel_ip": data["tunnel_ip"],
                                       "uuid":data["uuid"]                                     
-                                        })        
+                                        }) 
+            logger.info(
+                        f"Added DROP rule for {tunnel_ip}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "deactivate",
+                            "exception": ""
+                        }
+            ) 
+            if already_availble:
+                response = {"message":f"Already deactivated: {data['tunnel_ip']}"}
+
         except Exception as e:
-                print(f"Error occured while deactivating {tunnel_ip}:", e)
-                response = {"message":f"Error occured while deactivating {tunnel_ip}"} 
+                logger.error(
+                    f"Failed to insert DROP rule or restart for {tunnel_ip}",
+                    extra={
+                        "device_type": "ReachlinkServer",
+                        "device_ip": hub_ip,
+                        "api_endpoint": "deactivate",
+                        "exception": str(e)
+                    }
+                )
+                response = {"message":f"Error:while deactivating {tunnel_ip}. Please try again later."} 
     except Exception as e:
         logger.error(
             f"Failed to deactivate",
@@ -204,26 +259,45 @@ def deactivate(data):
                 "exception": str(e)
             }
             ) 
-        response = {"message":f"Error:while deactivating {tunnel_ip}"}                  
+        response = {"message":f"Error:while deactivating {tunnel_ip}. Please try again later."}                  
     return response
 
 def activate(data):
     try:       
         response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
         tunnel_ip = data["tunnel_ip"].split("/")[0]   
+        e = None  # Initialize early
         if True:
             try:
                     command = f"sudo iptables -D INPUT -s {tunnel_ip} -j DROP"
                     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
                     os.system("sudo netfilter-persistent save")
-            except Exception as e:
-                    if not " returned non-zero exit status 1" in str(e):
-                        print(f"Error occured while activating {tunnel_ip}:", e)
-                        logger.error(f"Error: Get hub routing table:{e}")
-                        response = {"message":f"Error occured while activating {tunnel_ip}"}                
+            except Exception as ex:
+                    e = ex
+                    if " returned non-zero exit status 1" in str(e):                        
+                        response = {"message":f"Device is unreachable. Please check branch internet before activation."}   
+                    else:
+                        response = {"message":f"Error:while activating {tunnel_ip}. Please try again later."}  
+            logger.info(
+            f"{response}",
+            extra={
+                "device_type": "ReachlinkServer",
+                "device_ip": hub_ip,
+                "api_endpoint": "activate",
+                "exception": str(e) if e else ""
+            }
+            )          
     except Exception as e:
-        print(e)
-        response = {"message":f"Error: {e}"}
+        logger.error(
+            f"Failed to activate",
+            extra={
+                "device_type": "ReachlinkServer",
+                "device_ip": hub_ip,
+                "api_endpoint": "activate",
+                "exception": str(e)
+            }
+            )  
+        response =  {"message":f"Error:while activating {tunnel_ip}. Please try again later."} 
     return response
 
 def activate_gre(data):
@@ -250,7 +324,7 @@ def activate_gre(data):
                 coll_spoke_disconnect.delete_many({"uuid": data["uuid"]})
     except Exception as e:
         print(e)
-        response = {"message":f"Error: {e}"}
+        response = {"message":f"Error:"}
     return response
 
 def diagnostics(data):
@@ -269,6 +343,15 @@ def diagnostics(data):
         except subprocess.CalledProcessError:
             rtt_avg = -1
     response ={"message": f"Error: Subnet {data['subnet']} not Reachable"}
+    logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "pinghub",
+                            "exception": ""
+                        }
+            )
     return response
 
 def background_deletesubnet(data):
@@ -327,7 +410,7 @@ def delsubnet(data):
         background_thread.start()       
        
     except Exception as e:
-        response = {"message":f"Error: {e}"}                   
+        response = {"message":f"Error: while deleting subnet"}                   
     return response
 
 def background_addsubnet(data):
@@ -402,7 +485,7 @@ def configurepbr_spoke(data):
             #status = router_configure.addroute(data)
             response = {"message":"Dummy"}
     except Exception as e:
-        response = {"message": f"Error: {e}"}
+        response = {"message": f"Error: configuring pbr spoke"}
     print(response)
 
 def configurepbr_spoke_new(realipdata):
@@ -454,7 +537,7 @@ def configurepbr_spoke_new(realipdata):
                 #status = router_configure.addroute(data)
                 response = {"message":"Dummy"}
     except Exception as e:
-        response = {"message": f"Error: {e}"}
+        response = {"message": f"Error: configure pbr spoke new"}
     print(response)    
 
 def addstaticroute_ubuntu(data):
@@ -519,14 +602,31 @@ def addstaticroute_ubuntu(data):
             background_thread.start()    
         os.system("systemctl restart openvpn-server@server")  
         response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
+        logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "add_static_route",
+                            "exception": ""
+                        }
+            )
     except Exception as e:
-        print(e)
-        response = {"message": "Error while adding route"}
+        logger.error(
+                        f"Failed to add route",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "add_static_route",
+                            "exception": str(e)
+                        }
+            )
+        response = {"message": "Error while adding route. Pl try again"}    
     return response
 
 def get_interface_details_ubuntu(data):
     try:
-        interface_details = []
+        interface_details = []        
         interface = psutil.net_if_addrs()
         intfc_ubuntu = []
         for intfc_name in interface:            
@@ -591,12 +691,18 @@ def get_interface_details_ubuntu(data):
                     if intfc["interface_name"] == "Reach_link1":
                         intfc["interface_name"] = "Overlay Tunnel"
                     if intfc["interface_name"] == "tun0":
-                        intfc["interface_name"] = "Base Tunnel"
-        response = interface_details
+                        intfc["interface_name"] = "Base Tunnel"        
     except Exception as e:
-        print(e)
-        response = []
-    return response
+        logger.error(
+                        f"Failed to fetch interface info",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "get_interface_info",
+                            "exception": str(e)
+                        }
+            )        
+    return interface_details
 
 def addsubnet(data):
     try:       
@@ -654,7 +760,7 @@ def addsubnet(data):
             try:
                 os.system(f"ip neighbor add {branch['tunnel_ip'].split('/')[0]} lladdr {branch['public_ip']} dev Reach_link1") 
             except Exception as e:
-                print(f"Neighbor add error: {e}")     
+                print(f"Neighbor add error: add route")     
         if len(real_routes) > 0:
             pbr_spoke_data = {"tunnel_ip": data["tunnel_ip"],
                               "uuid": data["uuid"],
@@ -681,7 +787,7 @@ def addsubnet(data):
             else:
                 response = {"message":f"Successfully added {added_subnet} subnet(s). {subnet_na} is already routed."}
     except Exception as e:    
-        response = {"message": f"Error in adding route, pl try again {e}" }
+        response = {"message": f"Error in adding route, pl try again add subnet" }
     return response 
 
 def configured_address():
@@ -744,10 +850,26 @@ def interface_config(data):
                                 cmd, shell=True, text=True
                                 )            
             response = [{"message": f"Successfully configured Interface: {intfc_name}"}]
+        logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "interface_config",
+                            "exception": ""
+                        }
+            )  
     except Exception as e:
-        print(e)
-        response = [{"message": f"Error while configuring interface with  {data['intfc_name']}: {e}"}]
-        print("excep", response)
+        logger.error(
+                        f"Failed to configure interface",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "interface_config",
+                            "exception": str(e)
+                        }
+            )    
+        response = [{"message": f"Error while configuring interface with  {data['intfc_name']}. Pl try again!"}]        
     return response
 
 def create_vlan_interface(data):
@@ -803,9 +925,26 @@ def create_vlan_interface(data):
                                 cmd, shell=True, text=True
                                 )
             response = [{"message": f"Successfully configured VLAN Interface: {vlan_int_name}"}]
-
+        logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "create_vlan_interface",
+                            "exception": ""
+                        }
+            )  
     except Exception as e:
-        response = [{"message": f"Error while configuring VLAN interface with id {data['vlan_id']}: {e}"}]
+        logger.error(
+                        f"Failed to create VLAN Interface",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "create_vlan",
+                            "exception": str(e)
+                        }
+            )   
+        response = [{"message": f"Error while creating VLAN interface with id {data['vlan_id']}. Pl try again!"}]
     return response
 
 def create_tunnel_interface(data):
@@ -846,9 +985,26 @@ def create_tunnel_interface(data):
                 response = [{"message": f"Successfully configured tunnel Interface: {data['tunnel_intfc_name']}"}]
             else:
                 response = [{"message": f"Error already interface: {data['tunnel_intfc_name']} exist."}]
-        
+        logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "create_tunnel_interface",
+                            "exception": ""
+                        }
+            )  
     except Exception as e:
-        response = [{"message": f"Error while configuring tunnel interface with id {data['tunnel_intfc_name']}: {e}"}]
+        logger.error(
+                        f"Failed to create tunnel Interface",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "create_tunnel_interface",
+                            "exception": str(e)
+                        }
+            )   
+        response = [{"message": f"Error while configuring tunnel interface with id {data['tunnel_intfc_name']}. Pl try again!"}]
     return response
 
 def delstaticroute_ubuntu(data):
@@ -876,8 +1032,26 @@ def delstaticroute_ubuntu(data):
             f.close()
         os.system("systemctl restart openvpn-server@server")
         response = {"message": "Successfully route deleted"}
+        logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "delete_static_route",
+                            "exception": ""
+                        }
+            )  
     except Exception as e:
-        response = {"message": "Error while deleting route"}
+        logger.error(
+                        f"Failed to delete static route",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "delete_static_route",
+                            "exception": str(e)
+                        }
+            )   
+        response = {"message": "Error while deleting route. Pl try again!"}
     return response
 
 def generate_dialerip(dialerips):
@@ -959,7 +1133,15 @@ def get_dialer_ip(devicename):
                 "hub_dialer_network":ubuntu_dialer_network,
                 "hub_dialer_netmask":ubuntu_dialer_netmask})        
     except Exception as e:
-        print(e)
+        logger.error(
+                        f"Failed to get dialer IP",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "api_endpoint": "add_cisco_rl",
+                            "exception": str(e)
+                        }
+            )   
     return ({"dialerip":newdialerip,
                 "dialerpassword": newdialerpassword,
                 "dialerusername": devicename,

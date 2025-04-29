@@ -181,91 +181,6 @@ def validate_ip(ip_address):
         if 23< int(prefix_len) < 33:
             return True    
     return False
-def setass(response, devicename):    
-    try:
-        connected_spoke =[]
-        try:
-            time.sleep(60)   
-        except Exception as e:
-            print(e)
-        newspokedevicename = response[0]["spokedevice_name"]        
-        newspokeconnstatus = False
-        with open(r'/etc/openvpn/server/openvpn-status.log','r') as f:
-            lines = f.readlines()
-            for row in  lines:     
-                data=row.split(",")
-                if data[0] == "CLIENT_LIST":
-                    collection = {"Tunnel_ip":data[3], "Public_ip":data[2].split(":")[0], "spokedevice_name": data[1]}
-                    connected_spoke.append(collection) 
-        for spoke in connected_spoke:
-            if spoke["spokedevice_name"] == newspokedevicename:
-                if devicename == "microtek":
-                    query = {"spokedevice_name": newspokedevicename }
-                    update_data = {"$set": {"public_ip":spoke["Public_ip"],
-                                            "tunnel_ip": spoke["Tunnel_ip"]                                                                       
-                                        }
-                                       }
-                    newspokeconnstatus = True    
-                    coll_tunnel_ip.update_many(query, update_data) 
-                    organizationid = response[0]["organization_id"]
-                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
-                    for dev in regdevices["registered_devices"]:                    
-                        if "microtek_spokes_info" in dev:                             
-                                for mispoke in  dev["microtek_spokes_info"]:                         
-                                    if newspokedevicename == mispoke["spokedevice_name"]:
-                                        mispoke["tunnel_ip"] = spoke["Tunnel_ip"] 
-                                        mispoke["public_ip"] = spoke["Public_ip"]                                 
-                                        
-                    query = {"organization_id": organizationid}
-                    update_data = {"$set": {
-                                        "registered_devices": regdevices["registered_devices"]                                                                           
-                                        }
-                                       }
-                    coll_registered_organization.update_many(query, update_data)   
-                elif devicename == "robustel":
-                    query = {"spokedevice_name": newspokedevicename }
-                    update_data = {"$set": {"public_ip":spoke["Public_ip"],
-                                            "tunnel_ip": spoke["Tunnel_ip"]                                                                       
-                                        }
-                                       }
-                    newspokeconnstatus = True    
-                    coll_tunnel_ip.update_many(query, update_data) 
-                    organizationid = response[0]["organization_id"]
-                    regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
-                    for dev in regdevices["registered_devices"]:                    
-                        if "robustel_spokes_info" in dev:                             
-                                for rospoke in  dev["robustel_spokes_info"]:                         
-                                    if newspokedevicename == rospoke["spokedevice_name"]:
-                                        rospoke["tunnel_ip"] = spoke["Tunnel_ip"] 
-                                        rospoke["public_ip"] = spoke["Public_ip"]                               
-                                        
-                    query = {"organization_id": organizationid}
-                    update_data = {"$set": {
-                                        "registered_devices": regdevices["registered_devices"]                                                                           
-                                        }
-                                       }
-                    coll_registered_organization.update_many(query, update_data)                                  
-                else:
-                    newspokeovpnip = spoke["Tunnel_ip"]
-                    newspokeconnstatus = True
-                    newspokegreip = response[0]["gretunnel_ip"].split("/")[0]
-                    command = f"sudo ip neighbor replace {newspokegreip} lladdr {newspokeovpnip} dev Reach_link1"
-                    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                    query = {"spokedevice_name": newspokedevicename }
-                    update_data = {"$set": {"public_ip":newspokeovpnip                                                                         
-                                        }
-                                       }
-                    coll_tunnel_ip.update_many(query, update_data)
-                os.system(f"python3 {reachlink_zabbix_path}")
-                os.system("systemctl restart reachlink_test")                           
-        if not newspokeconnstatus:
-            print(f"New spoke is not connected yet({newspokedevicename}). Trying again")  
-            logger.info(f"New spoke is not connected yet({newspokedevicename}). Trying again")          
-            setass(response, devicename)
-        else:
-            print(f"GRE tunnel created successfully for this {newspokedevicename}.")
-    except Exception as e:
-        print(f"set ass execption:{e}")
 
 @api_view(['POST'])
 def login_or_register(request):
@@ -344,8 +259,8 @@ def login(request: HttpRequest):
             response1 = HttpResponse(conffile_content, content_type='text/plain')
             response1['Content-Disposition'] = f'attachment; filename="{client_name}.ovpn"'
             response1['X-Message'] = json.dumps(response)
-            background_thread = threading.Thread(target=setass, args=(response,"ubuntu",))
-            background_thread.start() 
+            #background_thread = threading.Thread(target=setass, args=(response,"ubuntu",))
+            #background_thread.start() 
         else:
             response1 = HttpResponse(content_type='text/plain')
             response1['X-Message'] = json.dumps(response)        
@@ -376,8 +291,16 @@ def add_cisco_device(request: HttpRequest):
             orgstatus = False  
     elif "access_token" in data:
         orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:
-        logger.error(f"Error: Configure cisco HUB: Error in getting organization name ")
+    if not orgstatus:        
+        logger.error(
+            f"Error: Configure spoke: Error in getting organization name ",
+            extra={
+                "device_type": "ReachlinkServer",
+                "device_ip": hub_ip,
+                "api_endpoint": "configure spoke",
+                "exception": ""
+            }
+            ) 
         json_response = [{"message": f"Error:Error in getting organization name"}]
         response = HttpResponse(content_type='application/zip')
         response['X-Message'] = json.dumps(json_response)
@@ -403,8 +326,16 @@ def add_cisco_device(request: HttpRequest):
                 output_file = os.path.expanduser(f"~/{client_name}.ovpn")
                 if not os.path.exists(output_file):
                     print("Generating new client")
-                    if not(new_client(client_name)):
-                        logger.error(f"Error: Configure Robustel Spoke: Issue with client certificate generation")
+                    if not(new_client(client_name)):                        
+                        logger.error(
+                            f"Error: Configure Robustel Spoke: Issue with client certificate generation",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
                         response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
                         response1 = HttpResponse(content_type='text/plain')
                         response1['X-Message'] = json.dumps(response)
@@ -445,6 +376,15 @@ def add_cisco_device(request: HttpRequest):
 
                 # Prepare the response
                 buffer.seek(0)
+                logger.info(
+                            f"New Robustel client: {client_name} added",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
                 json_response = [{"message": response[0]["message"]}]
                 response1 = HttpResponse(buffer, content_type='application/zip')
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
@@ -452,11 +392,27 @@ def add_cisco_device(request: HttpRequest):
                 response1["Access-Control-Expose-Headers"] = "X-Message"
                 os.system("systemctl restart reachlink_test") 
                 return response1   
-            else:
-                logger.error(f"Error: Configure Robustel Spoke:{response[0]['message']}")
+            else:                
+                logger.error(
+                            f"Error: Configure Robustel Spoke:{response[0]['message']}",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
                 json_response = [{"message": f"Error:{response[0]['message']}"}]
-        except Exception as e:
-            logger.error(f"Error: Configure Robustel Spoke: {e}")
+        except Exception as e:            
+            logger.error(
+                            f"Error: Configure Robustel Spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        ) 
             json_response = [{"message": f"Error:{response[0]['message']}"}]
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(json_response)
@@ -509,6 +465,15 @@ def add_cisco_device(request: HttpRequest):
                 # Prepare the response
                 buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
+                logger.info(
+                            f"New Microtek {client_name} added",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
                 response1 = HttpResponse(buffer, content_type='application/zip')
                 response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response1['X-Message'] = json.dumps(json_response)
@@ -516,12 +481,27 @@ def add_cisco_device(request: HttpRequest):
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")  
                 return response1 
-            else:
-                logger.error(f"Error: Configure Microtek Spoke:{response[0]['message']}")              
+            else:                
+                logger.error(
+                            f"Error: Configure Microtek Spoke:{response[0]['message']}",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )              
                 json_response = [{"message": f"Error:{response[0]['message']}"}]
-        except Exception as e:
-            print(f"Error: Configure Microtek Spoke:{e}")
-            logger.error(f"Error: Configure Microtek Spoke:{e}")
+        except Exception as e:            
+            logger.error(
+                            f"Error: Configure Microtek Spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        )     
             json_response = [{"message": f"Error:{response[0]['message']}"}]
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(json_response)
@@ -539,7 +519,6 @@ def add_cisco_device(request: HttpRequest):
             data["uuid"] = data['branch_location'] + f"_{orgname}_ciscodevice.net"
         else:
             data["uuid"] = data['branch_location'] + f"_{orgname}_cisco_ubuntu.net"
-        print(data)
         data["username"] = "none"
         data["password"] = "none" 
         try:
@@ -656,6 +635,15 @@ def add_cisco_device(request: HttpRequest):
                         dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
                         coll_tunnel_ip.insert_one(dialerinfo)                    
                 else:
+                        logger.error(
+                            f"Error:while generating dialerip for cisco",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )    
                         json_response = [{"message": f"Error:while generating dialerip"}]
                         response = HttpResponse(content_type='application/zip')
                         response['X-Message'] = json.dumps(json_response)
@@ -681,6 +669,15 @@ def add_cisco_device(request: HttpRequest):
                     # Prepare the response
                     buffer.seek(0)
                 json_response = [{"message": response[0]["message"]}]
+                logger.info(
+                            f"response[0]['message']",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )  
                 response = HttpResponse(buffer, content_type='application/zip')
                 response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
                 response['X-Message'] = json.dumps(json_response)
@@ -694,9 +691,16 @@ def add_cisco_device(request: HttpRequest):
             else:
                 json_response = [{"message": f"Error:{response[0]['message']}"}]
         except Exception as e:
-            print("device add exception", e)
-            logger.error(f"Error: Configure cisco spoke:{e}")
-            json_response = [{"message": f"Error:Internal Server Error"}]
+            logger.error(
+                            "Error: Configure cisco spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        )             
+            json_response = [{"message": f"Error:Internal Server Error, pl try again!"}]
         print(json_response)
         response = HttpResponse(content_type='application/zip')
         response['X-Message'] = json.dumps(json_response)
@@ -718,8 +722,16 @@ def add_cisco_hub(request: HttpRequest):
     for hubinf in coll_hub_info.find({}):
         if hubinf["hub_dialer_network"] == hub_dialer_network:
             if hubinf["hub_ip"] != data["hub_ip"]:
-                json_response = [{"message": f"Error: This Dialer network ID already available, pl choose different one."}]
-                print(json_response)
+                json_response = [{"message": f"Error: This Dialer network ID already available, pl choose different one."}]                
+                logger.error(
+                            "Error: This Dialer network ID already available",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure HUB",
+                                "exception": ""
+                            }
+                        )             
                 response = HttpResponse(content_type='application/zip')
                 response['X-Message'] = json.dumps(json_response)
                 response["Access-Control-Expose-Headers"] = "X-Message"
@@ -738,7 +750,15 @@ def add_cisco_hub(request: HttpRequest):
     elif "access_token" in data:
         orgname, orgstatus = onboarding.organization_name(data)
     if not orgstatus:
-        logger.error(f"Error: Configure cisco HUB: Error in getting organization name ")
+        logger.error(
+                            "Error: Error in getting organization name ",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure HUB",
+                                "exception": ""
+                            }
+                        ) 
         json_response = [{"message": f"Error:Error in getting organization name"}]
         response = HttpResponse(content_type='application/zip')
         response['X-Message'] = json.dumps(json_response)
@@ -762,8 +782,7 @@ def add_cisco_hub(request: HttpRequest):
                 response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
         print(response)
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco HUB is already Registered":
-            devicename = response[0]["spokedevice_name"]
-            devicename = devicename   
+            devicename = response[0]["spokedevice_name"]   
             configuredhubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})            
             coll_tunnel_ip.delete_many({"uuid":data["uuid"]}) 
             devicehubinfo = {}           
@@ -857,6 +876,15 @@ def add_cisco_hub(request: HttpRequest):
             # Prepare the response
             buffer.seek(0)
             json_response = [{"message": response[0]["message"]}]
+            logger.info(
+                            f"{response[0]['message']}:{devicename}",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure HUB",
+                                "exception": ""
+                            }
+                        ) 
             response = HttpResponse(buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="reachlink_hub_conf.zip"'
             response['X-Message'] = json.dumps(json_response)
@@ -865,10 +893,17 @@ def add_cisco_hub(request: HttpRequest):
             return response
         else:
             json_response = [{"message": f"Error:{response[0]['message']}"}]
-    except Exception as e:
-        print(e)
-        logger.error(f"Error: Configure cisco HUB:{e}")
-        json_response = [{"message": f"Error:Internal Server Error"}]
+    except Exception as e:        
+        logger.error(
+                            f"Error while configuring HUB",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "configure HUB",
+                                "exception": str(e)
+                            }
+                        ) 
+        json_response = [{"message": f"Error:Internal Server Error, pl try again!"}]
     print(json_response)
     response = HttpResponse(content_type='application/zip')
     response['X-Message'] = json.dumps(json_response)
@@ -930,7 +965,14 @@ def homepage_info(request: HttpRequest):
                 cache.set(cache_key, response, timeout=60)
                 return JsonResponse(response, safe=False)
     except Exception as e:
-        logger.error(f"Error: Home Page info:{e}")   
+        logger.error(f"Error: Home Page info",
+                     extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "Home page info",
+                                "exception": str(e)
+                            }
+                    )   
     for device in total_devices:
         hub_info = []
         bandwidth_info = []
@@ -983,7 +1025,14 @@ def adminbranch_info():
                                                 }
                                         })
     except Exception as e:
-        logger.error(f"Error: Getting Branch info:{e}")
+        logger.error(f"Error: Getting Branch info",
+                     extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "admin branch info",
+                                "exception": str(e)
+                            }
+                    )
     return adminbranch_info
 
 @api_view(['GET'])
@@ -1020,7 +1069,14 @@ def branch_info(request: HttpRequest):
                     }
                 return JsonResponse(response, safe=False)
     except Exception as e:
-        logger.error(f"Error: Getting Branch info:{e}")
+        logger.error(f"Error: Getting Branch info",
+                     extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "branch info",
+                                "exception": str(e)
+                            }
+                    )
     response = {    "data":data,
                         "total_branches":total_no_branches,
                         "inactive_branches":inactive_branches,
@@ -1046,7 +1102,14 @@ def adminhub_info():
                                     }
                                 })
     except Exception as e:
-        logger.error(f"Error: get Admin hub info Spoke:{e}")
+        logger.error(f"Error: get Admin hub info Spoke",
+                     extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "admin hub info",
+                                "exception": str(e)
+                            }
+                    )
     return response
 
 @api_view(['GET'])
@@ -1080,7 +1143,14 @@ def hub_info(request: HttpRequest):
                     }
                 return JsonResponse(response, safe=False)
     except Exception as e:
-        logger.error(f"Error: Configure Microtek Spoke:{e}")
+        logger.error(f"Error: hub info",
+                     extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "Hub info",
+                                "exception": str(e)
+                            }
+                    )
     data.append({"branch_location": "Reachlink_server",
                                          "hub_ip":hub_ip,
                                          "hub_status":"active",
@@ -1277,7 +1347,16 @@ def get_interface_details_spoke(request):
                 else:
                     interface_details =[]
             except requests.exceptions.RequestException as e:
-                print("disconnected")                
+                print("disconnected")  
+                logger.error(f"Connection timeout ",
+                     extra={
+                                "device_type": "ReachlinkSpoke",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "get_interface_info",
+                                "exception": str(e)
+                            }
+                    )     
+                interface_details =[]         
         elif "microtek" in data["uuid"]:           
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
@@ -1296,7 +1375,14 @@ def get_interface_details_spoke(request):
         # Store in cache for 60 seconds
         cache.set(cache_key, interface_details, timeout=60)
     except Exception as e:
-        logger.error(f"Error: Get interafce details of spoke:{e}")
+        logger.error(f"Error in get interface details ",
+                     extra={
+                                "device_type": "",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "get_interface_info",
+                                "exception": str(e)
+                            }
+                    )        
     return JsonResponse(interface_details, safe=False)
 
 @api_view(['POST'])  
@@ -1356,7 +1442,7 @@ def create_vlan_interface_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.createvlaninterface(data) 
-    except Exception as e:
+    except Exception as e:          
         logger.error(f"Error: Create VLAN interface in HUB:{e}")
         response = [{"message": f"Error: While creating VLAN interface"}]
     return JsonResponse(response, safe=False)
@@ -2678,9 +2764,7 @@ def get_microtekspoke_config(request: HttpRequest):
                         "router_password": response[0]["router_password"],
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
-                        }
-        #background_thread = threading.Thread(target=setass, args=(response, "microtek",))
-        #background_thread.start()
+                        }        
         setass_task.apply_async(args=[response, "microtek"], countdown=60)
     else:
         spokedetails= {"message": response[0]["message"]}
@@ -2706,9 +2790,7 @@ def get_robustelspoke_config(request: HttpRequest):
         spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],                        
                         "message": response[0]["message"],
                         "snmpcommunitystring": snmpcommunitystring
-                        }
-        #background_thread = threading.Thread(target=setass, args=(response, "robustel",))
-        #background_thread.start()
+                        }        
         setass_task.apply_async(args=[response, "robustel"], countdown=60)
     else:
         spokedetails= {"message": response[0]["message"]}

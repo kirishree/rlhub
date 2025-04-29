@@ -87,9 +87,9 @@ def set_openvpn_client():
                             ]
         for command in config_commands:
             output = send_command_wo(shell, command)
-            if "OK" in output:
-                print(command, "success")
-            else:
+            if "OK" not in output: 
+                if "add" in command:
+                    continue         
                 print(command, "failed")
                 ssh_client.close()                
                 print("Error while configuring pl try again.")
@@ -97,8 +97,7 @@ def set_openvpn_client():
                 input()
                 return
         output = send_command_wo(shell, "config save_and_apply")
-    except Exception as e:
-        print(e)
+    except Exception as e:        
         print("Error while configuring pl try again.")
         print("Enter a key to exit...")
         input()
@@ -186,7 +185,7 @@ def main():
         else:
             print("Error while authenticating data")            
     except Exception as e:
-        print(f"Error while getting configuration: {e}")
+        print(f"Error while getting configuration. Pl try again!")
     print("Enter a key to exit...")
     input()
     return   

@@ -72,13 +72,24 @@ def set_openvpn_client():
                             "set firewall remote_ssh_access false",
                             "set firewall local_ssh_access true",
                             "set firewall local_telnet_access true",
-                            "set ssh port 3366"                                                       
+                            "add route static_route 1",
+                            "set route static_route 1 desc secdnsroute",
+                            "set route static_route 1 destination 8.8.4.4",
+                            "set route static_route 1 netmask 255.255.255.255",
+                            "set route static_route 1 interface wwan", 
+                            "add route static_route 2",
+                            "set route static_route 2 desc pridnsroute",
+                            "set route static_route 2 destination 8.8.8.8",
+                            "set route static_route 2 netmask 255.255.255.255",
+                            "set route static_route 2 interface wwan",  
+                            "set openvpn tunnel 1 mtu 1500",
+                            "set ssh port 3366"                                                             
                             ]
         for command in config_commands:
             output = send_command_wo(shell, command)
-            if "OK" in output:
-                print(command, "success")
-            else:
+            if "OK" not in output: 
+                if "add" in command:
+                    continue         
                 print(command, "failed")
                 ssh_client.close()                
                 print("Error while configuring pl try again.")
@@ -86,8 +97,7 @@ def set_openvpn_client():
                 input()
                 return
         output = send_command_wo(shell, "config save_and_apply")
-    except Exception as e:
-        print(e)
+    except Exception as e:        
         print("Error while configuring pl try again.")
         print("Enter a key to exit...")
         input()
@@ -175,7 +185,7 @@ def main():
         else:
             print("Error while authenticating data")            
     except Exception as e:
-        print(f"Error while getting configuration: {e}")
+        print(f"Error while getting configuration. Pl try again!")
     print("Enter a key to exit...")
     input()
     return   
