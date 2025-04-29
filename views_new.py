@@ -2917,5 +2917,4 @@ def logfile_content(request):
             logfile_content = file.readlines()
 
     logfile_content.reverse()
-    content = ''.join(logfile_content)  # Convert list to string
-    return HttpResponse(content, content_type="text/plain")
+    return JsonResponse({'log': logfile_content})
