@@ -69,8 +69,16 @@ def get_routingtable_robustel(data):
         try:
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
+        except Exception as e:            
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "get_routing_table",
+                "exception": str(e)
+            }
+            )
             return []    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
@@ -83,9 +91,9 @@ def get_routingtable_robustel(data):
         interface = ""
         for route in routes_info:
             route = re.sub(r'\s+', ' ', route)  # Replace multiple spaces with a single space
-            if "id =" in route:
-                
-                routing_table.append({"protocol":"default",
+            if "id =" in route:  
+                if not ("8.8.8.8"  in destination or "8.8.4.4"  in destination):              
+                    routing_table.append({"protocol":"default",
                                 "destination": destination,
                                 "gateway": gateway,
                                 "metric":distance,
@@ -106,7 +114,8 @@ def get_routingtable_robustel(data):
                 interface = route.split(" ")[3]
             if "metric =" in route:
                 distance = route.split(" ")[3]
-        routing_table.append({"protocol":"default",
+        if not ("8.8.8.8"  in destination or "8.8.4.4"  in destination):
+            routing_table.append({"protocol":"default",
                                 "destination": destination,
                                 "gateway": gateway,
                                 "metric":distance,
@@ -132,12 +141,27 @@ def get_routingtable_robustel(data):
                 ipintf = ipaddress.IPv4Interface(network)
                 destination = ipintf.with_prefixlen
             if "interface =" in intfc:
-                routing_table.append({"protocol":"static",
+                if not ("8.8.8.8"  in destination or "8.8.4.4"  in destination):
+                    routing_table.append({"protocol":"static",
                                 "destination": destination,
                                 "gateway": gateway,
                                 "metric":"-",
                                 "outgoint_interface_name": intfc.split(" ")[3],
                                 "table_id": "main"})
+    except Exception as e:        
+        logger.error(
+            f"Failed to fetch routing table",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "get_routing_table",
+                "exception": str(e)
+            }
+            )    
+        if len(routing_table) > 0:
+            return routing_table[1:]
+        else:
+            return [] 
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -160,8 +184,16 @@ def pingspoke(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when ping option to robustel{router_ip}: {e}")
-            response = {"message":f"Error: Connection Error. Pl try again"}
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "pingspoke",
+                "exception": str(e)
+            }
+            )
+            response = {"message":f"Connection Timeout. Pl try again!"}
             return response    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
@@ -176,7 +208,15 @@ def pingspoke(data):
                 avg_ms = pinginfo.split("=")[1].split("/")[1]  
                 response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {avg_ms}ms"}
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Ping time out",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "pingspoke",
+                "exception": str(e)
+            }
+            )
         response = {"message":f"Error: Ping Timeout. Pl try again"}     
     finally:
         # Close the SSH connection
@@ -201,21 +241,36 @@ def traceroute(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
         try:
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
-            return []      
+            logger.error(
+            f" SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "trace",
+                "exception": str(e)
+            }
+            )
+            return "Connection Time out. Pl try again!"      
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, f'traceroute {data["trace_ip"]}')
         cleaned_output = clean_traceroute_output(output)
         
     except Exception as e:
-        print(e)
+        logger.error(
+            f" Failed to fetch trace info",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "trace",
+                "exception": str(e)
+            }
+            )
         cleaned_output = "Error while traceroute"      
     finally:
         # Close the SSH connection
@@ -238,9 +293,16 @@ def get_interface_robustel(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "get_interface_info",
+                "exception": str(e)
+            }
+            )
             return []  
-
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
@@ -309,7 +371,15 @@ def get_interface_robustel(data):
                                  "interfaceid":virtual_interfacelastid
                                 })
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Failed to fetch interface info",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "trace",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -331,8 +401,17 @@ def createvlaninterface(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
-            return []      
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "create_vlan_interface",
+                "exception": str(e)
+            }
+            )
+            response = [{"message": f"Connection time out. Pl try again!"}]
+            return response     
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')
@@ -346,7 +425,16 @@ def createvlaninterface(data):
                 vlan_no = intfc.split(" ")[3]
         if vlanpresent:
             if int(vlan_no) == 10:
-                response = [{"message": "Error: This device allows only 10 VLAN interface"}]   
+                response = [{"message": "Info: This device allows only 10 VLAN interface"}]   
+                logger.info(
+                    f"{response}",
+                    extra={
+                        "device_type": "Robustel",
+                        "device_ip": router_ip,
+                        "api_endpoint": "create_vlan_interface",
+                        "exception": ""
+                        }
+                    )
                 ssh_client.close()
                 return response 
             vlan_no = int(vlan_no) + 1
@@ -363,16 +451,47 @@ def createvlaninterface(data):
                     vlan_ip = data["addresses"][0].split("/")[0]
                     subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
                     netmask = str(subnet.netmask)
-                    output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
+                    output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')                    
                     if "OK" in output:
-                        output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
+                        output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
                         if "OK" in output:
-                            output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')
+                            output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')                            
                             if "OK" in output:
                                 output = send_command_config(shell, f'config save_and_apply')
-                                response = [{"message": f"Successfully vlan interface created lan0.{data['vlan_id']}"}]                         
+                                response = [{"message": f"Successfully vlan interface created lan0.{data['vlan_id']}"}]       
+                            else:
+                                output = send_command_config(shell, f'config save_and_apply')
+                                response = [{"message": f"Vlan interface created lan0.{data['vlan_id']}. Assign IP using Edit configuration"}] 
+                        else:
+                            output = send_command_config(shell, f'config save_and_apply')
+                            response = [{"message": f"Vlan interface created lan0.{data['vlan_id']}. Assign IP using Edit configuration"}] 
+                    else:
+                        response = [{"message": f"Error in assigning vlan id, pl try again!"}] 
+                else:
+                    response = [{"message": f"Error in linking physical interface, pl try again!"}] 
+            else:
+                response = [{"message": f"Connection timeout, pl try again!"}]
+        else:
+            response = [{"message": f"Error in creation of VLAN, maybe Connection timeout, pl try again!"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "create_vlan_interface",
+                "exception": ""
+            }
+            )
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Failed to add Vlan",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "create_vlan_interface",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -393,8 +512,17 @@ def deletevlaninterface(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
-            return []      
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_vlan_interface",
+                "exception": str(e)
+            }
+            )
+            response = [{"message": "Connection timeout. pl try again! "}]   
+            return response   
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')
@@ -410,12 +538,31 @@ def deletevlaninterface(data):
                 if data["intfc_name"] == intfc.split(" ")[3]:
                     break
         if vlanpresent:
-            output = send_command_wo(shell, f'del lan vlan {vlan_no}')
-        response = [{"message": f"Error while deleting vlan interface {data['intfc_name']}"}]
+            output = send_command_wo(shell, f'del lan vlan {vlan_no}')        
         if "OK" in output:            
-            response = [{"message": f"Successfully vlan interface {data['intfc_name']} deleted"}]                         
+            response = [{"message": f"Successfully vlan interface {data['intfc_name']} deleted"}]  
+        else:            
+            response = [{"message": f"Vlan interface {data['intfc_name']} cannot be deleted"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_vlan_interface",
+                "exception": ""
+            }
+            )     
+        output = send_command_wo(shell, f'config save_and_apply')                  
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Failed to delete VLAN interafce",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_vlan_interface",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -437,8 +584,17 @@ def addstaticroute(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
-            return []      
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "add_static_route",
+                "exception": str(e)
+            }
+            )
+            response = [{"message": "Connection timeout. pl try again! "}]   
+            return response    
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show route all')
@@ -452,8 +608,17 @@ def addstaticroute(data):
                 staticroute_no = intfc.split(" ")[3]
         if staticroutepresent:
             if int(staticroute_no) == 40:
-                response = [{"message": "Error: Robustel device allows upto 40 static route only"}] 
+                response = [{"message": "Info: Robustel device allows upto 40 static route only"}] 
                 ssh_client.close()
+                logger.error(
+                        f"{response}",
+                        extra={
+                            "device_type": "Robustel",
+                            "device_ip": router_ip,
+                            "api_endpoint": "add_static_route",
+                            "exception": ""
+                        }
+                )
                 return response
             staticroute_no = int(staticroute_no) + 1
         else:
@@ -472,12 +637,39 @@ def addstaticroute(data):
                         output = send_command_wo(shell, f'set route static_route {staticroute_no} netmask {dst_netmask}')
                         if "OK" in output:                   
                             output = send_command_wo(shell, f'set route static_route {staticroute_no} gateway {subnet["gateway"]}')
-                            response = {"message": "Successfully added the route"}
-            if staticroute_no == 40:
+                            if "OK" in output:   
+                                response = {"message": "Successfully added the route"}
+                            else:
+                                response = {"message": "Error in setting gateway. Pl check & try again"}
+                        else:
+                            response = {"message": "Error in setting netmask. Pl check & try again"}
+                    else:
+                        response = {"message": "Error in setting destination. Pl check & try again"}
+                else:
+                    response = {"message": "Error in adding static route. Pl try again"}
+            if staticroute_no == 40:                
                 break
-            staticroute_no += 1                      
+            staticroute_no += 1
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "add_static_route",
+                "exception": ""
+            }
+            )    
+        output = send_command_wo(shell, f'config save_and_apply')                  
     except Exception as e:
-        logger.error(f"Error: Adding route in Robustel Spoke:{e}")
+        logger.error(
+            f"Failed to add route",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "add_static_route",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -499,7 +691,17 @@ def delstaticroute(data):
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
             logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
-            return []      
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
+            response = [{"message": "Connection timeout. pl try again! "}]   
+            return response     
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show route all')
@@ -522,11 +724,31 @@ def delstaticroute(data):
                     destination = str(ipintf.with_prefixlen)
                     if destination == subnet_ip:                 
                         output = send_command_wo(shell, f'del route static_route {staticroute_no}')
-                        response = [{"message": "Error while deleting route "}]
-                        if "OK" in output:            
-                            response = [{"message": f"Successfully deleted the route {subnet_ip}"}]                         
+                        
+                        if "OK" in output:                                        
+                            response = [{"message": f"Successfully deleted the route {subnet_ip}"}]   
+                        else:
+                            response = [{"message": "Error while deleting route. Pl try again"}] 
+                        logger.info(
+                            f"{response}",
+                            extra={
+                                "device_type": "Robustel",
+                                "device_ip": router_ip,
+                                "api_endpoint": "delete_static_route",
+                                "exception": ""
+                                }
+                        )  
+        output = send_command_wo(shell, f'config save_and_apply')          
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Failed to delete route",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -548,8 +770,17 @@ def interface_config(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
-            return []       
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
+            response = [{"message": "Connection timeout. pl try again! "}]   
+            return response      
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
 
@@ -576,10 +807,10 @@ def interface_config(data):
                     output = send_command_wo(shell, f'config save_and_apply')
                     response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
                 else:
-                    response = [{"message": "Error while configuring IP address"}]                
+                    response = [{"message": "Error while configuring IP address. Pl try again"}]                
             else:
                 response = [{"message": "Error no such vlan available"}]
-            print(response)
+            
         elif "_IP_Alias" in data['intfc_name']:
             alias_id = []
             multi_ip = False
@@ -612,8 +843,25 @@ def interface_config(data):
                     response = [{"message": "Error while adding Multiple IP "}]   
                     break                  
             output = send_command_wo(shell, f'config save_and_apply')
+        logger.error(
+            f"{response}",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
     except Exception as e:
-        print(f"Error in interface_config in robutel {e}")
+        logger.error(
+            f"Failed to configure interface",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
         # Close the SSH connection
         ssh_client.close()
     return response
