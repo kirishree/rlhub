@@ -275,12 +275,12 @@ def activate(data):
             except Exception as ex:
                     e = ex
                     if " returned non-zero exit status 1" in str(e):                        
-                        response = {"message":f"Device isn't blocked, just unreachable. Please check branch connectivity."}   
+                        response = {"message":f"Error: Device isn't blocked, just unreachable. Please check branch connectivity."}   
                     else:
                         response = {"message":f"Error:while activating {tunnel_ip}. Please try again later."}  
             
         else:
-            response = {"message":f"Device isn't blocked, just unreachable. Please check branch internet before activation."}
+            response = {"message":f"Error: Device isn't blocked, just unreachable. Please check branch internet before activation."}
         logger.info(
             f"{response}",
             extra={
