@@ -46,7 +46,7 @@ def organization_name(data):
                   }
         get_organization_name = requests.get(url+"org/", headers=headers)
         org_response = get_organization_name.json()
-        organization_name = org_response["data"]["company_name"]
+        organization_name = org_response["data"]["company_name"].replace(" ", "")
         return organization_name, True
     except Exception as e:
         print(e)
@@ -83,8 +83,8 @@ def authenticate_user(data):
                     subscription_status = True
             if subscription_status:
                 get_organization_name = requests.get(url+"org/", headers=headers)
-                org_response = get_organization_name.json()
-                organization_name = org_response["data"]["company_name"]
+                org_response = get_organization_name.json()                
+                organization_name = org_response["data"]["company_name"].replace(" ", "")
                 subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
                 subsjson_response = subscription_response.json()
                 timestamp = int(subsjson_response["data"]["created_at"])
