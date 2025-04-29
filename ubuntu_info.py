@@ -267,7 +267,7 @@ def activate(data):
         response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
         tunnel_ip = data["tunnel_ip"].split("/")[0]   
         e = None  # Initialize early
-        if True:
+        if "." in tunnel_ip:
             try:
                     command = f"sudo iptables -D INPUT -s {tunnel_ip} -j DROP"
                     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
@@ -278,21 +278,24 @@ def activate(data):
                         response = {"message":f"Device is unreachable. Please check branch internet before activation."}   
                     else:
                         response = {"message":f"Error:while activating {tunnel_ip}. Please try again later."}  
-            logger.info(
+            
+        else:
+            response = {"message":f"Device is unreachable. Please check branch internet before activation."}
+        logger.info(
             f"{response}",
             extra={
                 "device_type": "ReachlinkServer",
-                "device_ip": hub_ip,
+                "device_ip": tunnel_ip,
                 "api_endpoint": "activate",
                 "exception": str(e) if e else ""
             }
-            )          
+            )  
     except Exception as e:
         logger.error(
             f"Failed to activate",
             extra={
                 "device_type": "ReachlinkServer",
-                "device_ip": hub_ip,
+                "device_ip": tunnel_ip,
                 "api_endpoint": "activate",
                 "exception": str(e)
             }
