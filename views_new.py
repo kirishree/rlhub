@@ -2653,7 +2653,17 @@ def vlan_interface_delete_hub(request):
                 print(response) 
         elif data["hub_ip"] == hub_ip:
             response = [] 
-            intfc_name = data["intfc_name"]            
+            intfc_name = data["intfc_name"] 
+            if "basetunnel" in  intfc_name.lower():
+                response = [{"message": f"Error: {intfc_name} deletion is prohibited"}]
+                logger.error(f"Error: {intfc_name} deletion is prohibited",
+                             extra={
+                                "device_type": "Reachlink_server",
+                                "device_ip": hub_ip,
+                                "api_endpoint": "delete_interface",
+                                "exception": ""
+                            })
+                return JsonResponse(response, safe=False)
             if os.path.exists("/etc/netplan/00-installer-config.yaml"):
                 # Open and read the Netplan configuration
                 with open("/etc/netplan/00-installer-config.yaml", "r") as f:
@@ -2686,12 +2696,12 @@ def vlan_interface_delete_hub(request):
                 result = subprocess.run(
                                 cmd, shell=True, text=True
                                 )    
-            else:            
-                cmd = f"sudo ip link del {intfc_name}"
-                result = subprocess.run(
-                                cmd, shell=True, text=True
-                                )            
-                response = [{"message": f"Successfully  deleted VLAN Interface: {intfc_name}"}]
+            #else:            
+            #    cmd = f"sudo ip link del {intfc_name}"
+            #    result = subprocess.run(
+            #                   cmd, shell=True, text=True
+            #                   )            
+            response = [{"message": f"Successfully  deleted VLAN Interface: {intfc_name}"}]
     except Exception as e:
         logger.error(f"Error: Delete Interface HUB:{e}")
         response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
