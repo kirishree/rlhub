@@ -849,7 +849,7 @@ def interface_config(data):
                 "device_type": "Robustel",
                 "device_ip": router_ip,
                 "api_endpoint": "interface_config",
-                "exception": str(e)
+                "exception": ""
             }
             )
     except Exception as e:
