@@ -1,13 +1,15 @@
 from celery import shared_task
 import pymongo
 from decouple import config
+import os
+import subprocess
+import logging
+logger = logging.getLogger('reachlink')
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_tunnel_ip = db_tunnel["tunnel_ip"]
 coll_registered_organization = db_tunnel["registered_organization"]
-import os
-import subprocess
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 
 @shared_task(bind=True, max_retries=20, default_retry_delay=60)
@@ -86,8 +88,35 @@ def setass_task(self, response, devicename):
                 os.system("systemctl restart reachlink_test")                           
         if not newspokeconnstatus:
             print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
+            logger.error(
+                        f"New spoke is not connected yet({newspokedevicename}). Trying again",
+                        extra={
+                            "device_type": devicename,
+                            "device_ip": newspokedevicename,
+                            "api_endpoint": "calery_task",
+                            "exception": ""
+                        }
+            )    
             raise self.retry(exc=Exception("Spoke not connected yet"))
         else:
-            print(f"GRE tunnel created successfully for this {newspokedevicename}.")
+            print(f"Tunnel connected successfully for this {newspokedevicename}")
+            logger.info(
+                        f"Tunnel connected successfully for this {newspokedevicename}",
+                        extra={
+                            "device_type": devicename,
+                            "device_ip": newspokedevicename,
+                            "api_endpoint": "calery_task",
+                            "exception": ""
+                        }
+            ) 
     except Exception as e:
+        logger.error(
+                        f"Error in set association",
+                        extra={
+                            "device_type": devicename,
+                            "device_ip": response,
+                            "api_endpoint": "calery_task",
+                            "exception": str(e)
+                        }
+            ) 
         print(f"set ass execption:{e}")

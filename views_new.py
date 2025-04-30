@@ -159,9 +159,26 @@ def new_client(client_name):
                 ovpn.write(client_key.read())
             ovpn.write("</key>\n")
         print(f"Client configuration generated at: {output_file}")
+        logger.info(
+                    f"Client configuration generated",
+                    extra={
+                            "device_type": "",
+                            "device_ip": client_name,
+                            "api_endpoint": "add_cisco_device",
+                            "exception": ""
+                        }
+        )
         return True
     except Exception as e:
-        print(e)
+        logger.error(
+                        f"Error during client certificate creation",
+                        extra={
+                                "device_type": "",
+                                "device_ip": client_name,
+                                "api_endpoint": "add_cisco_device",
+                                "exception": str(e)
+                            }
+        )
         return False
 
 def validate_ip(ip_address):

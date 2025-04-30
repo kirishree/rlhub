@@ -8,6 +8,8 @@ import ipaddress
 import os
 import subprocess
 import hub_config
+import logging
+logger = logging.getLogger('reachlink')
 from decouple import config
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
@@ -49,7 +51,15 @@ def organization_name(data):
         organization_name = org_response["data"]["company_name"].replace(" ", "")
         return organization_name, True
     except Exception as e:
-        print(e)
+        logger.error(
+                        f"Error in getting organization name",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "organization_",
+                            "exception": str(e)
+                        }
+            )         
         return 'Internal Server Error', False
 
 
@@ -67,7 +77,16 @@ def authenticate_user(data):
                 loginjson_response = login_response.json()
                 access_token = loginjson_response["data"]["access_token"]
             else:
-                 return 'Invalid Login & password'
+                logger.warning(
+                        f"Invalid Login/Password",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "authenticat_user",
+                            "exception": ""
+                        }
+                ) 
+                return 'Invalid Login or Password'
         else:
             access_token = data["access_token"]
         headers = {
@@ -116,13 +135,49 @@ def authenticate_user(data):
                                                 ],
                         "organization_name": organization_name                                           
                 })
+                logger.info(
+                        f"New organization Registered {organization_name}",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "authenticat_user",
+                            "exception": ""
+                        }
+                ) 
                 return True
             else:
-                    return 'Not Subscribed for Reach WAN'
+                logger.info(
+                        f"Not Subscribed for ReachLink",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "authenticat_user",
+                            "exception": ""
+                        }
+                ) 
+                return 'Not Subscribed for ReachLink'
         else:
-                return 'Not Subscribed for any services'
+            logger.info(
+                        f"Not Subscribed for any services",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "authenticat_user",
+                            "exception": ""
+                        }
+                ) 
+            return 'Not Subscribed for any services'
     except:
-        return 'Internal Server Error'
+        logger.error(
+                        f"Error during authentication",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "authenticat_user",
+                            "exception": str(e)
+                        }
+                )
+        return 'Temporary issue. Please retry after some time.'
 
 
 def get_organization_id(data):
@@ -159,7 +214,15 @@ def get_organization_id(data):
             print(user_response)
             return False, data 
     except Exception as e:
-        print(e)
+        logger.error(
+                        f"Error during get organization id",
+                        extra={
+                            "device_type": "NA",
+                            "device_ip": "NA",
+                            "api_endpoint": "get_organization_id",
+                            "exception": str(e)
+                        }
+                )
         return False, data
 
 def generate_device_name(length,organization_info):
@@ -223,6 +286,15 @@ def check_user(data, newuser):
                                                 "spokedevice_name":device["cisco_hub_info"]["spokedevice_name"],
                                                 "organization_id":organization_id
                                                 }]
+                                    logger.info(
+                                                f"This Cisco HUB is already Registered",
+                                                extra={
+                                                        "device_type": "Cisco",
+                                                        "device_ip": device["cisco_hub_info"]["hub_ip"],
+                                                        "api_endpoint": "add_cisco_hub",
+                                                        "exception": ""
+                                                    }
+                                    )
                                     return response, newuser
                         elif "ciscodevice" in data["uuid"]:
                             if "cisco_hub_info" in device:
@@ -234,6 +306,15 @@ def check_user(data, newuser):
                                                 "spokedevice_name":cispoke["spokedevice_name"],
                                                 "organization_id":organization_id
                                                 }]
+                                            logger.info(
+                                                f"This Cisco Spoke is already Registered",
+                                                extra={
+                                                        "device_type": "CiscoSpoke",
+                                                        "device_ip": cispoke.get("dialerip", ""),
+                                                        "api_endpoint": "add_cisco_device",
+                                                        "exception": ""
+                                                    }
+                                            )
                                             return response, newuser
                         elif "robustel" in data["uuid"]:
                             if "reachlink_hub_info" in device:
@@ -244,6 +325,15 @@ def check_user(data, newuser):
                                                 "spokedevice_name":rospoke["spokedevice_name"],
                                                 "organization_id":organization_id
                                                 }]
+                                            logger.info(
+                                                f"This Robustel Spoke is already Registered",
+                                                extra={
+                                                        "device_type": "Robustel",
+                                                        "device_ip": rospoke["spokedevice_name"],
+                                                        "api_endpoint": "add_cisco_device",
+                                                        "exception": ""
+                                                    }
+                                            )
                                             return response, newuser
                         elif "microtek" in data["uuid"]:
                             if "reachlink_hub_info" in device:
@@ -256,6 +346,15 @@ def check_user(data, newuser):
                                                 "router_username": mispoke["router_username"],
                                                 "router_password": mispoke["router_password"]
                                                 }]
+                                            logger.info(
+                                                f"This Microtek Spoke is already Registered",
+                                                extra={
+                                                        "device_type": "Microtek",
+                                                        "device_ip": mispoke["spokedevice_name"],
+                                                        "api_endpoint": "add_cisco_device",
+                                                        "exception": ""
+                                                    }
+                                            )
                                             return response, newuser
                         elif "cisco_ubuntu" in data["uuid"]:
                             if "reachlink_hub_info" in device:
@@ -266,6 +365,15 @@ def check_user(data, newuser):
                                                 "spokedevice_name":cispoke["spokedevice_name"],
                                                 "organization_id":organization_id
                                                 }]
+                                            logger.info(
+                                                f"This Cisco Spoke - Ubuntu hub is already Registered",
+                                                extra={
+                                                        "device_type": "CiscoSpoke",
+                                                        "device_ip": cispoke["spokedevice_name"],
+                                                        "api_endpoint": "add_cisco_device",
+                                                        "exception": ""
+                                                    }
+                                            )
                                             return response, newuser
                         else:
                             if "reachlink_hub_info" in device:
@@ -279,6 +387,15 @@ def check_user(data, newuser):
                                                 "remote_ip":openvpnhubip, 
                                                 "hub_gretunnel_endpoint":hub_tunnel_endpoint,
                                                 }]
+                                            logger.info(
+                                                f"This ReachLink Spoke is already Registered",
+                                                extra={
+                                                        "device_type": "ReachLinkSpoke",
+                                                        "device_ip": ubspoke["spokedevice_name"],
+                                                        "api_endpoint": "login",
+                                                        "exception": ""
+                                                    }
+                                            )
                                             return response, newuser
                     #length = len(registered_devices_info)+1
                     #spokedevice_name =  generate_device_name(length, details)
@@ -393,6 +510,15 @@ def check_user(data, newuser):
                                  "hub_gretunnel_endpoint":hub_tunnel_endpoint,
                                  "organization_id":organization_id
                                  }]
+                    logger.info(
+                                    f"Successfully Registered",
+                                    extra={
+                                            "device_type": spokedevice_name,
+                                            "device_ip": spokedevice_name,
+                                            "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                            "exception": ""
+                                    }
+                                )
                     return response, newuser
                 else:
                     userStatus = check_subscription_renewed(data, organization_id)
@@ -401,6 +527,15 @@ def check_user(data, newuser):
                         return response, newuser
                     else:
                         response = [{"message":"Your plan reached the limit. Pl upgrade it","expiry_date":dummy_expiry_date }]
+                        logger.info(
+                                    f"Plan reached the limit",
+                                    extra={
+                                            "device_type": "",
+                                            "device_ip": "",
+                                            "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                            "exception": ""
+                                    }
+                                )
                         return response, newuser
             else:
                 newuser = True
@@ -409,9 +544,27 @@ def check_user(data, newuser):
         else:
             newuser = False
             response =[{"message":"Not Registered", "expiry_date":dummy_expiry_date }]
+            logger.info(
+                        f"Not Registered",
+                        extra={
+                                "device_type": "",
+                                "device_ip": "",
+                                "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                "exception": ""
+                            }
+            )
             return response, newuser
     except Exception as e:
         print("Error:", e)
+        logger.error(
+                        f"Error during check user",
+                        extra={
+                                "device_type": "",
+                                "device_ip": "",
+                                "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                "exception": str(e)
+                            }
+            )
         response =[{"message":"Internal Server Error", "expiry_date":dummy_expiry_date }]
         return response, newuser
   
@@ -567,7 +720,7 @@ def check_onboarding(username, password):
                 if current_datetime < to_date:
                     return 'True', user_role
             else:
-                    return 'Not Subscribed for Reach WAN', False
+                    return 'Not Subscribed for ReachLink', False
         else:
                 return 'Not Subscribed for any services', False
     except:
