@@ -863,9 +863,7 @@ def interface_config(data):
                                                 "api_endpoint": "interface_config",
                                                 "exception": str(e)
                                         }
-                                    )
-
-                            
+                                    )                           
 
             if len(alias_id) > 0:
                 for ipid in alias_id:
