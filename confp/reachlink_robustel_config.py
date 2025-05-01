@@ -82,8 +82,7 @@ def set_openvpn_client():
                             "set route static_route 2 destination 8.8.8.8",
                             "set route static_route 2 netmask 255.255.255.255",
                             "set route static_route 2 interface wwan",  
-                            "set openvpn tunnel 1 mtu 1500",
-                            "set ssh port 3366"                                                             
+                            "set openvpn tunnel 1 mtu 1500"                                                                                        
                             ]
         for command in config_commands:
             output = send_command_wo(shell, command)
@@ -96,7 +95,22 @@ def set_openvpn_client():
                 print("Enter a key to exit...")
                 input()
                 return
-        output = send_command_wo(shell, "config save_and_apply")
+        print("Is this device supports SNMP?")
+        output = send_command_wo(shell, "set snmp enable true")
+        if "OK" in output:
+            print("Yes, it supports SNMP, starts to configure")
+            output = send_command_wo(shell, "set snmp version snmpv1v2v3")
+            if "OK" in output:
+                output = send_command_wo(shell, "set snmp rocommunity reachlink")
+                if "OK" in output:
+                    output = send_command_wo(shell, "set snmp rwcommunity reachlink")
+                    if "OK" in output:
+                        print("SNMP Configured successfully") 
+        else:
+            print("This device doesn't support SNMP")
+        output = send_command_wo(shell, "set ssh port 3366")
+        if "OK" in output:
+            output = send_command_wo(shell, "config save_and_apply")
     except Exception as e:        
         print("Error while configuring pl try again.")
         print("Enter a key to exit...")
