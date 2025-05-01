@@ -821,7 +821,52 @@ def interface_config(data):
                 if "id =" in intfc and "v" not in intfc:
                     if multi_ip:
                         alias_id.append(intfc.split(" ")[3])
-                        multi_ip = False                       
+                        multi_ip = False
+                if "ip = " in intfc:
+                    if multi_ip:
+                        multiple_ip = intfc.split(" ")[3]  
+                        if multiple_ip.split(".")[0] != "10":
+                            if multiple_ip.split(".")[0] == "172":
+                                if 15 < int(multiple_ip.split(".")[1]) < 32:
+                                    private_ip = True
+                                else:
+                                    private_ip = False
+                            elif multiple_ip.split(".")[0] == "192":
+                                if multiple_ip.split(".")[1] == "168":
+                                    private_ip = True
+                                else:
+                                    private_ip = False
+                            elif int(multiple_ip.split(".")[0]) > 223: 
+                                private_ip = True
+                            else:
+                                private_ip = False
+                        else:
+                            private_ip = True
+
+                        if not private_ip:
+                            try:
+                                os.system(f"sudo iptables -A FORWARD -p icmp -d {multiple_ip} -j ACCEPT")
+                                os.system(f"sudo iptables -A FORWARD -p tcp -d {multiple_ip} -j DROP")
+                                logger.info(f"Deleted the Ports closed rule {multiple_ip}, since this IP is deleted",
+                                        extra={
+                                                "device_type": "Robustel",
+                                                "device_ip": router_ip,
+                                                "api_endpoint": "interface_config",
+                                                "exception": ""
+                                        }
+                                    )
+                            except Exception as e:
+                                logger.error(f"Error while delete the Ports closed rule {multiple_ip} in iptables",
+                                        extra={
+                                                "device_type": "Robustel",
+                                                "device_ip": router_ip,
+                                                "api_endpoint": "interface_config",
+                                                "exception": str(e)
+                                        }
+                                    )
+
+                            
+
             if len(alias_id) > 0:
                 for ipid in alias_id:
                     output = send_command_wo(shell, f'del lan multi_ip {ipid}')
@@ -879,7 +924,7 @@ def interface_config(data):
                                         }
                                     )
                     except Exception as e:
-                        logger.error(f"Error while applying ip {realip} in iptables",
+                        logger.error(f"Error while adding ip {realip} in iptables",
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
