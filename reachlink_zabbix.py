@@ -488,7 +488,7 @@ def main():
                             print("Already host_id available")
                         else:
                             if rospoke.get("tunnel_ip", "None") != "None":                                                       
-                                templateid = "10639"
+                                templateid = "10739"
                                 host_id = create_new_host(rospoke["spokedevice_name"], rospoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 rospoke["host_id"] = host_id
                         if "itemid_sent" in rospoke:
