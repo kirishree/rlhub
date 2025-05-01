@@ -845,8 +845,8 @@ def interface_config(data):
 
                         if not private_ip:
                             try:
-                                os.system(f"sudo iptables -A FORWARD -p icmp -d {multiple_ip} -j ACCEPT")
-                                os.system(f"sudo iptables -A FORWARD -p tcp -d {multiple_ip} -j DROP")
+                                os.system(f"sudo iptables -D FORWARD -p icmp -d {multiple_ip} -j ACCEPT")
+                                os.system(f"sudo iptables -D FORWARD -p tcp -d {multiple_ip} -j DROP")
                                 logger.info(f"Deleted the Ports closed rule {multiple_ip}, since this IP is deleted",
                                         extra={
                                                 "device_type": "Robustel",
