@@ -4,6 +4,7 @@ import ipaddress
 import re
 port_number = 3366
 import logging
+import os
 logger = logging.getLogger('reachlink')
 # Function to send a command and wait for the router's prompt
 def send_command(shell, command, wait_time=2):
@@ -689,8 +690,7 @@ def delstaticroute(data):
         try:
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, port=port_number, password=password, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(f"SSH Connection Error when getting routing table to robustel{router_ip}: {e}")
+        except Exception as e:            
             logger.error(
             f"SSH Connection Error",
             extra={
@@ -826,24 +826,68 @@ def interface_config(data):
                 for ipid in alias_id:
                     output = send_command_wo(shell, f'del lan multi_ip {ipid}')
             ipid = 1
+            real_ip = []
             for datas in data["new_addresses"]: 
                 multiple_ip = datas["address"].split("/")[0]
                 subnet = ipaddress.IPv4Network(datas["address"], strict=False)  # Allow non-network addresses
-                netmask = str(subnet.netmask)
+                netmask1 = str(subnet.netmask)
                 output = send_command_wo(shell, f'add lan multi_ip {ipid}')
                 if "OK" in output:
                     output = send_command_wo(shell, f'set lan multi_ip {ipid} ip {multiple_ip}')
                     if "OK" in output:
-                        output = send_command_wo(shell, f'set lan multi_ip {ipid} netmask {netmask}')    
-                        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]                    
+                        output = send_command_wo(shell, f'set lan multi_ip {ipid} netmask {netmask1}')    
+                        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]  
+                        
+                        if multiple_ip.split(".")[0] != "10":
+                            if multiple_ip.split(".")[0] == "172":
+                                if 15 < int(multiple_ip.split(".")[1]) < 32:
+                                    private_ip = True
+                                else:
+                                    private_ip = False
+                            elif multiple_ip.split(".")[0] == "192":
+                                if multiple_ip.split(".")[1] == "168":
+                                    private_ip = True
+                                else:
+                                    private_ip = False
+                            elif int(multiple_ip.split(".")[0]) > 223: 
+                                private_ip = True
+                            else:
+                                private_ip = False
+                        else:
+                            private_ip = True
+
+                        if not private_ip:
+                            real_ip.append(multiple_ip)                     
                     else:
                         response = [{"message": f"Error while configuring IP address {datas['address']}"}]   
                     ipid = ipid + 1
                 else:
                     response = [{"message": "Error while adding Multiple IP "}]   
-                    break                  
+                    break 
             output = send_command_wo(shell, f'config save_and_apply')
-        logger.error(
+            if len(real_ip) > 0:
+                for realip in real_ip:
+                    try:
+                        os.system(f"sudo iptables -A FORWARD -p icmp -d {realip} -j ACCEPT")
+                        os.system(f"sudo iptables -A FORWARD -p tcp -d {realip} -j DROP")
+                        logging.info(f"Ports closed for {realip}",
+                                        extra={
+                                                "device_type": "Robustel",
+                                                "device_ip": router_ip,
+                                                "api_endpoint": "interface_config",
+                                                "exception": ""
+                                        }
+                                    )
+                    except Exception as e:
+                        logging.error(f"Error while applying ip {realip} in iptables",
+                                        extra={
+                                                "device_type": "Robustel",
+                                                "device_ip": router_ip,
+                                                "api_endpoint": "interface_config",
+                                                "exception": str(e)
+                                        }
+                                    )
+        logger.info(
             f"{response}",
             extra={
                 "device_type": "Robustel",

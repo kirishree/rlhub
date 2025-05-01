@@ -2103,11 +2103,7 @@ def ping_spoke(request: HttpRequest):
         elif "robustel" in data["uuid"]:
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            ping_result = robustel_configure.pingspoke(data)
-            if ping_result == "-1":
-                response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
-            else:                
-                response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}ms"}
+            response = robustel_configure.pingspoke(data)            
     except Exception as e:    
         logger.error(f"Error: Ping from Spoke:{e}")
         response = {"message": f"Error: Subnet {data['subnet']} Not Reachable" }   

@@ -302,7 +302,7 @@ def main():
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
                             else:
-                                item_id = get_item_id(rodevice.get("host_id", ""), f"Interface eth0: Bits")
+                                item_id = get_item_id(rodevice.get("host_id", ""), f"Interface tun1: Bits")
                                 bits_received = 0
                                 bits_sent = 0                                
                                 for item in item_id:

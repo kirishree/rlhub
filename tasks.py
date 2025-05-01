@@ -93,7 +93,7 @@ def setass_task(self, response, devicename):
                         extra={
                             "device_type": devicename,
                             "device_ip": newspokedevicename,
-                            "api_endpoint": "calery_task",
+                            "api_endpoint": "celery_task",
                             "exception": ""
                         }
             )    
@@ -105,17 +105,17 @@ def setass_task(self, response, devicename):
                         extra={
                             "device_type": devicename,
                             "device_ip": newspokedevicename,
-                            "api_endpoint": "calery_task",
+                            "api_endpoint": "celery_task",
                             "exception": ""
                         }
             ) 
     except Exception as e:
         logger.error(
-                        f"Error in set association",
+                        str(e),
                         extra={
                             "device_type": devicename,
                             "device_ip": response,
-                            "api_endpoint": "calery_task",
+                            "api_endpoint": "celery_task",
                             "exception": str(e)
                         }
             ) 

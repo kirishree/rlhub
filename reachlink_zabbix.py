@@ -488,14 +488,14 @@ def main():
                             print("Already host_id available")
                         else:
                             if rospoke.get("tunnel_ip", "None") != "None":                                                       
-                                templateid = "10248"
+                                templateid = "10639"
                                 host_id = create_new_host(rospoke["spokedevice_name"], rospoke["tunnel_ip"], reg_org["organization_name"], mailid, templateid)
                                 rospoke["host_id"] = host_id
                         if "itemid_sent" in rospoke:
                             print("Already item_id available")
                         else: 
                             if "host_id" in rospoke:                                                
-                                item_id = get_item_id(rospoke["host_id"], "Interface eth0: Bits")
+                                item_id = get_item_id(rospoke["host_id"], "Interface tun1: Bits")
                                 for item in item_id:
                                     if "sent" in item["name"]:
                                         rospoke["itemid_sent"] = item["itemid"] 
