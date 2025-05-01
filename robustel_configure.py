@@ -541,9 +541,9 @@ def deletevlaninterface(data):
         if vlanpresent:
             output = send_command_wo(shell, f'del lan vlan {vlan_no}')        
         if "OK" in output:            
-            response = {"message": f"Successfully vlan interface {data['intfc_name']} deleted"}
+            response = {"message": f"Successfully interface {data['intfc_name']} deleted"}
         else:            
-            response = {"message": f"Error: Vlan interface {data['intfc_name']} cannot be deleted"}
+            response = {"message": f"Error: Interface {data['intfc_name']} cannot be deleted"}
         logger.info(
             f"{response}",
             extra={
