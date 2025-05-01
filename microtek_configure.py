@@ -694,10 +694,10 @@ def deletevlaninterface(data):
                             response = [{"message": f"Successfully deleted VLAN interface in Microtek Spoke {data['intfc_name']}"}]
                             ssh_client.close()       
                             return response
-        response = [{"message": f"Error no such VLAN interface in Microtek Spoke {data['intfc_name']}"}]
+        response = {"message": f"Error no such VLAN interface in Microtek Spoke {data['intfc_name']}"}
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while deleting VLAN interface in Microtek Spoke {data['intfc_name']}"}]
+        response = {"message": f"Error while deleting VLAN interface in Microtek Spoke {data['intfc_name']}"}
           
     finally:
         # Close the SSH connection
@@ -745,10 +745,10 @@ def deletetunnelinterface(data):
                             response = [{"message": f"Successfully deleted Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
                             ssh_client.close()       
                             return response
-        response = [{"message": f"Error no such Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
+        response = {"message": f"Error no such Tunnel interface in Microtek Spoke {data['intfc_name']}"}
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while deleting Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
+        response = {"message": f"Error while deleting Tunnel interface in Microtek Spoke {data['intfc_name']}"}
           
     finally:
         # Close the SSH connection

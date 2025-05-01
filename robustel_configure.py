@@ -522,7 +522,7 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
-            response = [{"message": "Connection timeout. pl try again! "}]   
+            response = {"message": "Connection timeout. pl try again! "} 
             return response   
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
@@ -541,9 +541,9 @@ def deletevlaninterface(data):
         if vlanpresent:
             output = send_command_wo(shell, f'del lan vlan {vlan_no}')        
         if "OK" in output:            
-            response = [{"message": f"Successfully vlan interface {data['intfc_name']} deleted"}]  
+            response = {"message": f"Successfully vlan interface {data['intfc_name']} deleted"}
         else:            
-            response = [{"message": f"Vlan interface {data['intfc_name']} cannot be deleted"}]
+            response = {"message": f"Error: Vlan interface {data['intfc_name']} cannot be deleted"}
         logger.info(
             f"{response}",
             extra={

@@ -1762,7 +1762,7 @@ def vlan_interface_delete_spoke(request):
                 data["router_password"] = router_info["router_password"]
                 response = robustel_configure.deletevlaninterface(data)
             else:
-                response = [{"message": f"Error: {data['intfc_name']} deletion is prohibited"}]
+                response = {"message": f"Error: {data['intfc_name']} deletion is prohibited"}
     except Exception as e:
         logger.error(f"Error: Delete Interface Spoke:{e}")
         response = {"message": f"Error: "}

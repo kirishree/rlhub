@@ -647,7 +647,7 @@ def deletevlaninterface(data):
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
             print(f"SSH Connection Error: {e}")
-            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+            return {"message": f"Error: {router_ip} refued to connect. Try later"}
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
@@ -661,9 +661,9 @@ def deletevlaninterface(data):
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
         if " not be deleted" in deleteoutput:
-            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]   
+            response = {"message": f"Error: Interface {data['intfc_name']} may not be deleted"}   
         else:
-            response = [{"message": f"Succesfully interface {data['intfc_name']} deleted"}]
+            response = {"message": f"Succesfully interface {data['intfc_name']} deleted"}
    
         # Save the configuration
         send_command(shell, 'write memory')    
