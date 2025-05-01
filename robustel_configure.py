@@ -870,7 +870,7 @@ def interface_config(data):
                     try:
                         os.system(f"sudo iptables -A FORWARD -p icmp -d {realip} -j ACCEPT")
                         os.system(f"sudo iptables -A FORWARD -p tcp -d {realip} -j DROP")
-                        logging.info(f"Ports closed for {realip}",
+                        logger.info(f"Ports closed for {realip}",
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
@@ -879,7 +879,7 @@ def interface_config(data):
                                         }
                                     )
                     except Exception as e:
-                        logging.error(f"Error while applying ip {realip} in iptables",
+                        logger.error(f"Error while applying ip {realip} in iptables",
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
