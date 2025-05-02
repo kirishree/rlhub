@@ -1024,6 +1024,10 @@ def delstaticroute_ubuntu(data):
                 subnet_ip = route["destination"].split("/")[0]
                 netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
                 serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+            elif "." not in route['gateway']:
+                subnet_ip = route["destination"].split("/")[0]
+                netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
+                serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
             else:
                 staticroutefile.replace(f'ip route add {route["destination"]} via {route["gateway"]}', f'#ip route add {route["destination"]} via {route["gateway"]}')                
                 os.system(f'ip route del {route["destination"]} via {route["gateway"]}')        
