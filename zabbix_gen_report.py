@@ -49,7 +49,7 @@ def get_item_id(host_id, name):
         response = session.post(zabbix_api_url, json=get_item)
         result = response.json().get('result', [])        
         items = {} 
-        no_samplesperhour = 60        
+        no_samplesperhour = 60      
         for item in result:
             if "Bits" in item["name"] and name.split(":")[0] == item["name"].split(":")[0]:                           
                 items.update({item["name"]: item["itemid"]})

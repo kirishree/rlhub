@@ -334,7 +334,7 @@ def diagnostics(data):
     ip_addresses = [data["subnet"].split("/")[0]]
     for ip in ip_addresses:    
         try:
-            command = (f"ping -I 192.168.2.3 -c 5  {ip}")
+            command = (f"ping -c 5  {ip}")
             output = subprocess.check_output(command.split()).decode()
             lines = output.strip().split("\n")
             # Extract the round-trip time from the last line of output
@@ -901,8 +901,7 @@ def create_vlan_interface(data):
                 network_config["network"]["vlans"][vlan_int_name] = {
                                                                 "id": int(data["vlan_id"]),
                                                                 "link": data["link"],
-                                                                "addresses": data["addresses"],
-                                                                "nameservers": {"addresses": data["nameservers"]},
+                                                                "addresses": data["addresses"]                                                                ,
                                                                 }
 
                 # Write the updated configuration back to the file
