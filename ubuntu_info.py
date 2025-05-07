@@ -551,8 +551,17 @@ def addstaticroute_ubuntu(data):
         with open("/etc/openvpn/server/ipp.txt", "r") as f:
             tunnelipinfo = f.read()
             f.close()            
-        tunnelip_info = tunnelipinfo.split("\n")          
+        tunnelip_info = tunnelipinfo.split("\n")   
+        current_routes = get_routing_table_ubuntu()  
+        available_routes = [] 
         for route in routes:
+            for currentroute in current_routes:
+                if currentroute["destination"] == route["destination"]:
+                    if currentroute["gateway"] == route["gateway"]:
+                        continue
+                    else:
+                        available_routes.append(route["destination"])
+                        continue
             if "10.8.0" not in route["gateway"]:
                 with open("/etc/reach/staticroutes.sh", "a") as f:
                     f.write(f'\nip route add {route["destination"]} via {route["gateway"]}')
@@ -602,9 +611,11 @@ def addstaticroute_ubuntu(data):
             pbr_spoke_data = { "realip_subnet": real_routes
                               }
             background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
-            background_thread.start()    
+            background_thread.start()            
         os.system("systemctl restart openvpn-server@server")  
         response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
+        if len(available_routes) > 0:
+            response = {"message":f"Error: {available_routes} is not added due to route conflict."}
         logger.info(
                         f"{response}",
                         extra={
