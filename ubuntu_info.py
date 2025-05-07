@@ -1043,7 +1043,7 @@ def delstaticroute_ubuntu(data):
                     with open(f"/etc/openvpn/server/{route['gateway']}", "r") as f:
                         clientfile = f.read()
                         f.close()   
-                    clientfile = clientfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+                    clientfile = clientfile.replace(f"iroute {subnet_ip} {netmask}", f"#iroute {subnet_ip} {netmask}")
                     with open(f"/etc/openvpn/server/{route['gateway']}", "w") as f:
                         f.write(clientfile)
                         f.close()   
