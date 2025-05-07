@@ -115,17 +115,17 @@ def get_routing_table_ubuntu():
                     if str(intfc_name) == "Reach_link1":
                         intfc_name = "Overlay Tunnel"
                     if str(intfc_name) == "tun0":
-                        intfc_name = "Base Tunnel"   
-                    if "10.8.0." in gateway:
+                        intfc_name = "BaseTunnel"   
+                    if "10.8.0." in gateway:                       
                         destinationclient = destination.split("/")[0]
                         for routesovpn in openvpnstatus.split("\n"):
                             if "ROUTING_TABLE," in routesovpn:
                                 if  destinationclient in routesovpn.split(",")[1]:
-                                    gateway = routesovpn.split(",")[2]
-                                    branch_name = coll_tunnel_ip.find_one({"spokedevice_name": gateway})
-                                    if branch_name:
-                                        gateway = branch_name.get("branch_location", " ")
-                                    break
+                                    clientname = routesovpn.split(",")[2]
+                                    branch_info = coll_tunnel_ip.find_one({"spokedevice_name": clientname})
+                                    if branch_info:
+                                        gateway = branch_info.get("branch_location", " ")
+                                        break        
                     response.append({"outgoint_interface_name":str(intfc_name),
                                   "gateway":str(gateway),
                                   "destination":str(destination)+"/"+str(dst_len),
