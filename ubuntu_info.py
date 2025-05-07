@@ -1029,7 +1029,7 @@ def delstaticroute_ubuntu(data):
             f.close() 
         with open("/etc/reach/staticroutes.sh", "r") as f:
             staticroutefile = f.read()
-            f.close()
+            f.close()          
         for route in subnet_info:
             if "10.8." in route['gateway']:
                 subnet_ip = route["destination"].split("/")[0]
@@ -1039,6 +1039,14 @@ def delstaticroute_ubuntu(data):
                 subnet_ip = route["destination"].split("/")[0]
                 netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
                 serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+                if os.path.exists(f"/etc/openvpn/server/{route['gateway']}"):
+                    with open(f"/etc/openvpn/server/{route['gateway']}", "r") as f:
+                        clientfile = f.read()
+                        f.close()   
+                    clientfile = clientfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+                    with open(f"/etc/openvpn/server/{route['gateway']}", "w") as f:
+                        f.write(clientfile)
+                        f.close()   
             else:
                 staticroutefile.replace(f'ip route add {route["destination"]} via {route["gateway"]}', f'#ip route add {route["destination"]} via {route["gateway"]}')                
                 os.system(f'ip route del {route["destination"]} via {route["gateway"]}')        
