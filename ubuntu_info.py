@@ -1023,7 +1023,7 @@ def create_tunnel_interface(data):
 def delstaticroute_ubuntu(data):
     try:
         subnet_info = data["routes_info"]
-        logger.info(f"delete static route data: {data}")
+        logger.info(f"Delete static route at HUB: {data}")
         with open("/etc/openvpn/server/server.conf", "r") as f:
             serverfile = f.read()
             f.close() 
@@ -1043,13 +1043,14 @@ def delstaticroute_ubuntu(data):
                     if "ROUTING_TABLE," in routesovpn:
                         if  subnet_ip in routesovpn.split(",")[1]:
                             clientname = routesovpn.split(",")[2]
-                            break            
-                if os.path.exists(f"/etc/openvpn/server/{clientname}"):
-                    with open(f"/etc/openvpn/server/{clientname}", "r") as f:
+                            break     
+                print("clientname", clientname)       
+                if os.path.exists(f"/etc/openvpn/server/ccd/{clientname}"):
+                    with open(f"/etc/openvpn/server/ccd/{clientname}", "r") as f:
                         clientfile = f.read()
                         f.close()   
                     clientfile = clientfile.replace(f"iroute {subnet_ip} {netmask}", f"#iroute {subnet_ip} {netmask}")
-                    with open(f"/etc/openvpn/server/{clientname}", "w") as f:
+                    with open(f"/etc/openvpn/server/ccd/{clientname}", "w") as f:
                         f.write(clientfile)
                         f.close()  
             elif "." not in route['gateway']:
@@ -1061,13 +1062,14 @@ def delstaticroute_ubuntu(data):
                     if "ROUTING_TABLE," in routesovpn:
                         if  subnet_ip in routesovpn.split(",")[1]:
                             clientname = routesovpn.split(",")[2]
-                            break            
-                if os.path.exists(f"/etc/openvpn/server/{clientname}"):
-                    with open(f"/etc/openvpn/server/{clientname}", "r") as f:
+                            break   
+                logger.info(f"clientname:{clientname}")          
+                if os.path.exists(f"/etc/openvpn/server/ccd/{clientname}"):
+                    with open(f"/etc/openvpn/server/ccd/{clientname}", "r") as f:
                         clientfile = f.read()
                         f.close()   
                     clientfile = clientfile.replace(f"iroute {subnet_ip} {netmask}", f"#iroute {subnet_ip} {netmask}")
-                    with open(f"/etc/openvpn/server/{clientname}", "w") as f:
+                    with open(f"/etc/openvpn/server/ccd/{clientname}", "w") as f:
                         f.write(clientfile)
                         f.close()   
             else:
