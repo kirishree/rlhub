@@ -1023,6 +1023,7 @@ def create_tunnel_interface(data):
 def delstaticroute_ubuntu(data):
     try:
         subnet_info = data["routes_info"]
+        logger.info(f"delete static route data: {data}")
         with open("/etc/openvpn/server/server.conf", "r") as f:
             serverfile = f.read()
             f.close() 
