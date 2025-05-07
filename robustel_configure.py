@@ -1004,5 +1004,5 @@ def interface_config(data):
             )
         # Close the SSH connection
         ssh_client.close()
-        os.system("systemctl restart openvpn-server@server")  
+    os.system("systemctl restart openvpn-server@server")  
     return response
