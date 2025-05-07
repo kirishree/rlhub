@@ -567,7 +567,7 @@ def addstaticroute_ubuntu(data):
                     f.write(f'\nip route add {route["destination"]} via {route["gateway"]}')
                     f.close()
                 os.system(f'ip route add {route["destination"]} via {route["gateway"]}')
-                continue
+                continue            
             for tunnelinfo in tunnelip_info:
                 if route["gateway"] in  tunnelinfo:
                     subnet_ip = route["destination"].split("/")[0]

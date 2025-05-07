@@ -1692,6 +1692,7 @@ def interface_config_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
             response = robustel_configure.interface_config(data)
             print(response)
     except Exception as e:

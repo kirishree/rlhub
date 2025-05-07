@@ -5,6 +5,8 @@ import re
 port_number = 3366
 import logging
 import os
+from decouple import config
+openvpn_network = config('OPENVPN_NETWORK')
 logger = logging.getLogger('reachlink')
 # Function to send a command and wait for the router's prompt
 def send_command(shell, command, wait_time=2):
@@ -394,6 +396,21 @@ def createvlaninterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
+    vlan_ip = data["addresses"][0].split("/")[0]  
+    corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+    ip_obj = ipaddress.ip_address(vlan_ip)
+    if ip_obj in corrected_subnet:
+        response = [{"message": f"Error while creating  VLAN interface due to address conflict {multiple_ip}"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "api_endpoint": "create_vlan_interface",
+                "exception": ""
+            }
+            )
+        return response
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -440,16 +457,14 @@ def createvlaninterface(data):
                 return response 
             vlan_no = int(vlan_no) + 1
         else:
-            vlan_no = 1    
-        print(vlan_no)
+            vlan_no = 1       
         output = send_command_wo(shell, f'add lan vlan {vlan_no}')
         response = [{"message": "Error while creating vlan interface"}]
         if "OK" in output:
             output = send_command_wo(shell, f'set lan vlan {vlan_no} enable true')
             if "OK" in output:
                 output = send_command_wo(shell, f'set lan vlan {vlan_no} interface lan0')
-                if "OK" in output:
-                    vlan_ip = data["addresses"][0].split("/")[0]
+                if "OK" in output:                    
                     subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
                     netmask = str(subnet.netmask)
                     output = send_command_wo(shell, f'set lan vlan {vlan_no} vid {data["vlan_id"]}')                    
@@ -629,7 +644,13 @@ def addstaticroute(data):
             subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
             if subnet_key:
                 destination = subnet[subnet_key].split("/")[0]
-                dst_netmask = str(ipaddress.IPv4Network(subnet[subnet_key]).netmask)
+                corrected_dst = ipaddress.ip_network(subnet[subnet_key], strict=False)                
+                dst_netmask = str(ipaddress.IPv4Network(corrected_dst.netmask)).split("/")[0]              
+                corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+                ip_obj = ipaddress.ip_address(destination)
+                if ip_obj in corrected_subnet:
+                    response = {"message": f"Error while adding route due to address conflict {destination}"}
+                    break                
                 output = send_command_wo(shell, f'add route static_route {staticroute_no}')
                 response = {"message": "Error while adding static route"}              
                 if "OK" in output:
@@ -801,13 +822,18 @@ def interface_config(data):
                 vlan_ip = data["new_addresses"][0]["address"].split("/")[0]
                 subnet = ipaddress.IPv4Network(data["new_addresses"][0]["address"], strict=False)  # Allow non-network addresses
                 netmask = str(subnet.netmask)
-                output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
-                if "OK" in output:
-                    output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
-                    output = send_command_wo(shell, f'config save_and_apply')
-                    response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
-                else:
-                    response = [{"message": "Error while configuring IP address. Pl try again"}]                
+                corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+                ip_obj = ipaddress.ip_address(vlan_ip)
+                if ip_obj in corrected_subnet:
+                    response = [{"message": f"Error while configuring  VLAN interface due to address conflict {multiple_ip}"}]
+                else:     
+                    output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
+                    if "OK" in output:
+                        output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
+                        output = send_command_wo(shell, f'config save_and_apply')
+                        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+                    else:
+                        response = [{"message": "Error while configuring IP address. Pl try again"}]                
             else:
                 response = [{"message": "Error no such vlan available"}]
             
@@ -863,8 +889,7 @@ def interface_config(data):
                                                 "api_endpoint": "interface_config",
                                                 "exception": str(e)
                                         }
-                                    )                           
-
+                                    )
             if len(alias_id) > 0:
                 for ipid in alias_id:
                     output = send_command_wo(shell, f'del lan multi_ip {ipid}')
@@ -874,6 +899,11 @@ def interface_config(data):
                 multiple_ip = datas["address"].split("/")[0]
                 subnet = ipaddress.IPv4Network(datas["address"], strict=False)  # Allow non-network addresses
                 netmask1 = str(subnet.netmask)
+                corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+                ip_obj = ipaddress.ip_address(multiple_ip)
+                if ip_obj in corrected_subnet:
+                    response = [{"message": f"Error while configuring interface due to address conflict {multiple_ip}"}]
+                    break                
                 output = send_command_wo(shell, f'add lan multi_ip {ipid}')
                 if "OK" in output:
                     output = send_command_wo(shell, f'set lan multi_ip {ipid} ip {multiple_ip}')
@@ -900,7 +930,9 @@ def interface_config(data):
                             private_ip = True
 
                         if not private_ip:
-                            real_ip.append(multiple_ip)                     
+                            correctednetwork = str(ipaddress.ip_network(datas["address"], strict=False)).split("/")[0]
+                            real_ip.append({"ip":multiple_ip, "netmask":netmask1, "ipprefix":correctednetwork})     
+                                            
                     else:
                         response = [{"message": f"Error while configuring IP address {datas['address']}"}]   
                     ipid = ipid + 1
@@ -908,12 +940,33 @@ def interface_config(data):
                     response = [{"message": "Error while adding Multiple IP "}]   
                     break 
             output = send_command_wo(shell, f'config save_and_apply')
-            if len(real_ip) > 0:
+            spokename = data["spokedevice_name"]
+            if len(real_ip) > 0:          
                 for realip in real_ip:
                     try:
-                        os.system(f"sudo iptables -A FORWARD -p icmp -d {realip} -j ACCEPT")
-                        os.system(f"sudo iptables -A FORWARD -p tcp -d {realip} -j DROP")
-                        logger.info(f"Ports closed for {realip}",
+                        os.system(f"sudo iptables -A FORWARD -p icmp -d {realip['ip']} -j ACCEPT")
+                        os.system(f"sudo iptables -A FORWARD -p tcp -d {realip['ip']} -j DROP")
+                        logger.info(f"Ports closed for {realip['ip']}",
+                                        extra={
+                                                "device_type": "Robustel",
+                                                "device_ip": router_ip,
+                                                "api_endpoint": "interface_config",
+                                                "exception": ""
+                                        }
+                                    )  
+                        if os.path.exists(f"/etc/openvpn/server/ccd/{spokename}"):
+                            with open(f"/etc/openvpn/server/ccd/{spokename}", "a") as f:
+                                f.write(f"\niroute {realip['ipprefix']} {realip['netmask']} ")  
+                                f.close()   
+                        else:
+                            with open(f"/etc/openvpn/server/ccd/{spokename}", "w") as f:
+                                f.write(f"\niroute {realip['ipprefix']} {realip['netmask']} ")  
+                                f.close()   
+
+                        with open(f"/etc/openvpn/server/server.conf", "a") as f:
+                            f.write(f"\nroute {realip['ipprefix']} {realip['netmask']} ")  
+                            f.close()
+                        logger.info(f"Route added for {realip['ip']} in HUB",
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
@@ -951,4 +1004,5 @@ def interface_config(data):
             )
         # Close the SSH connection
         ssh_client.close()
+        os.system("systemctl restart openvpn-server@server")  
     return response
