@@ -400,7 +400,7 @@ def createvlaninterface(data):
     corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
     ip_obj = ipaddress.ip_address(vlan_ip)
     if ip_obj in corrected_subnet:
-        response = [{"message": f"Error while creating  VLAN interface due to address conflict {multiple_ip}"}]
+        response = [{"message": f"Error while creating  VLAN interface due to address conflict {vlan_ip}"}]
         logger.info(
             f"{response}",
             extra={
@@ -460,7 +460,7 @@ def createvlaninterface(data):
                     )
             ssh_client.close()
             return response 
-        vlan_no = available_numbers = [i for i in range(1,11) if i not in vlan_ids]             
+        vlan_no = [i for i in range(1,11) if i not in vlan_ids][0]            
         output = send_command_wo(shell, f'add lan vlan {vlan_no}')
         response = [{"message": "Error while creating vlan interface"}]
         if "OK" in output:
