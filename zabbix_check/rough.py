@@ -61,4 +61,15 @@ corrected_subnet = ipaddress.ip_network("10.8.0.0/24", strict=False)
 ip_obj = ipaddress.ip_address(destination)
 if ip_obj in corrected_subnet:  
     response = {"message": f"Error while adding route due to address conflict {destination}"}
-    print(response)               
+    print(response)      
+
+id = []
+available_numbers = [i for i in range(1,10) if i not in id]
+
+# Pick one (e.g., the first available)
+if available_numbers:
+    selected = available_numbers[0]
+    print("Selected:", selected)
+else:
+    print("No available number")
+         

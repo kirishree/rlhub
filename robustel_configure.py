@@ -434,17 +434,22 @@ def createvlaninterface(data):
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')
         interfacedetails = output.split("\n")
-        vlanpresent = False
+        vlanpresent = False  
+        vlan_no = 0   
+        vlan_ids = []     
         for intfc in interfacedetails:
             intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
             if "vlan {" in intfc:
                 vlanpresent =True
             if "id =" in intfc and "v" not in intfc:
-                vlan_no = intfc.split(" ")[3]
-        if vlanpresent:
-            if int(vlan_no) == 10:
-                response = [{"message": "Info: This device allows only 10 VLAN interface"}]   
-                logger.info(
+                if vlanpresent:
+                    vlan_no = intfc.split(" ")[3]
+                    vlan_ids.append(int(vlan_no))
+            if "}" in intfc:
+                vlanpresent = False        
+        if len(vlan_ids) == 10:
+            response = [{"message": "Info: This device allows only 10 VLAN interface"}]   
+            logger.info(
                     f"{response}",
                     extra={
                         "device_type": "Robustel",
@@ -453,11 +458,9 @@ def createvlaninterface(data):
                         "exception": ""
                         }
                     )
-                ssh_client.close()
-                return response 
-            vlan_no = int(vlan_no) + 1
-        else:
-            vlan_no = 1       
+            ssh_client.close()
+            return response 
+        vlan_no = available_numbers = [i for i in range(1,11) if i not in vlan_ids]             
         output = send_command_wo(shell, f'add lan vlan {vlan_no}')
         response = [{"message": "Error while creating vlan interface"}]
         if "OK" in output:
