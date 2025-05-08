@@ -201,7 +201,7 @@ def validate_ip(ip_address):
     return False
 
 @api_view(['POST'])
-def login_or_register_old(request):
+def login_or_register(request):
     username = request.data.get("username")
     password = request.data.get("password")
 
@@ -247,7 +247,7 @@ def login_or_register_old(request):
         })
     
 @api_view(['POST'])
-def login_or_register(request):
+def login_or_register_new(request):
     username = request.data.get("username")
     password = request.data.get("password")
     if not username or not password:
@@ -257,7 +257,7 @@ def login_or_register(request):
         user = authenticate(username=username, password=password)
         # Generate JWT tokens for new user
         refresh = RefreshToken.for_user(user)
-        refresh['role'] = "ADMIN"  # Assuming 'role' is a field on your user model
+        refresh['role'] = "admin"  # Assuming 'role' is a field on your user model
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
