@@ -251,7 +251,7 @@ def login_or_register(request):
     password = request.data.get("password")
     if not username or not password:
         return Response({"error": "Username and password are required"}, status=400)    
-    onboard_status, onuser_role, org_id, user_id, first_name, last_name = onboarding.check_login_onboarding(username, password)
+    onboard_status, onuser_role, org_id, user_id, first_name, last_name, org_name = onboarding.check_login_onboarding(username, password)
     if onboard_status == "True":
         if onuser_role == "ADMIN":
             onuser_role = "org-admin"
@@ -272,6 +272,7 @@ def login_or_register(request):
         refresh['onboarding_user_id'] = user_id
         refresh['onboarding_first_name'] = first_name
         refresh['onboarding_last_name'] = last_name
+        refresh['onboarding_org_name'] = org_name
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),

@@ -752,6 +752,9 @@ def check_login_onboarding(username, password):
             user_id = user_info["id"]
             first_name = user_info["first_name"]
             last_name = user_info["last_name"]
+        get_organization_name = requests.get(url+"org/", headers=headers)
+        org_response = get_organization_name.json()
+        org_name = org_response["data"]["company_name"].replace(" ", "")
         service_response = requests.get(url+"services/", headers=headers)
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
@@ -770,11 +773,11 @@ def check_login_onboarding(username, password):
                 # Add Duration to get to_date
                 to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
                 if current_datetime < to_date:
-                    return 'True', user_role, org_id, user_id, first_name, last_name
+                    return 'True', user_role, org_id, user_id, first_name, last_name, org_name
             else:
-                    return 'Not Subscribed for ReachLink', False, False, False, False, False
+                    return 'Not Subscribed for ReachLink', False, False, False, False, False, False
         else:
-                return 'Not Subscribed for any services', False, False, False, False, False
+                return 'Not Subscribed for any services', False, False, False, False, False, False
     except:
-        return 'Internal Server Error', False, False, False, False, False
+        return 'Internal Server Error', False, False, False, False, False, False
 
