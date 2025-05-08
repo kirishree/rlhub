@@ -541,8 +541,7 @@ def deletevlaninterface(data):
             return response   
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
-        output = get_command_output(shell, 'show lan all')
-        logger.info(f"show lan all: {output}")
+        output = get_command_output(shell, 'show lan all')        
         interfacedetails = output.split("\n")
         vlanpresent = False
         for intfc in interfacedetails:
@@ -551,8 +550,9 @@ def deletevlaninterface(data):
                 vlanpresent =True
             if "id =" in intfc and "v" not in intfc:
                 vlan_no = intfc.split(" ")[3]
-            if "interface =" in intfc:
-                if data["intfc_name"] == intfc.split(" ")[3]:
+            if "vid =" in intfc:
+                vlanid = intfc.split(" ")[3]
+                if vlanid == data['intfc_name'].split("Vlan")[1]:
                     break
         logger.info(f"vlan no({data['intfc_name']}): {vlan_no}")
         if vlanpresent:
