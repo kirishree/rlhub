@@ -836,7 +836,10 @@ def interface_config(data):
                     if "OK" in output:
                         output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
                         output = send_command_wo(shell, f'config save_and_apply')
-                        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+                        if len(data["new_addresses"]) == 1:
+                            response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+                        else:
+                            response = [{"message": f"Configured the Primary address on interface interface {data['intfc_name']}. It doesn't support secondary address "}]
                     else:
                         response = [{"message": "Error while configuring IP address. Pl try again"}]                
             else:
