@@ -299,10 +299,11 @@ def login_or_register(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def login(request: HttpRequest):
-    data = json.loads(request.body)
-    print(data)
+    data = json.loads(request.body)    
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "reachlink_spoke_login" }
+                    )
     global newuser
     try:
         response, newuser = onboarding.check_user(data, newuser)        
@@ -347,7 +348,9 @@ def add_cisco_device(request: HttpRequest):
     global newuser
     orgstatus = False
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for configure spoke: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "configure_spoke" }
+                    )
     print(f"requested ip of add cisco device spoke:{public_ip}") 
     if "organization_id" in data:
         org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
@@ -781,8 +784,9 @@ def add_cisco_hub(request: HttpRequest):
     data = json.loads(request.body)    
     data['branch_location'] = data['branch_location'].lower()
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    print(f"requested ip of add cisco hub:{public_ip}")
-    logger.debug(f'Received request for configure HUB: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "configure_hub" }
+                    )
     subnet = ipaddress.IPv4Network(data["hub_dialer_ip"], strict=False)  # Allow non-network addresses
     hub_dialer_netmask = str(subnet.netmask) 
     # Extract the network address
@@ -981,12 +985,15 @@ def add_cisco_hub(request: HttpRequest):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def homepage_info(request: HttpRequest):
-    try:        
+    try:  
+        organization_id = str(request.GET.get('organization_id'))         
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Home page info: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {organization_id}",
+                    extra={ "api_endpoint": "homepage_info" }
+                    )
         response = {}        
         total_no_branches = 0
-        organization_id = str(request.GET.get('organization_id'))        
+             
         cache_key = f"home_page_{organization_id}"
         home_page_details = cache.get(cache_key)
         if home_page_details:
@@ -1113,12 +1120,12 @@ def branch_info(request: HttpRequest):
             try:
                 adminbranchinfo = []
                 adminbranchinfo = adminbranch_info()
-                logger.debug(f'Received request for Admin Branch info: {request.method} {request.path} Requested ip: {public_ip}')                
+                logger.debug(f"Requested_ip:{public_ip}, payload: {organization_id}",
+                    extra={ "api_endpoint": "branch_info" }
+                    )
             except Exception as e:
                 logger.error(f"Error: Getting Admin Branch info:{e}")
-            return JsonResponse(adminbranchinfo, safe=False)
-        
-        logger.debug(f'Received request for Branch info: {request.method} {request.path} Requested ip: {public_ip}')
+            return JsonResponse(adminbranchinfo, safe=False)    
         response = {}
         data = []     
         active_branches = 0
@@ -1190,11 +1197,12 @@ def hub_info(request: HttpRequest):
             try:
                 adminhubinfo = []
                 adminhubinfo = adminhub_info()
-                logger.debug(f'Received request for Admin Hub info: {request.method} {request.path} Requested ip: {public_ip}')                
+                logger.debug(f"Requested_ip:{public_ip}, payload: {organization_id}",
+                    extra={ "api_endpoint": "hub_info" }
+                    )
             except Exception as e:
                 logger.error(f"Error: Getting Admin Hub info:{e}")
-            return JsonResponse(adminhubinfo, safe=False)        
-        logger.debug(f'Received request for Hub info: {request.method} {request.path} Requested ip: {public_ip}')
+            return JsonResponse(adminhubinfo, safe=False)       
         response = {}
         data = []        
         organization_id = str(request.GET.get('organization_id'))
@@ -1239,7 +1247,9 @@ def hub_info(request: HttpRequest):
 def deactivate(request: HttpRequest):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     data = json.loads(request.body) 
-    logger.debug(f'Received request for Deactivation: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "deactivate" }
+                    )
     if ".net" not in data.get("uuid", ""):         
         response = ubuntu_info.deactivate(data)
     if "ciscodevice" in data.get("uuid", ""):
@@ -1389,7 +1399,9 @@ def get_interface_details_spoke(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Get interface details: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_interface_details" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         interface_details = cache.get(cache_key)
@@ -1460,7 +1472,9 @@ def create_vlan_interface_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for create VLAN Interface: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_vlan_interafce_spoke" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1522,7 +1536,9 @@ def create_sub_interface_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Create Sub-interface: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_sub_interface_spoke" }
+                    )
         if "robustel" in data["uuid"]:
             response = [{"message": f"Error: This Robustel device doesn't support Sub Interface"}]            
             return JsonResponse(response, safe=False)
@@ -1584,7 +1600,9 @@ def create_loopback_interface_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for create Loopback interface: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_loopback_interface_spoke" }
+                    )
         if "robustel" in data["uuid"] or "microtek" in data["uuid"]:
             response = [{"message": "Error: This device doesn't support Loopback Interface"}]
             return JsonResponse(response, safe=False)
@@ -1638,7 +1656,9 @@ def create_tunnel_interface_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for create Tunnel Interface spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_tunnel_interface_spoke" }
+                    )
         if "robustel" in data["uuid"]:
             response = [{"message": "Error: This device doesn't support Tunnel Interface"}]
             return JsonResponse(response, safe=False)
@@ -1700,7 +1720,9 @@ def interface_config_spoke(request):
         print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Interface config Spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "interface_config_spoke" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1758,8 +1780,10 @@ def vlan_interface_delete_spoke(request):
         data = json.loads(request.body)
         print("vlan delete ", data)
         # Capture the public IP from the request headers
-        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for delete interface spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "interface_delete" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1815,6 +1839,14 @@ def vlan_interface_delete_spoke(request):
                 response = robustel_configure.deletevlaninterface(data)
             else:
                 response = [{"message": f"Error: {data['intfc_name']} deletion is prohibited"}]
+                logger.info(f"Error: {data['intfc_name']} deletion is prohibited",
+                                        extra={
+                                                "device_type": "Robustel",
+                                                "device_ip": data["tunnel_ip"].split("/")[0],
+                                                "api_endpoint": "interface_delete",
+                                                "exception": ""
+                                        }
+                                    )
     except Exception as e:
         logger.error(f"Error: Delete Interface Spoke:{e}")
         response = [{"message": f"Error: "}]
@@ -1827,7 +1859,9 @@ def get_routing_table_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Get routing table spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_routing_table_spoke" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"routing_branch_{branch_id}"
         routing_table = cache.get(cache_key)
@@ -1882,7 +1916,9 @@ def add_route_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for add route spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "add_sttaic_route_spoke" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"routing_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1943,7 +1979,9 @@ def del_staticroute_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for del static route spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "delete_static_route_spoke" }
+                    )
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"routing_branch_{branch_id}"
         cache.delete(cache_key)
@@ -2012,7 +2050,9 @@ def get_pbr_info_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for get pbr info spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_pbr_info_spoke" }
+                    )
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -2057,7 +2097,9 @@ def get_pbr_info_spoke(request):
 def diagnostics(request: HttpRequest):
     data = json.loads(request.body)   
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for ping HUB: {request.method} {request.path} Requested ip: {public_ip}')  
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "ping_from_hub" }
+                    )
     try:
         if "cisco" in data["uuid"]:                   
             cache1_key = f"HUB_details_{data['uuid']}"
@@ -2098,7 +2140,9 @@ def ping_spoke(request: HttpRequest):
         data = json.loads(request.body) 
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for ping spoke: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "ping_from_spoke" }
+                    )
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -2167,7 +2211,9 @@ def traceroute_spoke(request):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for traceroute spoke: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "trace_from_spoke" }
+                    )
     host_ip = data.get('trace_ip', None)
     if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
@@ -2236,7 +2282,9 @@ def traceroute_hub(request):
     print("trace hub data", data) 
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Trachroute HUB: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "trace_from_hub" }
+                    )
     host_ip = data.get('trace_ip', None)
     if "cisco" in data["uuid"]:
         cache1_key = f"HUB_details_{data['uuid']}"
@@ -2267,7 +2315,9 @@ def addsubnet(request: HttpRequest):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for add route to ReachLink server: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "addsubnet" }
+                    )
         response = ubuntu_info.addsubnet(data)        
     except Exception as e:
         logger.error(f"Error: Add route in ReachLink server:{e}")
@@ -2281,7 +2331,9 @@ def add_ip_rule_spoke(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for add ip rule: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "add_ip_rule_spoke" }
+                    )
         if ".net" not in data.get("uuid", ""):            
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
@@ -2319,7 +2371,9 @@ def autofix(request: HttpRequest):
         data = json.loads(request.body)  
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for autofix: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "autofix" }
+                    )
         response = [{"message": f"Successfully fixed the Gateway issue: {data['tunnel_ip']}"}]
         route_add = {"default_gw": hub_tunnel_endpoint}
         tunnel_ip = data["tunnel_ip"].split("/")[0]
@@ -2335,8 +2389,7 @@ def autofix(request: HttpRequest):
         else:
             response = [{"message":f"Error while changing gateway:{data['tunnel_ip']}"}]
     except Exception as e:    
-        logger.error(f"Error: autofix in Spoke:{e}")
-    logger.debug(f'Received request: {request.method} {request.path}')      
+        logger.error(f"Error: autofix in Spoke:{e}")         
     return JsonResponse(response, safe=False)  
 
 @api_view(['POST'])    
@@ -2345,7 +2398,9 @@ def delsubnet(request: HttpRequest):
     data = json.loads(request.body)   
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Del subnet spoke: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "delsubnet" }
+                    )
     response = ubuntu_info.background_deletesubnet(data)
     return JsonResponse(response, safe=False)
 ##############Inactive branch##############
@@ -2354,7 +2409,9 @@ def delsubnet(request: HttpRequest):
 def activate(request: HttpRequest):
     data = json.loads(request.body)     
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Activation of spoke: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "activate" }
+                    )
     if ".net" not in data.get("uuid", ""):         
         response = ubuntu_info.activate(data)
     if "ciscodevice" in data.get("uuid", ""):
@@ -2393,7 +2450,9 @@ def get_routing_table(request):
     try:
         data = json.loads(request.body) 
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for HUB routing table: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_hub_routing_table" }
+                    )
         branch_id = data["hub_wan_ip"]
         cache_key = f"routing_hub_{branch_id}"
         routing_table = cache.get(cache_key)
@@ -2430,7 +2489,9 @@ def addstaticroute_hub(request: HttpRequest):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for add static route HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "add_static_route_hub" }
+                    )
         routes = data["routes_info"]    
         branch_id = data["hub_wan_ip"] 
         cache_key = f"routing_hub_{branch_id}"
@@ -2477,7 +2538,9 @@ def delstaticroute_hub(request: HttpRequest):
     response = [{"message":"Successfully deleted"}]
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Delete static route in HUB: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "delete_static_route_hub" }
+                    )
     branch_id = data["hub_wan_ip"]
     cache_key = f"routing_hub_{branch_id}"
     cache.delete(cache_key)
@@ -2517,7 +2580,9 @@ def get_interface_details_hub(request):
         print(data)  
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Gte interafce details HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_interface_details_hub" }
+                    )
         branch_id = data["hub_wan_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         interface_details = cache.get(cache_key)
@@ -2553,7 +2618,9 @@ def create_vlan_interface_hub(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Create VLAN interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_vlan_interface_hub" }
+                    )
         branch_id = data["hub_wan_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
@@ -2583,7 +2650,9 @@ def create_sub_interface_hub(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for create SUb Interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "creaate_sub_interface_hub" }
+                    ) 
         branch_id = data["hub_wan_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
@@ -2613,7 +2682,9 @@ def create_loopback_interface_hub(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for create Loopback Interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_loopback_interface_hub" }
+                    )
         branch_id = data["hub_wan_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
@@ -2643,7 +2714,9 @@ def create_tunnel_interface_hub(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for create Tunnel Interface: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "create_tunnel_interface_hub" }
+                    )
         branch_id = data["hub_wan_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
@@ -2674,7 +2747,9 @@ def vlan_interface_delete_hub(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Delete interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "interface_delete_hub" }
+                    )
         branch_id = data["hub_ip"]
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
@@ -2762,7 +2837,9 @@ def interface_config_hub(request):
         data = json.loads(request.body)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for configure Interface HUB: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "interface_config_hub" }
+                    )
         branch_id = data["hub_wan_ip"] 
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
@@ -2805,7 +2882,9 @@ def interface_config_hub(request):
 def get_ciscohub_config(request: HttpRequest):
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Cisco HUB Config: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_ciscohub_config" }
+                    )
     response = hub_config.get_ciscohub_config(data)
     return JsonResponse(response, safe=False)
 
@@ -2814,7 +2893,9 @@ def get_ciscohub_config(request: HttpRequest):
 def get_ciscospoke_config(request: HttpRequest):
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Configure Cisco spoke: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_ciscospoke_config" }
+                    )
     response = hub_config.get_ciscospoke_config(data)
     return JsonResponse(response, safe=False)
 
@@ -2824,7 +2905,9 @@ def get_microtekspoke_config(request: HttpRequest):
     global newuser
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_microtekspoke_config" }
+                    )
     orgname, orgstatus = onboarding.organization_name(data)
     if not orgstatus:
         logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
@@ -2852,7 +2935,9 @@ def get_robustelspoke_config(request: HttpRequest):
     global newuser
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Microtek Spoke Config: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "get_robustelspoke_config" }
+                    )
     orgname, orgstatus = onboarding.organization_name(data)
     if not orgstatus:
         logger.error(f"Error: Get Configure Robustel HUB: Error in getting organization name ")
@@ -2878,9 +2963,10 @@ def onboard_block(request: HttpRequest):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for onboard block: {request.method} {request.path} Requested ip: {public_ip}')
-    response = onboardblock.onboard_block(data)
-    logger.debug(f'Received request: {request.method} {request.path}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "onboard_block" }
+                    )
+    response = onboardblock.onboard_block(data)    
     return HttpResponse(response)
 
 @api_view(['POST'])  
@@ -2889,7 +2975,9 @@ def onboard_unblock(request: HttpRequest):
     data = json.loads(request.body)   
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for onboard unblock: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "onboard_unblock" }
+                    )
     response = onboardblock.onboard_unblock(data)
     return HttpResponse(response)      
 
@@ -2899,7 +2987,9 @@ def onboard_delete(request: HttpRequest):
     data = json.loads(request.body)
     # Capture the public IP from the request headers
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for onboard delete: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "onboard_delete" }
+                    )
     onboardblock.onboard_delete(data)
     return HttpResponse
 
@@ -2909,14 +2999,18 @@ def spoke_update(request: HttpRequest):
     data = json.loads(request.body)
     response = onboardblock.spoke_update(data)
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for Spoke update: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "spoke_update" }
+                    )
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_configured_hub(request):
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f'Received request for get configured HUB: {request.method} {request.path} Requested ip: {public_ip}')
+    logger.debug(f"Requested_ip:{public_ip}",
+                    extra={ "api_endpoint": "get_configured_hubs" }
+                    )
     try:
         hubips = []
         for hubinfo in coll_hub_info.find({}):
@@ -2931,7 +3025,9 @@ def change_password(request):
     try:
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for change Password: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "change_password" }
+                    )
         # Retrieve the user object
         user = User.objects.get(username=data.get("username"))        
         # Change the password
@@ -2953,7 +3049,9 @@ def traffic_report(request):
         data = json.loads(request.body)
         print(data)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for traffic report: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "api_endpoint": "traffic_report" }
+                    )
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         if "icmp" in data["intfcname"].lower():
             data["intfcname"] = 'ICMP Response time'
@@ -3005,7 +3103,9 @@ def traffic_report(request):
 def adminhomepage_info(request: HttpRequest):
     try:        
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-        logger.debug(f'Received request for Home page info: {request.method} {request.path} Requested ip: {public_ip}')
+        logger.debug(f"Requested_ip:{public_ip}",
+                    extra={ "api_endpoint": "admin_homepage_info" }
+                    )
         response = {}        
         total_no_branches = 0
         #organization_id = str(request.GET.get('organization_id'))        
