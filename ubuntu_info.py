@@ -148,7 +148,7 @@ def get_routing_table_ubuntu():
 def deactivate_gre(data):
     try:
         
-        response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
+        response = [{"message":f"Successfully disconnected: {data['tunnel_ip']}"}]
         tunnel_ip = data["tunnel_ip"].split("/")[0]
         if ipaddress.ip_address(tunnel_ip) in ipaddress.ip_network(vrf1_ip):
             try:
@@ -165,7 +165,7 @@ def deactivate_gre(data):
                        print(f"Error occured while deleting route for {i}:",e)
             except:
                 print(f"Error occured while deleting {tunnel_ip} as neighbor:", e)
-                response = {"message":f"Device already disconnected: {data['tunnel_ip']}"} 
+                response = [{"message":f"Device already disconnected: {data['tunnel_ip']}"}] 
           
         coll_spoke_disconnect.insert_one({"public_ip": data["public_ip"], 
                                       "tunnel_ip": data["tunnel_ip"],
@@ -174,12 +174,12 @@ def deactivate_gre(data):
                                     })
     except Exception as e:
         print(e)
-        response = {"message":f"Error:while deactivating data['tunnel_ip']"}                  
+        response = [{"message":f"Error:while deactivating data['tunnel_ip']"} ]                 
     return response
 
 def deactivate(data):
     try:        
-        response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
+        response = [{"message":f"Successfully disconnected: {data['tunnel_ip']}"}]
         tunnel_ip = data["tunnel_ip"].split("/")[0]  
         already_availble = False      
         try:
@@ -236,7 +236,7 @@ def deactivate(data):
                         }
             ) 
             if already_availble:
-                response = {"message":f"Already deactivated: {data['tunnel_ip']}"}
+                response = [{"message":f"Already deactivated: {data['tunnel_ip']}"}]
 
         except Exception as e:
                 logger.error(
@@ -248,7 +248,7 @@ def deactivate(data):
                         "exception": str(e)
                     }
                 )
-                response = {"message":f"Error:while deactivating {tunnel_ip}. Please try again later."} 
+                response = [{"message":f"Error:while deactivating {tunnel_ip}. Please try again later."}]
     except Exception as e:
         logger.error(
             f"Failed to deactivate",
@@ -259,12 +259,12 @@ def deactivate(data):
                 "exception": str(e)
             }
             ) 
-        response = {"message":f"Error:while deactivating {tunnel_ip}. Please try again later."}                  
+        response = [{"message":f"Error:while deactivating {tunnel_ip}. Please try again later."}]                  
     return response
 
 def activate(data):
     try:       
-        response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
+        response = [{"message":f"Successfully activating...: {data['tunnel_ip']}"}]
         tunnel_ip = data["tunnel_ip"].split("/")[0]   
         e = None  # Initialize early
         if "." in tunnel_ip:
@@ -275,12 +275,12 @@ def activate(data):
             except Exception as ex:
                     e = ex
                     if " returned non-zero exit status 1" in str(e):                        
-                        response = {"message":f"Error: Device isn't blocked, just unreachable. Please check branch connectivity."}   
+                        response = [{"message":f"Error: Device isn't blocked, just unreachable. Please check branch connectivity."}]  
                     else:
-                        response = {"message":f"Error:while activating {tunnel_ip}. Please try again later."}  
+                        response = [{"message":f"Error:while activating {tunnel_ip}. Please try again later."}]
             
         else:
-            response = {"message":f"Error: Device isn't blocked, just unreachable. Please check branch internet before activation."}
+            response = [{"message":f"Error: Device isn't blocked, just unreachable. Please check branch internet before activation."}]
         logger.info(
             f"{response}",
             extra={
@@ -300,12 +300,12 @@ def activate(data):
                 "exception": str(e)
             }
             )  
-        response =  {"message":f"Error:while activating {tunnel_ip}. Please try again later."} 
+        response =  [{"message":f"Error:while activating {tunnel_ip}. Please try again later."}] 
     return response
 
 def activate_gre(data):
     try:       
-        response = {"message":f"Successfully activating...: {data['tunnel_ip']}"}
+        response = [{"message":f"Successfully activating...: {data['tunnel_ip']}"}]
         tunnel_ip = data["tunnel_ip"].split("/")[0]   
         if True:
             if ipaddress.ip_address(tunnel_ip) in ipaddress.ip_network(vrf1_ip):
@@ -323,11 +323,11 @@ def activate_gre(data):
                             print(f"Error occured while adding route for {i}:", e)
                 except Exception as e:
                     print(f"Error occured while adding {tunnel_ip} as neighbor:", e)
-                    response = {"message":f"Device already activated: {data['tunnel_ip']}"}
+                    response = [{"message":f"Device already activated: {data['tunnel_ip']}"}]
                 coll_spoke_disconnect.delete_many({"uuid": data["uuid"]})
     except Exception as e:
         print(e)
-        response = {"message":f"Error:"}
+        response = [{"message":f"Error:"}]
     return response
 
 def diagnostics(data):
@@ -341,11 +341,11 @@ def diagnostics(data):
             last_line = lines[-1].strip()
             rtt = last_line.split()[3]
             rtt_avg = rtt.split("/")[1]
-            response = {"message": f"Subnet {data['subnet']} Reachable with RTT: {rtt_avg}ms"}
+            response = [{"message": f"Subnet {data['subnet']} Reachable with RTT: {rtt_avg}ms"}]
             return response
         except subprocess.CalledProcessError:
             rtt_avg = -1
-    response ={"message": f"Error: Subnet {data['subnet']} not Reachable"}
+    response = [{"message": f"Error: Subnet {data['subnet']} not Reachable"}]
     logger.info(
                         f"{response}",
                         extra={
@@ -376,24 +376,23 @@ def background_deletesubnet(data):
                     json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     json_response = json.loads(json_response)
                     print(json_response)
-                    response = {"message":json_response["message"]}                
+                    response = [{"message":json_response["message"]}]              
                 else:
-                    response = {"message": "Error while adding subnet in spoke side. Pl try again"}
+                    response = [{"message": "Error while adding subnet in spoke side. Pl try again"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response ={"message": "Tunnel disconnected in the middle. So, pl try again"} 
+                response =[{"message": "Tunnel disconnected in the middle. So, pl try again"}] 
     else:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             status = router_configure.delroute(data)
-            response = {"message":status}
-
+            response = [{"message":status}]
 
 def delsubnet(data):
     try:
         
-        response = {"message":f"Successfully deleted {len(data['subnet_info'])} subnet(s)"}  
+        response = [{"message":f"Successfully deleted {len(data['subnet_info'])} subnet(s)"}]
         subnets = data["subnet_info"]
         tunnel_ip = data["tunnel_ip"].split("/")[0] 
         tunnel_info = coll_tunnel_ip.find_one({"tunnel_ip": data['tunnel_ip']}) 
@@ -413,7 +412,7 @@ def delsubnet(data):
         background_thread.start()       
        
     except Exception as e:
-        response = {"message":f"Error: while deleting subnet"}                   
+        response = [{"message":f"Error: while deleting subnet"}]                  
     return response
 
 def background_addsubnet(data):
@@ -435,24 +434,24 @@ def background_addsubnet(data):
                     json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     json_response = json.loads(json_response)
                     print(json_response)
-                    response = {"message":json_response["message"]}              
+                    response = [{"message":json_response["message"]}]            
                 else:
-                    response = {"message":"Error while sending route info to spoke"}
+                    response = [{"message":"Error while sending route info to spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
     elif "microtek" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             status = microtek_configure.addroute(data)
-            response = {"message":status}
+            response = [{"message":status}]
     elif "cisco" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             status = router_configure.addroute(data)
-            response = {"message":status}
+            response = [{"message":status}]
 
 def configurepbr_spoke(data):
     try:    
@@ -461,34 +460,33 @@ def configurepbr_spoke(data):
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
             # Set the headers to indicate that you are sending JSON data
-            headers = {"Content-Type": "application/json"} 
-           
+            headers = {"Content-Type": "application/json"}
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "add_ip_rules", data=json_data, headers=headers)  # Timeout set to 5 seconds                               
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     ip_rule_response = json.loads(get_response)
-                    response = {"message":ip_rule_response["message"]}              
+                    response = [{"message":ip_rule_response["message"]}]           
                 else:
-                    response = {"message":"Error while configuring ip rule in spoke"}
+                    response = [{"message":"Error while configuring ip rule in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
         elif "microtek" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             status = microtek_configure.configurepbr(data)
-            response = {"message":status}
+            response = [{"message":status}]
         elif "cisco" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             #status = router_configure.addroute(data)
-            response = {"message":"Dummy"}
+            response = [{"message":"Dummy"}]
     except Exception as e:
-        response = {"message": f"Error: configuring pbr spoke"}
+        response = [{"message": f"Error: configuring pbr spoke"}]
     print(response)
 
 def configurepbr_spoke_new(realipdata):
@@ -515,12 +513,12 @@ def configurepbr_spoke_new(realipdata):
                     if response.status_code == 200:           
                         get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                         ip_rule_response = json.loads(get_response)                        
-                        response = {"message":ip_rule_response["message"]}              
+                        response = [{"message":ip_rule_response["message"]}]             
                     else:
-                        response = {"message":"Error while configuring ip rule in spoke"}
+                        response = [{"message":"Error while configuring ip rule in spoke"}]
                 except requests.exceptions.RequestException as e:
                     print("disconnected")
-                    response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                    response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
             elif "microtek" in data["uuid"]:
                 router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
                 microtek_pbr_data = {}
@@ -532,13 +530,13 @@ def configurepbr_spoke_new(realipdata):
                 if subnet_key:
                     microtek_pbr_data["realip_subnet"] = [{"subnet":data[subnet_key]}]
                 status = microtek_configure.configurepbr(microtek_pbr_data)
-                response = {"message":status}
+                response = [{"message":status}]
             elif "cisco" in data["uuid"]:
                 router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
                 data["router_username"] = router_info["router_username"]
                 data["router_password"] = router_info["router_password"]
                 #status = router_configure.addroute(data)
-                response = {"message":"Dummy"}
+                response = [{"message":"Dummy"}]
     except Exception as e:
         response = {"message": f"Error: configure pbr spoke new"}
     print(response)    
@@ -581,8 +579,7 @@ def addstaticroute_ubuntu(data):
                     else:
                         with open(f"/etc/openvpn/server/ccd/{spokename}", "w") as f:
                             f.write(f"\niroute {subnet_ip} {netmask} ")  
-                            f.close()   
-
+                            f.close()
                     with open(f"/etc/openvpn/server/server.conf", "a") as f:
                         f.write(f"\nroute {subnet_ip} {netmask} ")  
                         f.close()               
@@ -613,9 +610,9 @@ def addstaticroute_ubuntu(data):
             background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
             background_thread.start()            
         os.system("systemctl restart openvpn-server@server")  
-        response = {"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}
+        response = [{"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}]
         if len(available_routes) > 0:
-            response = {"message":f"Error: {available_routes} is not added due to route conflict."}
+            response = [{"message":f"Error: {available_routes} is not added due to route conflict."}]
         logger.info(
                         f"{response}",
                         extra={
@@ -635,7 +632,7 @@ def addstaticroute_ubuntu(data):
                             "exception": str(e)
                         }
             )
-        response = {"message": "Error while adding route. Pl try again"}    
+        response = [{"message": "Error while adding route. Pl try again"}]   
     return response
 
 def get_interface_details_ubuntu(data):
@@ -793,15 +790,15 @@ def addsubnet(data):
         background_thread = threading.Thread(target=background_addsubnet, args=(data,))
         background_thread.start() 
         if len(subnet_na) == 0: 
-            response = {"message":f"Successfully added {len(data['subnet_info'])} subnet(s)."}    
+            response = [{"message":f"Successfully added {len(data['subnet_info'])} subnet(s)."}]    
         else:
             added_subnet = len(data['subnet_info']) - len(subnet_na)
             if added_subnet == 0:
-                response = {"message":f"{subnet_na} is already routed."}
+                response = [{"message":f"{subnet_na} is already routed."}]
             else:
-                response = {"message":f"Successfully added {added_subnet} subnet(s). {subnet_na} is already routed."}
+                response = [{"message":f"Successfully added {added_subnet} subnet(s). {subnet_na} is already routed."}]
     except Exception as e:    
-        response = {"message": f"Error in adding route, pl try again add subnet" }
+        response = [{"message": f"Error in adding route, pl try again add subnet" }]
     return response 
 
 def configured_address():
@@ -1082,7 +1079,7 @@ def delstaticroute_ubuntu(data):
             f.write(staticroutefile)
             f.close()
         os.system("systemctl restart openvpn-server@server")
-        response = {"message": "Successfully route deleted"}
+        response = [{"message": "Successfully route deleted"}]
         logger.info(
                         f"{response}",
                         extra={
@@ -1102,7 +1099,7 @@ def delstaticroute_ubuntu(data):
                             "exception": str(e)
                         }
             )   
-        response = {"message": "Error while deleting route. Pl try again!"}
+        response = [{"message": "Error while deleting route. Pl try again!"}]
     return response
 
 def generate_dialerip(dialerips):

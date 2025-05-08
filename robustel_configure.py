@@ -540,7 +540,7 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
-            response = {"message": "Connection timeout. pl try again! "} 
+            response = [{"message": "Connection timeout. pl try again! "}] 
             return response   
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
@@ -561,9 +561,9 @@ def deletevlaninterface(data):
         if vlanpresent:
             output = send_command_wo(shell, f'del lan vlan {vlan_no}')        
         if "OK" in output:            
-            response = {"message": f"Successfully interface {data['intfc_name']} deleted"}
+            response = [{"message": f"Successfully interface {data['intfc_name']} deleted"}]
         else:            
-            response = {"message": f"Error: Interface {data['intfc_name']} cannot be deleted"}
+            response = [{"message": f"Error: Interface {data['intfc_name']} cannot be deleted"}]
         logger.info(
             f"{response}",
             extra={
@@ -599,7 +599,7 @@ def addstaticroute(data):
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    response = {"message": "Error while adding static route"}    
+    response = [{"message": "Error while adding static route"} ]   
     try:
         try:
             # Connect to the router
@@ -654,10 +654,10 @@ def addstaticroute(data):
                 corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
                 ip_obj = ipaddress.ip_address(destination)
                 if ip_obj in corrected_subnet:
-                    response = {"message": f"Error while adding route due to address conflict {destination}"}
+                    response = [{"message": f"Error while adding route due to address conflict {destination}"}]
                     break                
                 output = send_command_wo(shell, f'add route static_route {staticroute_no}')
-                response = {"message": "Error while adding static route"}              
+                response = [{"message": "Error while adding static route"} ]             
                 if "OK" in output:
                     output = send_command_wo(shell, f'set route static_route {staticroute_no} destination {destination}')
                     if "OK" in output:
@@ -665,15 +665,15 @@ def addstaticroute(data):
                         if "OK" in output:                   
                             output = send_command_wo(shell, f'set route static_route {staticroute_no} gateway {subnet["gateway"]}')
                             if "OK" in output:   
-                                response = {"message": "Successfully added the route"}
+                                response = [{"message": "Successfully added the route"}]
                             else:
-                                response = {"message": "Error in setting gateway. Pl check & try again"}
+                                response = [{"message": "Error in setting gateway. Pl check & try again"}]
                         else:
-                            response = {"message": "Error in setting netmask. Pl check & try again"}
+                            response =[{"message": "Error in setting netmask. Pl check & try again"}]
                     else:
-                        response = {"message": "Error in setting destination. Pl check & try again"}
+                        response = [{"message": "Error in setting destination. Pl check & try again"}]
                 else:
-                    response = {"message": "Error in adding static route. Pl try again"}
+                    response = [{"message": "Error in adding static route. Pl try again"}]
             if staticroute_no == 40:                
                 break
             staticroute_no += 1

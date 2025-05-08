@@ -1439,7 +1439,7 @@ def create_vlan_interface_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)            
                 else:
-                    response = {"message":"Error while configuring VLAN interface in spoke"}
+                    response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
@@ -1672,7 +1672,7 @@ def interface_config_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)               
                 else:
-                    response = {"message":"Error while configuring interface in spoke"}
+                    response = [{"message":"Error while configuring interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
@@ -1734,7 +1734,7 @@ def vlan_interface_delete_spoke(request):
                     response = json.loads(get_response)                
                                
                 else:
-                    response = {"message":"Error while deleting VLAN interface in spoke"}
+                    response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
                 response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
@@ -1743,7 +1743,7 @@ def vlan_interface_delete_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             if "overlay" in data['intfc_name'].lower():
-                response = {"message": f"Error: Deleting {data['intfc_name']} is prohibited"}                
+                response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]                
             elif "." in data['intfc_name']:
                 response = microtek_configure.deletevlaninterface(data) 
             else:
@@ -1751,7 +1751,7 @@ def vlan_interface_delete_spoke(request):
             return JsonResponse(response,safe=False) 
         elif "cisco" in data["uuid"]:
             if "virtual-template" in data["intfc_name"].lower() or "dialer1" in data["intfc_name"].lower():
-                response = {"message": f"Error: Deleting {data['intfc_name']} is prohibited"}
+                response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
                 return JsonResponse(response, safe=False)
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1763,10 +1763,10 @@ def vlan_interface_delete_spoke(request):
                 data["router_password"] = router_info["router_password"]
                 response = robustel_configure.deletevlaninterface(data)
             else:
-                response = {"message": f"Error: {data['intfc_name']} deletion is prohibited"}
+                response = [{"message": f"Error: {data['intfc_name']} deletion is prohibited"}]
     except Exception as e:
         logger.error(f"Error: Delete Interface Spoke:{e}")
-        response = {"message": f"Error: "}
+        response = [{"message": f"Error: "}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1835,7 +1835,7 @@ def add_route_spoke(request):
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"routing_branch_{branch_id}"
         cache.delete(cache_key)
-        response = {"message":"Error in adding route"}
+        response = [{"message":"Error in adding route"}]
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -1855,10 +1855,10 @@ def add_route_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)                
                 else:
-                    response = {"message":"Error while deleting VLAN interface in spoke"}
+                    response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1871,9 +1871,9 @@ def add_route_spoke(request):
             data["router_password"] = router_info["router_password"]
             status = router_configure.addroute(data)
             if status:
-                response = {"message": "Successfully route added"}
+                response = [{"message": "Successfully route added"}]
             else:
-                response = {"message":"Error in adding route"}
+                response = [{"message":"Error in adding route"}]
             print("check",response)
         elif "robustel" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
@@ -1882,7 +1882,7 @@ def add_route_spoke(request):
             response = robustel_configure.addstaticroute(data)         
     except Exception as e:
         logger.error(f"Error: Adding route in Spoke:{e}")
-        response = {"message": f"Error: while adding route"}
+        response = [{"message": f"Error: while adding route"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1915,10 +1915,10 @@ def del_staticroute_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)             
                 else:
-                    response = {"message":"Error while deleting VLAN interface in spoke"}
+                    response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1930,7 +1930,7 @@ def del_staticroute_spoke(request):
             subnets = data["routes_info"]
             for subnet in subnets:
                 if "8.8." in subnet["destination"]:
-                    route_details = response = {"message":f"Error: Deletion of this route ({subnet}) is prohibited"}
+                    route_details = [{"message":f"Error: Deletion of this route ({subnet}) is prohibited"}]
                     break
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
@@ -1942,16 +1942,16 @@ def del_staticroute_spoke(request):
             data["router_password"] = router_info["router_password"]
             for subnet in data["routes_info"]:
                 if subnet["destination"].split("/")[0] == router_info["dialer_hub_ip"]:
-                    response = {"message":f"Error: This route ({subnet}) not able to delete"}
+                    response = [{"message":f"Error: This route ({subnet}) not able to delete"}]
                     return JsonResponse(response, safe=False)  
             status = router_configure.delstaticroute(data)
             if status:
-                response = {"message": "Successfully route deleted"}
+                response = [{"message": "Successfully route deleted"}]
             else:
-                response = {"message":"Error in deleting route"}
+                response = [{"message":"Error in deleting route"}]
     except Exception as e:
         logger.error(f"Error: Delete route in Spoke:{e}")
-        response = {"message": f"Error: while deleting route"}
+        response = [{"message": f"Error: while deleting route"}]
     return JsonResponse(response, safe=False)        
 
 @api_view(['POST'])  
@@ -2386,10 +2386,10 @@ def addstaticroute_hub(request: HttpRequest):
         cache.delete(cache_key)
         for route in routes:
             if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
-                response = {"message":"Error Invalid destination"}
+                response = [{"message":"Error Invalid destination"}]
                 return JsonResponse(response, safe=False) 
             if dialernetworkip in route["destination"]:
-                response = {"message":"Error Invalid destination"}
+                response = [{"message":"Error Invalid destination"}]
                 return JsonResponse(response, safe=False) 
         if "ciscohub" in data["uuid"]:
             print("hiciscohub")
@@ -2407,16 +2407,16 @@ def addstaticroute_hub(request: HttpRequest):
                 data["subnet_info"] = data["routes_info"]
                 status = router_configure.addroute(data)
                 if status:
-                    response = {"message": "Successfully route added"}
+                    response = [{"message": "Successfully route added"}]
                 else:
-                    response = {"message":"Error in adding route"}
+                    response = [{"message":"Error in adding route"}]
             else:
-                response = {"message":"Error in getting hub info"}
+                response = [{"message":"Error in getting hub info"}]
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.addstaticroute_ubuntu(data)
     except Exception as e:  
         logger.error(f"Error: Add static routing in HUB:{e}")
-        response = {"message": f"Error in adding route, pl try again." }
+        response =[{"message": f"Error in adding route, pl try again." }]
     return JsonResponse(response, safe=False) 
 
 @api_view(['POST'])  
@@ -2447,14 +2447,14 @@ def delstaticroute_hub(request: HttpRequest):
                 data["router_password"] = hub_info["router_password"]
                 status = router_configure.delstaticroute(data)
                 if status:
-                    response = {"message": "Successfully route deleted"}
+                    response = [{"message": "Successfully route deleted"}]
                 else:
-                    response = {"message":"Error in deleting route"}
+                    response = [{"message":"Error in deleting route"}]
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.delstaticroute_ubuntu(data)
     except Exception as e:
         logger.error(f"Error: Delete static route HUB:{e}")
-        response = {"message":f"Error while deleting route"}
+        response = [{"message":f"Error while deleting route"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -2743,7 +2743,7 @@ def interface_config_hub(request):
             print(response)
     except Exception as e:
         logger.error(f"Error: Interface configure HUB:{e}")
-        response = {"message": f"Error: {e}"}
+        response = [{"message": f"Error: interface config"}]
     return JsonResponse(response, safe=False)
 ##################HUB COMPLETE#################
 
