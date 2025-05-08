@@ -436,7 +436,8 @@ def createvlaninterface(data):
         interfacedetails = output.split("\n")
         vlanpresent = False  
         vlan_no = 0   
-        vlan_ids = []     
+        vlan_ids = []  
+        current_addresses = []   
         for intfc in interfacedetails:
             intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
             if "vlan {" in intfc:
@@ -445,8 +446,32 @@ def createvlaninterface(data):
                 if vlanpresent:
                     vlan_no = intfc.split(" ")[3]
                     vlan_ids.append(int(vlan_no))
+            if "ip = " in intfc:
+                ipv4addres = intfc.split(" ")[3]            
+            if "netmask = " in intfc:
+                netmask = intfc.split(" ")[3]
+                currentip = f"{ipv4addres}/{netmask}"
+                # Create an IPv4Network object
+                ipintf = ipaddress.IPv4Interface(currentip)
+                current_addresses.append(ipintf.with_prefixlen)
             if "}" in intfc:
-                vlanpresent = False        
+                vlanpresent = False  
+        for current_address in current_addresses:
+            corrected_subnet = ipaddress.ip_network(current_address, strict=False)
+            ip_obj = ipaddress.ip_address(vlan_ip)
+            if ip_obj in corrected_subnet:
+                response = [{"message": f"Error while creating  VLAN interface due to address conflict {vlan_ip}"}]
+                logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "Robustel",
+                            "device_ip": router_ip,
+                            "api_endpoint": "create_vlan_interface",
+                            "exception": ""
+                        }
+                )
+                ssh_client.close()
+                return response     
         if len(vlan_ids) == 10:
             response = [{"message": "Info: This device allows only 10 VLAN interface"}]   
             logger.info(
@@ -814,17 +839,41 @@ def interface_config(data):
         interfacedetails = output.split("\n")
         if "Vlan" in data['intfc_name']:
             vlan_no = "None"
+            current_addresses = []
+            vlan_ip = data["new_addresses"][0]["address"].split("/")[0]
             for intfc in interfacedetails:
                 intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
                 if "id =" in intfc and "v" not in intfc:
                     vlan_no = intfc.split(" ")[3]
                 if "vid =" in intfc:
-                    vlanid = intfc.split(" ")[3]
-                    if vlanid == data['intfc_name'].split("Vlan")[1]:
-                        break
-            print("vlan_no", vlan_no)
-            if vlan_no != "None":
-                vlan_ip = data["new_addresses"][0]["address"].split("/")[0]
+                    vlanidn = intfc.split(" ")[3]
+                    if vlanidn == data['intfc_name'].split("Vlan")[1]:
+                        vlanid = vlanidn
+                if "ip = " in intfc:
+                    ipv4addres = intfc.split(" ")[3]            
+                if "netmask = " in intfc:
+                    netmask = intfc.split(" ")[3]
+                    currentip = f"{ipv4addres}/{netmask}"
+                    # Create an IPv4Network object
+                    ipintf = ipaddress.IPv4Interface(currentip)
+                    current_addresses.append(ipintf.with_prefixlen)
+            for current_address in current_addresses:
+                corrected_subnet = ipaddress.ip_network(current_address, strict=False)
+                ip_obj = ipaddress.ip_address(vlan_ip)
+                if ip_obj in corrected_subnet:
+                    response = [{"message": f"Error while configuring VLAN interface due to address conflict {vlan_ip}"}]
+                    logger.info(
+                        f"{response}",
+                        extra={
+                            "device_type": "Robustel",
+                            "device_ip": router_ip,
+                            "api_endpoint": "interface_config",
+                            "exception": ""
+                        }
+                    )
+                    ssh_client.close()
+                    return response     
+            if vlan_no != "None":                
                 subnet = ipaddress.IPv4Network(data["new_addresses"][0]["address"], strict=False)  # Allow non-network addresses
                 netmask = str(subnet.netmask)
                 corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
@@ -851,7 +900,7 @@ def interface_config(data):
             for intfc in interfacedetails:
                 intfc = re.sub(r'\s+', ' ', intfc)  # Replace multiple spaces with a single space
                 if "multi_ip {" in intfc:
-                    multi_ip = True
+                    multi_ip = True                
                 if "id =" in intfc and "v" not in intfc:
                     if multi_ip:
                         alias_id.append(intfc.split(" ")[3])

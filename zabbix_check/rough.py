@@ -59,7 +59,7 @@ print("corrrr",corrected_dst)
 dst_netmask = str(ipaddress.IPv4Network(corrected_dst.netmask))
 print("dst", dst_netmask)
 destination = "10.8.0.22"
-corrected_subnet = ipaddress.ip_network("10.8.0.0/24", strict=False)
+corrected_subnet = ipaddress.ip_network("10.8.0.10/24", strict=False)
 ip_obj = ipaddress.ip_address(destination)
 if ip_obj in corrected_subnet:  
     response = {"message": f"Error while adding route due to address conflict {destination}"}
@@ -128,4 +128,4 @@ def check_onboarding(username, password):
                 return 'Not Subscribed for any services', False
     except:
         return 'Internal Server Error', False
-check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
+#check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
