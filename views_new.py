@@ -201,7 +201,7 @@ def validate_ip(ip_address):
     return False
 
 @api_view(['POST'])
-def login_or_register(request):
+def login_or_register_old(request):
     username = request.data.get("username")
     password = request.data.get("password")
 
@@ -247,7 +247,7 @@ def login_or_register(request):
         })
     
 @api_view(['POST'])
-def login_or_register_new(request):
+def login_or_register(request):
     username = request.data.get("username")
     password = request.data.get("password")
     if not username or not password:
