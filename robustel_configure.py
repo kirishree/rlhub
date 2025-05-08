@@ -839,7 +839,7 @@ def interface_config(data):
                         if len(data["new_addresses"]) == 1:
                             response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
                         else:
-                            response = [{"message": f"Configured the Primary address on interface interface {data['intfc_name']}. It doesn't support secondary address "}]
+                            response = [{"message": f"Configured the Primary address on {data['intfc_name']}. It doesn't support secondary address "}]
                     else:
                         response = [{"message": "Error while configuring IP address. Pl try again"}]                
             else:
