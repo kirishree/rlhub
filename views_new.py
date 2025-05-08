@@ -68,6 +68,7 @@ from .tasks import setass_task
 newuser = False
 dummy_expiry_date = ""
 mongo_uri = config('DB_CONNECTION_STRING')
+super_user_name = config('SUPER_USER_NAME')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_registered_organization = db_tunnel["registered_organization"]
@@ -250,7 +251,19 @@ def login_or_register(request):
     username = request.data.get("username")
     password = request.data.get("password")
     if not username or not password:
-        return Response({"error": "Username and password are required"}, status=400)    
+        return Response({"error": "Username and password are required"}, status=400)  
+    if username ==  super_user_name:
+        # Authenticate existing user
+        user = authenticate(username=username, password=password)
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = "ADMIN"  # Assuming 'role' is a field on your user model
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
+
     onboard_status, onuser_role, org_id, user_id, first_name, last_name, org_name = onboarding.check_login_onboarding(username, password)
     if onboard_status == "True":
         if onuser_role == "ADMIN":
