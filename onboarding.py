@@ -725,4 +725,56 @@ def check_onboarding(username, password):
                 return 'Not Subscribed for any services', False
     except:
         return 'Internal Server Error', False
+    
+def check_login_onboarding(username, password):
+    try:
+        data_login = {
+                    "email": username,
+                    "password": password
+                 }
+        # Send a POST request with the data
+        login_response = requests.post(url+"auth/login", json=data_login)
+        if login_response.status_code == 200:
+        # Parse the JSON response
+            loginjson_response = login_response.json()
+            access_token = loginjson_response["data"]["access_token"]
+        else:
+            return 'Invalid Login & password'
+        headers = {
+                    "Authorization": f"Bearer {access_token}"
+                  }
+        user_response = requests.get(url+"users/me", headers=headers)
+        if user_response.status_code == 200:
+            userjson_response = user_response.json()            
+            user_info = userjson_response["data"]["user"]
+            user_role = user_info["role"]
+            org_id = user_info["org_id"]
+            user_id = user_info["id"]
+            first_name = user_info["first_name"]
+            last_name = user_info["last_name"]
+        service_response = requests.get(url+"services/", headers=headers)
+        if service_response.status_code == 200:
+            servicejson_response = service_response.json()
+            services_info = servicejson_response["data"]["services"]
+            subscription_status = False
+            for service in services_info:
+                if service["name"] == "link":
+                    subscription_status = True
+            if subscription_status:
+                current_datetime = datetime.now() 
+                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                subsjson_response = subscription_response.json()
+                timestamp = int(subsjson_response["data"]["created_at"])
+                # Convert Unix timestamp to datetime
+                from_date = datetime.utcfromtimestamp(timestamp)
+                # Add Duration to get to_date
+                to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
+                if current_datetime < to_date:
+                    return 'True', user_role, org_id, user_id, first_name, last_name
+            else:
+                    return 'Not Subscribed for ReachLink', False, False, False, False, False
+        else:
+                return 'Not Subscribed for any services', False, False, False, False, False
+    except:
+        return 'Internal Server Error', False, False, False, False, False
 

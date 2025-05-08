@@ -200,7 +200,7 @@ def validate_ip(ip_address):
     return False
 
 @api_view(['POST'])
-def login_or_register(request):
+def login_or_register_old(request):
     username = request.data.get("username")
     password = request.data.get("password")
 
@@ -235,6 +235,43 @@ def login_or_register(request):
         refresh = RefreshToken.for_user(user)
         # Manually add custom claim for 'role'
         refresh['role'] = user.role  # Assuming 'role' is a field on your user model
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
+    else:
+        return Response({            
+            "message": onboard_status
+        })
+    
+@api_view(['POST'])
+def login_or_register(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+    if not username or not password:
+        return Response({"error": "Username and password are required"}, status=400)    
+    onboard_status, onuser_role, org_id, user_id, first_name, last_name = onboarding.check_login_onboarding(username, password)
+    if onboard_status == "True":
+        if onuser_role == "ADMIN":
+            onuser_role = "org-admin"
+        else:
+            onuser_role = "org-user"
+        # Authenticate existing user
+        user = authenticate(username=username, password=password)
+        # Create new user
+        if not user:
+            user = User.objects.create_user(username=username, password=password, role=onuser_role)
+
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        # Manually add custom claim for 'role'
+        refresh['role'] = user.role  # Assuming 'role' is a field on your user model
+        refresh['subscription_status'] = "True"
+        refresh['org_id'] = org_id
+        refresh['onboarding_user_id'] = user_id
+        refresh['onboarding_first_name'] = first_name
+        refresh['onboarding_last_name'] = last_name
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
