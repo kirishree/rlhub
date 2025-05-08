@@ -694,10 +694,10 @@ def deletevlaninterface(data):
                             response = [{"message": f"Successfully deleted VLAN interface in Microtek Spoke {data['intfc_name']}"}]
                             ssh_client.close()       
                             return response
-        response = {"message": f"Error no such VLAN interface in Microtek Spoke {data['intfc_name']}"}
+        response = [{"message": f"Error no such VLAN interface in Microtek Spoke {data['intfc_name']}"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = {"message": f"Error while deleting VLAN interface in Microtek Spoke {data['intfc_name']}"}
+        response = [{"message": f"Error while deleting VLAN interface in Microtek Spoke {data['intfc_name']}"}]
           
     finally:
         # Close the SSH connection
@@ -745,10 +745,10 @@ def deletetunnelinterface(data):
                             response = [{"message": f"Successfully deleted Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
                             ssh_client.close()       
                             return response
-        response = {"message": f"Error no such Tunnel interface in Microtek Spoke {data['intfc_name']}"}
+        response = [{"message": f"Error no such Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = {"message": f"Error while deleting Tunnel interface in Microtek Spoke {data['intfc_name']}"}
+        response = [{"message": f"Error while deleting Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
           
     finally:
         # Close the SSH connection
@@ -1164,14 +1164,14 @@ def lanconfig(data):
     password = data["router_password"]
     ip_address = data.get("ipaddress")
     if not (validateIP(ip_address)):
-            response = {"message": "Error: IP should be in private range"} 
+            response = [{"message": "Error: IP should be in private range"}] 
             print(response)  
             return response
     netmask = prefix_len_to_netmask(ip_address.split("/")[1])
     ip_addr = ip_address.split("/")[0]       
     ip_addresses = get_ip_addresses(ip_addr, netmask) 
     if ip_addr == ip_addresses["Subnet_ID"] or ip_addr ==  ip_addresses[ "Broadcast_IP"]:
-            response = {"message": "Error: Either Subnet ID or Broadcast IP is not able to assign"}  
+            response = [{"message": "Error: Either Subnet ID or Broadcast IP is not able to assign"}]  
             print(response) 
             return response
     # Create an SSH client instance
@@ -1234,7 +1234,7 @@ def lanconfig(data):
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
                 ip_obj = ipaddress.ip_address(ip_address.split("/")[0])
                 if ip_obj in corrected_subnet:  
-                    response = {"message": f"Error while configuring interface due to address conflict {ip_address}"}
+                    response = [{"message": f"Error while configuring interface due to address conflict {ip_address}"}]
                     ssh_client.close()            
                     return response
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={ip_address} interface=bridge')  
@@ -1290,12 +1290,12 @@ def lanconfig(data):
                         poolnumbers = addr.split(" ")[1]  
                         break
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
-            response = {"message":"LAN configured successfully"}
+            response = [{"message":"LAN configured successfully"}]
         else:
-            response = {"message":"LAN IP configured but error in DHCP configuration."}
+            response = [{"message":"LAN IP configured but error in DHCP configuration."}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = {"message":"Error in LAN configuration"}          
+        response = [{"message":"Error in LAN configuration"}]        
     finally:
         # Close the SSH connection
         ssh_client.close()       
@@ -1369,14 +1369,14 @@ def dhcpconfig(data):
                         poolnumbers = addr.split(" ")[1]  
                         break
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
-            response = {"message":"LAN configured successfully"}
+            response = [{"message":"LAN configured successfully"}]
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns set servers={primary_dns},{sec_dns}')
-            response = {"message": "DHCP configured successfully"}
+            response = [{"message": "DHCP configured successfully"}]
         else:
-            response = {"message":"Error in getting DHCP pool name."}
+            response = [{"message":"Error in getting DHCP pool name."}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = {"message":"Error in DHCP configuration"}          
+        response = [{"message":"Error in DHCP configuration"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       

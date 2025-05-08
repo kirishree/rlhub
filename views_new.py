@@ -1209,11 +1209,11 @@ def deactivate(request: HttpRequest):
                                       "uuid":data["uuid"]                                     
                                                                           
                                     })
-                    response = {"message":f"Successfully disconnected: {data['tunnel_ip']}"}
+                    response = [{"message":f"Successfully disconnected: {data['tunnel_ip']}"}]
                 else:
-                    response = {"message":f"Error:while deactivating data['tunnel_ip']"}   
+                    response = [{"message":f"Error:while deactivating data['tunnel_ip']"}]   
         else:
-            response = {"message": "Error HUB IP is missed"}
+            response = [{"message": "Error HUB IP is missed"}]
     if "microtek" in data.get("uuid", ""):
         response = ubuntu_info.deactivate(data)  
     if "robustel" in data.get("uuid", ""):
@@ -1243,20 +1243,20 @@ def lan_info(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     lan_info = json.loads(get_response)
                     print(lan_info)
-                    response = {"message":lan_info}              
+                    response = [{"message":lan_info}]             
                 else:
-                    response = {"message":"Error while getting lan info from spoke"}
+                    response = [{"message":"Error while getting lan info from spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"} ]  
         elif "microtek" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response_microtek = microtek_configure.laninfo(data)
-            response = {"message":response_microtek}
+            response = [{"message":response_microtek}]
     except Exception as e:
-        response = {"message": f"Error: {e}"}
+        response = [{"message": f"Error: {e}"}]
     print(response)
     return JsonResponse(response, safe=False)
 
@@ -1280,19 +1280,19 @@ def lan_config(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     lan_config_response = json.loads(get_response)
                     print(lan_info)
-                    response = {"message":lan_config_response["message"]}              
+                    response = [{"message":lan_config_response["message"]}]              
                 else:
-                    response = {"message":"Error while configuring LAN in spoke"}
+                    response = [{"message":"Error while configuring LAN in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = microtek_configure.lanconfig(data)
     except Exception as e:
-        response = {"message": f"Error: {e}"}
+        response = [{"message": f"Error: exception"}]
     print(response)
     return JsonResponse(response, safe=False)
 
@@ -1316,19 +1316,19 @@ def dhcp_config(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     lan_config_response = json.loads(get_response)
                     print(lan_info)
-                    response = {"message":lan_config_response["message"]}              
+                    response = [{"message":lan_config_response["message"]} ]             
                 else:
-                    response = {"message":"Error while configuring DHCP in spoke"}
+                    response = [{"message":"Error while configuring DHCP in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"} ]
         elif "microtek" in data["uuid"]:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = microtek_configure.dhcpconfig(data)            
     except Exception as e:
-        response = {"message": f"Error: {e}"}
+        response = [{"message": f"Error: {e}"}]
     print(response)
     return JsonResponse(response, safe=False)
 
@@ -1442,7 +1442,7 @@ def create_vlan_interface_spoke(request):
                     response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1504,10 +1504,10 @@ def create_sub_interface_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)              
                 else:
-                    response = {"message":"Error while configuring VLAN interface in spoke"}
+                    response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1566,10 +1566,10 @@ def create_loopback_interface_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)     
                 else:
-                    response = {"message":"Error while configuring Loopback interface in spoke"}
+                    response = [{"message":"Error while configuring Loopback interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}            
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]            
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1620,10 +1620,10 @@ def create_tunnel_interface_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)         
                 else:
-                    response = {"message":"Error while configuring VLAN interface in spoke"}
+                    response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1675,7 +1675,7 @@ def interface_config_spoke(request):
                     response = [{"message":"Error while configuring interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1697,7 +1697,7 @@ def interface_config_spoke(request):
             print(response)
     except Exception as e:
         logger.error(f"Error: Configure Interface Spoke:{e}")
-        response = {"message": f"Error: while configuring interface"}
+        response = [{"message": f"Error: while configuring interface"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -1737,7 +1737,7 @@ def vlan_interface_delete_spoke(request):
                     response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -2027,13 +2027,13 @@ def diagnostics(request: HttpRequest):
                 out = last_line.split(" ")[3]            
                 print(out)
                 if out == "0":
-                    response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
+                    response = [{"message":f"Error: Subnet {data['subnet']} Not Reachable"}]
                 else:
                     rtt = last_line.split(" ")[9].split("/")[1]
                     print(rtt)
-                    response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}
+                    response = [{"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}]
             else:
-                response = {"message":f"Error: Hub info not found"}        
+                response = [{"message":f"Error: Hub info not found"}]        
         else:
             response = ubuntu_info.diagnostics(data)
     except Exception as e:
@@ -2070,9 +2070,9 @@ def ping_spoke(request: HttpRequest):
                 json_response = json.loads(json_response)
                 #print(json_response)
                 if json_response[0]["avg_rtt"] != -1:
-                    response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {json_response[0]['avg_rtt']}ms"}
+                    response = [{"message":f"Subnet {data['subnet']} Reachable with RTT: {json_response[0]['avg_rtt']}ms"}]
                 else:
-                    response = {"message": f"Error: Subnet {data['subnet']} Not Reachable"}
+                    response = [{"message": f"Error: Subnet {data['subnet']} Not Reachable"}]
             else:
                 print("error response", response)
                 response =  {"message": f"Error: Subnet {data['subnet']} Not Reachable" }
@@ -2082,9 +2082,9 @@ def ping_spoke(request: HttpRequest):
             data["router_password"] = router_info["router_password"]
             ping_result = microtek_configure.pingspoke(data)          
             if ping_result == "-1":
-                response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
+                response = [{"message":f"Error: Subnet {data['subnet']} Not Reachable"}]
             else:                
-                response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}"}
+                response = [{"message":f"Subnet {data['subnet']} Reachable with RTT: {ping_result}"}]
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -2096,18 +2096,18 @@ def ping_spoke(request: HttpRequest):
             out = last_line.split(" ")[3]            
             print(out)
             if out == "0":
-                response = {"message":f"Error: Subnet {data['subnet']} Not Reachable"}
+                response = [{"message":f"Error: Subnet {data['subnet']} Not Reachable"}]
             else:
                 rtt = last_line.split(" ")[9].split("/")[1]
                 print(rtt)
-                response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}
+                response = [{"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}]
         elif "robustel" in data["uuid"]:
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             response = robustel_configure.pingspoke(data)            
     except Exception as e:    
         logger.error(f"Error: Ping from Spoke:{e}")
-        response = {"message": f"Error: Subnet {data['subnet']} Not Reachable" }   
+        response = [{"message": f"Error: Subnet {data['subnet']} Not Reachable" }]   
     return JsonResponse(response, safe=False)    
 
 @api_view(['POST'])  
@@ -2168,14 +2168,14 @@ def traceroute_spoke(request):
                     return JsonResponse(response_msg,safe=False)
                 except Exception as e:
                    print(e)
-                   response = {"message":e}       
+                   response = [{"message":e}]       
             else:
-                    response = {"message":"Error while sending route info to spoke"}
+                    response = [{"message":"Error while sending route info to spoke"}]
         except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
     else:
-        response = {"message":"Error:Trace ip is invalid"}
+        response = [{"message":"Error:Trace ip is invalid"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
@@ -2200,13 +2200,13 @@ def traceroute_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]        
                 trace_result = router_configure.traceroute(data)   
-                response = {"message": trace_result}   
+                response = [{"message": trace_result}]   
                 print("traceroute hub",response)    
         else:
-            response = {"message": "Error in connecting HUB"}        
+            response = [{"message": "Error in connecting HUB"}]        
     else:           
             result1 = subprocess.run(['traceroute', '-d', host_ip], capture_output=True, text=True)
-            response = {"message":result1.stdout}
+            response = [{"message":result1.stdout}]
     return JsonResponse(response,safe=False)
 
 @api_view(['POST'])  
@@ -2220,7 +2220,7 @@ def addsubnet(request: HttpRequest):
         response = ubuntu_info.addsubnet(data)        
     except Exception as e:
         logger.error(f"Error: Add route in ReachLink server:{e}")
-        response = {"message": f"Error in adding route, pl try again" }
+        response = [{"message": f"Error in adding route, pl try again" }]
     return JsonResponse(response, safe=False) 
 
 @api_view(['POST'])  
@@ -2243,21 +2243,21 @@ def add_ip_rule_spoke(request):
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     ip_rule_response = json.loads(get_response)
                     print(lan_info)
-                    response = {"message":ip_rule_response["message"]}              
+                    response = [{"message":ip_rule_response["message"]}]            
                 else:
-                    response = {"message":"Error while configuring ip rule in spoke"}
+                    response = [{"message":"Error while configuring ip rule in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
-                response = {"message":"Error:Tunnel disconnected in the middle. So pl try again"}   
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"} ]  
         else:
             router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             #status = router_configure.addroute(data)
-            response = {"message":"Dummy"}
+            response = [{"message":"Dummy"}]
     except Exception as e:
         logger.error(f"Error: Add IP rule Spoke:{e}")
-        response = {"message": f"Error: {e}"}
+        response =[{"message": f"Error: exception"}]
     print(response)
     return JsonResponse(response, safe=False)
 
@@ -2269,7 +2269,7 @@ def autofix(request: HttpRequest):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f'Received request for autofix: {request.method} {request.path} Requested ip: {public_ip}')
-        response = {"message": f"Successfully fixed the Gateway issue: {data['tunnel_ip']}"}
+        response = [{"message": f"Successfully fixed the Gateway issue: {data['tunnel_ip']}"}]
         route_add = {"default_gw": hub_tunnel_endpoint}
         tunnel_ip = data["tunnel_ip"].split("/")[0]
         json_data = json.dumps(route_add)    
@@ -2282,7 +2282,7 @@ def autofix(request: HttpRequest):
             json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_response = json.loads(json_response)                  
         else:
-            response = {"message":f"Error while changing gateway:{data['tunnel_ip']}"}
+            response = [{"message":f"Error while changing gateway:{data['tunnel_ip']}"}]
     except Exception as e:    
         logger.error(f"Error: autofix in Spoke:{e}")
     logger.debug(f'Received request: {request.method} {request.path}')      
@@ -2326,9 +2326,9 @@ def activate(request: HttpRequest):
                 response = router_configure.adduser(activate_data)
                 if response:
                     coll_spoke_disconnect.delete_many({"uuid": data["uuid"]})
-                    response = {"message":f"Successfully activated: {data['tunnel_ip']}"}
+                    response = [{"message":f"Successfully activated: {data['tunnel_ip']}"}]
                 else:
-                    response = {"message":f"Error:while activating data['tunnel_ip']"}     
+                    response = [{"message":f"Error:while activating data['tunnel_ip']"}]     
     if "microtek" in data.get("uuid", ""):
         response = ubuntu_info.activate(data)
     if "robustel" in data.get("uuid", ""):
@@ -2583,7 +2583,7 @@ def create_loopback_interface_hub(request):
             response = [{"message":"Error: This device doesn't support Loopback interface"}] 
     except Exception as e:
         logger.error(f"Error: Create Loopback Interface HUB:{e}")
-        response = [{"message": f"Error: {e}"}]
+        response = [{"message": f"Error: Some issue. Pl try again later."}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
