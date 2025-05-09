@@ -2,6 +2,8 @@ import paramiko
 import time
 import ipaddress
 import re
+import logging
+logger = logging.getLogger('reachlink')
 #ansible
 routes_protocol_map = {
     "L": "local",
@@ -60,7 +62,15 @@ def addroute(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "add_static_route",
+                "exception": str(e)
+            }
+            )
         return False
 
     # Open an interactive shell session
@@ -101,7 +111,15 @@ def delroute(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
         return False
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -124,8 +142,6 @@ def delroute(data):
     # Close the SSH connection
     ssh_client.close()
     return True
-
-
 
 def send_command_ping(shell, command, wait_time=5, buffer_size=4096, timeout=5, end_marker="Success rate"):
     """
@@ -167,13 +183,6 @@ def send_command_ping(shell, command, wait_time=5, buffer_size=4096, timeout=5, 
 
     return full_output
 
-# Example usage
-# Assuming `shell` is an interactive shell object connected to a Cisco router
-# shell = some_interactive_shell_session()
-# output = send_command_ping(shell, '10.200.202.5', wait_time=5)
-# print(output)
-
-
 def pingspoke(data):   
     
     # Define the router details
@@ -188,9 +197,16 @@ def pingspoke(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "ping",
+                "exception": str(e)
+            }
+            )
         return False
-
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
 
@@ -206,6 +222,15 @@ def pingspoke(data):
     status = send_command_ping(shell, f'ping {subnet_ip}', wait_time=5)
     # Close the SSH connection
     ssh_client.close()
+    logger.info(
+            f"{status}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "pingspoke",
+                "exception": ""
+            }
+            )
     return status
 
 def traceroute(data):    
@@ -221,7 +246,15 @@ def traceroute(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "traceroute",
+                "exception": str(e)
+            }
+            )
         return False
 
     # Open an interactive shell session
@@ -269,75 +302,6 @@ def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=1
     
     return full_output
 
-def get_interface_ciscoold(data):
-    """
-    Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
-    """
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data["router_password"]
-
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    intfcdetails = []
-    try:
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            print(f"SSH Connection Error: {e}")
-            return intfcdetails
-
-        # Open an interactive shell session
-        shell = ssh_client.invoke_shell()
-
-        # Disable paging
-        get_command_output(shell, 'terminal length 0', wait_time=1)
-
-        # Send the command and get the output
-        output = get_command_output(shell, 'show ip int brief')
-        interfacedetails = output.split("\n")[2:-1]
-        
-        for intfcinfo in interfacedetails:
-            
-            intfcinfo = intfcinfo.strip()
-            # Clean up extra spaces or non-visible characters using regex
-            intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
- #           print(f"After regex cleanup: '{intfcinfo}'")
-            intfcname = intfcinfo.split(" ")[0]
-            intfctype = "-"
-            if "ethernet" in intfcname.lower():
-                intfctype = "ether"
-            elif "vlan" in intfcname.lower():
-                intfctype = "VLAN"
-            elif "loopback" in intfcname.lower():
-                intfctype = "Loopback"
-            elif "tunnel" in intfcname.lower():
-                intfctype = "Tunnel"
-            elif "dialer" in intfcname.lower():
-                intfctype = "Dialer"
-            elif "bvi" in intfcname.lower():
-                intfctype = "BVI"
-            if "." in intfcname:
-                intfctype = "SubInterface"
-            if "virtual-template" in intfcname.lower():
-                intfctype = "Virtual"
-            if "virtual-access" not in intfcname.lower():
-                intfcdetails.append({"interface_name": intfcinfo.split(" ")[0],
-                                 "type": intfctype,
-                                 "Gateway": '-',
-                                 "mac_address": "-",
-                                 "addresses":[{"IPv4address": intfcinfo.split(" ")[1]}], 
-                                 "status": intfcinfo.split(" ")[4],
-                                 "protocol": intfcinfo.split(" ")[5],
-                                 "method": intfcinfo.split(" ")[3]
-                                })
-    finally:
-        # Close the SSH connection
-        ssh_client.close()
-    return intfcdetails
-
 def get_routingtable_cisco(data):
     """
     Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
@@ -355,9 +319,16 @@ def get_routingtable_cisco(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
-            return []
-        
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "get_routing_table",
+                "exception": str(e)
+            }
+            )
+            return []        
 
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -427,7 +398,15 @@ def delstaticroute(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
         return False
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -464,7 +443,15 @@ def createvlaninterface(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createvlan_interface",
+                "exception": str(e)
+            }
+            )
         return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -497,7 +484,16 @@ def createvlaninterface(data):
     send_command(shell, 'write memory')    
     # Close the SSH connection
     ssh_client.close()
-    return [{"message": "Successfully vlan interface created"}]
+    logger.info(
+            f"Interface {data['link']} created",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createvlan_interface",
+                "exception": ""
+            }
+            )
+    return [{"message": f"Interface {data['link']} created"}]
 
 def createsubinterface(data):
     # Define the router details
@@ -511,7 +507,15 @@ def createsubinterface(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createsub_interface",
+                "exception": str(e)
+            }
+            )
         return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
 
     # Open an interactive shell session
@@ -539,7 +543,16 @@ def createsubinterface(data):
     send_command(shell, 'write memory')    
     # Close the SSH connection
     ssh_client.close()
-    return [{"message": "Successfully sub-interface created"}]
+    logger.info(
+            f"Sub-Interface {subinterfacename} created",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createvlan_interface",
+                "exception": ""
+            }
+            )
+    return [{"message": f"Sub-Interface {subinterfacename} created"}]
 
 def createloopbackinterface(data):
     # Define the router details
@@ -554,7 +567,15 @@ def createloopbackinterface(data):
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
     except Exception as e:
-        print(f"SSH Connection Error: {e}")
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createloopback_interface",
+                "exception": str(e)
+            }
+            )
         return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
     # Open an interactive shell session
     shell = ssh_client.invoke_shell()
@@ -579,7 +600,16 @@ def createloopbackinterface(data):
     send_command(shell, 'write memory')    
     # Close the SSH connection
     ssh_client.close()
-    return [{"message": f"Successfully {data['loopback_intfc_name']} interface created"}]
+    logger.info(
+            f"Interface {data['loopback_intfc_name']} created",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createloopback_interface",
+                "exception": ""
+            }
+            )
+    return [{"message": f"Interface {data['loopback_intfc_name']} created"}]
 
 def adduser(data):
     # Define the router details
@@ -595,7 +625,15 @@ def adduser(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "adduser",
+                "exception": str(e)
+            }
+            )
             return False
         
         # Open an interactive shell session
@@ -624,7 +662,15 @@ def adduser(data):
         return True
     
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(
+            f"Error while adding user(Dialer)",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "adduser",
+                "exception": str(e)
+            }
+            )
         return False
 
 def deletevlaninterface(data):
@@ -646,7 +692,15 @@ def deletevlaninterface(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
             return {"message": f"Error: {router_ip} refued to connect. Try later"}
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -663,14 +717,31 @@ def deletevlaninterface(data):
         if " not be deleted" in deleteoutput:
             response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
         else:
-            response = [{"message": f"Succesfully interface {data['intfc_name']} deleted"}]
+            response = [{"message": f"Interface {data['intfc_name']} deleted"}]
    
         # Save the configuration
         send_command(shell, 'write memory')    
         # Close the SSH connection
         ssh_client.close()
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Error while deleting Interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+    logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": ""
+            }
+            )
     return response
 
 def createtunnelinterface(data):
@@ -687,7 +758,15 @@ def createtunnelinterface(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createtunnel_interface",
+                "exception": str(e)
+            }
+            )
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -711,22 +790,29 @@ def createtunnelinterface(data):
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
         # Save the configuration
-        send_command(shell, 'write memory')    
-        # Disable paging
-        #get_command_output(shell, 'terminal length 0', wait_time=1)
-
-        # Send the command and get the output
-        #output1 = get_command_output(shell, 'show ip int brief')
-        #print(output1)
-        # Validate Interface Existence
-        #if data["tunnel_intfc_name"] not in output1:
-        #   return [{"message": f"Error: Tunnel interface {data['tunnel_intfc_name']} not found after creation"}]
-
+        send_command(shell, 'write memory')           
         # Close the SSH connection
         ssh_client.close()
     except Exception as e:
-        print(e)
-    return [{"message": f"Succesfully tunnel interface {data['tunnel_intfc_name']} created"}]
+        logger.error(
+            f"Error while creating tunnel interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createtunnel_interface",
+                "exception": str(e)
+            }
+            )
+    logger.info(
+            f"Interface {data['tunnel_intfc_name']} created",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createtunnel_interface",
+                "exception": ""
+            }
+            )
+    return [{"message": f"Interface {data['tunnel_intfc_name']} created"}]
 
 def interfaceconfig(data):
     try:
@@ -748,7 +834,15 @@ def interfaceconfig(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -793,7 +887,7 @@ def interfaceconfig(data):
                 send_command(shell, f"ip address {interface_ip} {netmask}") 
             else:
                 send_command(shell, f"ip address {interface_ip} {netmask} sec")             
-        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+        response = [{"message": f"Interface {data['intfc_name']} updated"}]
         send_command(shell, "no shutdown")
         send_command(shell, 'end')
         # Save the configuration
@@ -801,8 +895,25 @@ def interfaceconfig(data):
         # Close the SSH connection
         ssh_client.close()
     except Exception as e:
-        response = [{"message": f"Error while configuring the interface {data['intfc_name']} "}]
-        print(e)
+        response = [{"message": f"Error while updating the interface {data['intfc_name']} "}]
+        logger.error(
+            f"Error while configuring interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createtunnel_interface",
+                "exception": str(e)
+            }
+            )
+    logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": ""
+            }
+            )
     return response
 
 def get_interface_cisco(data):
@@ -821,7 +932,15 @@ def get_interface_cisco(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "get_interface",
+                "exception": str(e)
+            }
+            )
             return intfcdetails
 
         # Open an interactive shell session
@@ -928,7 +1047,15 @@ def get_interface_cisco(data):
                                  "vlan_link": info["vlan_link"]
                                 })    
     except Exception as e:
-        print(e)
+        logger.error(
+            f"Error while get interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "get_interface",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
@@ -948,7 +1075,15 @@ def removeuser(data):
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         except Exception as e:
-            print(f"SSH Connection Error: {e}")
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "remove user",
+                "exception": str(e)
+            }
+            )
             return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
@@ -977,5 +1112,13 @@ def removeuser(data):
         return True
     
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(
+            f"Error while removing user (Dialer) for deactivating",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "remove user",
+                "exception": str(e)
+            }
+            )
         return False

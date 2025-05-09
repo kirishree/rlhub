@@ -1582,12 +1582,12 @@ def create_sub_interface_spoke(request):
             interface_details = microtek_configure.createvlaninterface(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
-            #print("vlan data", data)
-            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            response = router_configure.createsubinterface(data)   
-        
+            if data["link"].lower() == "fastethernet4":
+                data["router_username"] = router_info["router_username"]
+                data["router_password"] = router_info["router_password"]
+                response = router_configure.createsubinterface(data) 
+            else:
+                response = [{"message": f"Error: {data['link']} doesn't support sub-interface"}]        
     except Exception as e:
         response = [{"message": f"Error: while creating Sub interface"}]
         logger.error(f"Error: Create Sub Interface spoke:{e}")

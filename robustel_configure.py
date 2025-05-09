@@ -460,7 +460,7 @@ def createvlaninterface(data):
             corrected_subnet = ipaddress.ip_network(current_address, strict=False)
             ip_obj = ipaddress.ip_address(vlan_ip)
             if ip_obj in corrected_subnet:
-                response = [{"message": f"Error while creating  VLAN interface due to address conflict {vlan_ip}"}]
+                response = [{"message": f"Error while creating VLAN interface due to address conflict {vlan_ip}"}]
                 logger.info(
                         f"{response}",
                         extra={
@@ -502,7 +502,7 @@ def createvlaninterface(data):
                             output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')                            
                             if "OK" in output:
                                 output = send_command_config(shell, f'config save_and_apply')
-                                response = [{"message": f"Successfully vlan interface created lan0.{data['vlan_id']}"}]       
+                                response = [{"message": f"Interface lan0.{data['vlan_id']} created"}]       
                             else:
                                 output = send_command_config(shell, f'config save_and_apply')
                                 response = [{"message": f"Vlan interface created lan0.{data['vlan_id']}. Assign IP using Edit configuration"}] 
@@ -586,9 +586,9 @@ def deletevlaninterface(data):
         if vlanpresent:
             output = send_command_wo(shell, f'del lan vlan {vlan_no}')        
         if "OK" in output:            
-            response = [{"message": f"Successfully interface {data['intfc_name']} deleted"}]
+            response = [{"message": f"Interface {data['intfc_name']} deleted"}]
         else:            
-            response = [{"message": f"Error: Interface {data['intfc_name']} cannot be deleted"}]
+            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]
         logger.info(
             f"{response}",
             extra={
@@ -690,7 +690,7 @@ def addstaticroute(data):
                         if "OK" in output:                   
                             output = send_command_wo(shell, f'set route static_route {staticroute_no} gateway {subnet["gateway"]}')
                             if "OK" in output:   
-                                response = [{"message": "Successfully added the route"}]
+                                response = [{"message": "Route(s) added"}]
                             else:
                                 response = [{"message": "Error in setting gateway. Pl check & try again"}]
                         else:
@@ -777,7 +777,7 @@ def delstaticroute(data):
                         output = send_command_wo(shell, f'del route static_route {staticroute_no}')
                         
                         if "OK" in output:                                        
-                            response = [{"message": f"Successfully deleted the route {subnet_ip}"}]   
+                            response = [{"message": f"Route {subnet_ip} deleted"}]   
                         else:
                             response = [{"message": "Error while deleting route. Pl try again"}] 
                         logger.info(
@@ -886,11 +886,11 @@ def interface_config(data):
                         output = send_command_wo(shell, f'set lan vlan {vlan_no} netmask {netmask}')
                         output = send_command_wo(shell, f'config save_and_apply')
                         if len(data["new_addresses"]) == 1:
-                            response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+                            response = [{"message": f"Interface {data['intfc_name']} updated"}]
                         else:
                             response = [{"message": f"Configured the Primary address on {data['intfc_name']}. It doesn't support secondary address "}]
                     else:
-                        response = [{"message": "Error while configuring IP address. Pl try again"}]                
+                        response = [{"message": f"Error while updating interface {data['intfc_name']}"}]                
             else:
                 response = [{"message": "Error no such vlan available"}]
             
@@ -966,7 +966,7 @@ def interface_config(data):
                     output = send_command_wo(shell, f'set lan multi_ip {ipid} ip {multiple_ip}')
                     if "OK" in output:
                         output = send_command_wo(shell, f'set lan multi_ip {ipid} netmask {netmask1}')    
-                        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]  
+                        response = [{"message": f"Interface {data['intfc_name']} updated "}]  
                         
                         if multiple_ip.split(".")[0] != "10":
                             if multiple_ip.split(".")[0] == "172":
@@ -991,7 +991,7 @@ def interface_config(data):
                             real_ip.append({"ip":multiple_ip, "netmask":netmask1, "ipprefix":correctednetwork})     
                                             
                     else:
-                        response = [{"message": f"Error while configuring IP address {datas['address']}"}]   
+                        response = [{"message": f"Error while updating interface {data['intfc_name']}"}]   
                     ipid = ipid + 1
                 else:
                     response = [{"message": "Error while adding Multiple IP "}]   
