@@ -798,7 +798,7 @@ def addsubnet(data):
             else:
                 response = [{"message":f"Successfully added {added_subnet} subnet(s). {subnet_na} is already routed."}]
     except Exception as e:    
-        response = [{"message": f"Error in adding route, pl try again add subnet" }]
+        response = [{"message": f"Error in adding route, pl try again." }]
     return response 
 
 def configured_address():

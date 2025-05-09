@@ -69,7 +69,7 @@ def addroute(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-        return "Successfully added"
+        return "Route(s) added"
 
 def traceroute(data):   
    # Define the router details
@@ -198,7 +198,6 @@ def routingtable1(data):
                                 })
         return collect
         
-
 def routingtable(data):   
    # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -354,7 +353,6 @@ def interfacedetails(data):
                 intinfostrip = intinfo.strip()
                 # Clean up extra spaces or non-visible characters using regex
                 intinfostrip = re.sub(r'\s+', ' ', intinfostrip)  # Replace multiple spaces with a single space
-    #            print(intinfostrip)
                 if " name=" in intinfostrip:
                     interfacename = intinfostrip.split(" name=")[1].split('"')[1]                   
                     status_info = intinfostrip.split(" ")[1]
@@ -528,11 +526,10 @@ def interfaceconfig(data):
                 routerrealip = newaddr["address"].split("/")[0]
                 routersubnet = str(ipaddress.ip_network(newaddr["address"], strict=False))
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
-        response = [{"message": f"Successfully configured the interface {data['intfc_name']} "}]
+        response = [{"message": f"Interface {data['intfc_name']} updated"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while configuring interface in Microtek Spoke {data['intfc_name']}"}]
-          
+        response = [{"message": f"Error while updating interface {data['intfc_name']}"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
@@ -584,11 +581,10 @@ def createvlaninterface(data):
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"]}')  
         for newaddr in data["addresses"]:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
-        response = [{"message": f"Successfully created the VLAN interface {vlan_int_name} "}]
+        response = [{"message": f"Interface {vlan_int_name} created "}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while creating VLAN interface in Microtek Spoke {data['link']}"}]
-          
+        response = [{"message": f"Error while creating interface {data['link']}"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
@@ -641,11 +637,10 @@ def createtunnelinterface(data):
                     return response             
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
-        response = [{"message": f"Successfully created the Tunnel interface {greintfcname} "}]
+        response = [{"message": f"Tunnel interface {greintfcname} created "}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while creating Tunnel interface in Microtek Spoke {greintfcname}"}]
-          
+        response = [{"message": f"Error while creating Tunnel interface {greintfcname}. Pl try again!"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
@@ -691,13 +686,13 @@ def deletevlaninterface(data):
                             removeitemno = addr.split(" ")[1]
                             print("vlan item", removeitemno)
                             stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan remove {removeitemno}')
-                            response = [{"message": f"Successfully deleted VLAN interface in Microtek Spoke {data['intfc_name']}"}]
+                            response = [{"message": f"Interface {data['intfc_name']} deleted"}]
                             ssh_client.close()       
                             return response
-        response = [{"message": f"Error no such VLAN interface in Microtek Spoke {data['intfc_name']}"}]
+        response = [{"message": f"Error no such interface {data['intfc_name']}"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while deleting VLAN interface in Microtek Spoke {data['intfc_name']}"}]
+        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]
           
     finally:
         # Close the SSH connection
@@ -726,9 +721,7 @@ def deletetunnelinterface(data):
         output = ""
         while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
             if stdout.channel.recv_ready():
-                output += stdout.channel.recv(2048).decode()  # Read available data
-                
-            
+                output += stdout.channel.recv(2048).decode()  # Read available data               
             # Break if timeout is reached
             if time.time() - start_time > timeout:
                 print("Timeout reached. Terminating the traceroute command.")
@@ -742,14 +735,13 @@ def deletetunnelinterface(data):
                     if tunnelname == data['intfc_name']:                            
                             removeitemno = addr.split(" ")[1]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre remove {removeitemno}')
-                            response = [{"message": f"Successfully deleted Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
+                            response = [{"message": f"Interface {data['intfc_name']} deleted"}]
                             ssh_client.close()       
                             return response
-        response = [{"message": f"Error no such Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
+        response = [{"message": f"Error no such Tunnel interface {data['intfc_name']}"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while deleting Tunnel interface in Microtek Spoke {data['intfc_name']}"}]
-          
+        response = [{"message": f"Error while deleting Tunnel interface {data['intfc_name']}. Pl try again!"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
@@ -896,7 +888,6 @@ def delstaticroute(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
-
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -907,15 +898,12 @@ def delstaticroute(data):
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
         # Initialize variables for output collection
         start_time = time.time()
-        timeout = 10  # Stop after 10 seconds
-        
+        timeout = 10  # Stop after 10 seconds        
         # Use a loop to monitor and collect output
         output = ""
         while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
             if stdout.channel.recv_ready():
-                output += stdout.channel.recv(2048).decode()  # Read available data
-                
-            
+                output += stdout.channel.recv(2048).decode()  # Read available data    
             # Break if timeout is reached
             if time.time() - start_time > timeout:
                 print("Timeout reached. Terminating the traceroute command.")
@@ -927,33 +915,18 @@ def delstaticroute(data):
                     dstaddr = addr.split("dst-address=")[1].split(" ")[0]                   
                     gateway = addr.split("gateway=")[1].split(" ")[0]
                     #print("dstaddr", dstaddr)                    
-                    if dstaddr == routes["destination"] and gateway == routes["gateway"]:
-                            print(addr)
-                            addrstrip = addr.strip()
-                            print(addrstrip)
-                            removeitemno = addrstrip.split(" ")[0]
-                            print("route item", removeitemno)
-                            stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')
-                            #if removeitemno != " ":
-                             #   print("route item", removeitemno)
-                                #stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')
-                           # else:
-                            #    removeitemno = addr.split(" ")[0]
-                             #   print("route item", removeitemno)
-                                #stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')
-
-        response = [{"message": f"Successfully route(s) deleted"}]
-        
+                    if dstaddr == routes["destination"] and gateway == routes["gateway"]:                            
+                            addrstrip = addr.strip()                            
+                            removeitemno = addrstrip.split(" ")[0]                            
+                            stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')                            
+        response = [{"message": f"Route {data['routes_info']} deleted"}]        
     except Exception as e:
         print(f"An error occurred: {e}")
-        response = [{"message": f"Error while deleting routes in Microtek Spoke {data['intfc_name']}"}]
-          
+        response = [{"message": f"Error while deleting route {data['routes_info']}. Pl try again!"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
         return response
-
-
 def laninfo(data):   
    # Define the router details
     
