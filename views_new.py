@@ -1817,7 +1817,7 @@ def vlan_interface_delete_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            if "overlay" in data['intfc_name'].lower():
+            if "overlay" in data['intfc_name'].lower() or "bridge" in data["intfc_name"].lower():
                 response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]                
             elif "." in data['intfc_name']:
                 response = microtek_configure.deletevlaninterface(data) 
