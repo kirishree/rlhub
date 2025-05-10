@@ -1721,7 +1721,7 @@ def interface_config_spoke(request):
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
-                    extra={ "api_endpoint": "interface_config_spoke" }
+                    extra={ "api_endpoint": "interface_config_spoke" }                    
                     )
         branch_id = data["tunnel_ip"].split("/")[0] 
         cache_key = f"interfaces_branch_{branch_id}"

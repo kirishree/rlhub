@@ -395,6 +395,8 @@ def interfacedetails(data):
         addressinfo = []
         data1 =[]      
         for addr in addresses_info:
+            if " I " in addr:
+                continue
             if addr.strip():
                 addressinfo.append(addr)
             else:
@@ -429,8 +431,7 @@ def interfacedetails(data):
         return collect
 
 def interfaceconfig(data):   
-   # Define the router details   
-    print(data) 
+   # Define the router details       
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]

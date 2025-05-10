@@ -87,6 +87,7 @@ def check_onboarding(username, password):
         if login_response.status_code == 200:
         # Parse the JSON response
             loginjson_response = login_response.json()
+            print(loginjson_response)
             access_token = loginjson_response["data"]["access_token"]
         else:
             return 'Invalid Login & password'
@@ -128,4 +129,4 @@ def check_onboarding(username, password):
                 return 'Not Subscribed for any services', False
     except:
         return 'Internal Server Error', False
-#check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
+check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
