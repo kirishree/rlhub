@@ -6,8 +6,8 @@ import requests
 import getpass
 import re
 import ipaddress
-urllogin = "https://reachlinktest.cloudetel.com/auth"
-url = "https://reachlinktest.cloudetel.com/get_ciscohub_config"
+urllogin = "https://reachlinktest.cloudetel.com/beapi/auth"
+url = "https://reachlinktest.cloudetel.com/beapi/get_ciscohub_config"
 
 def find_com_port(description=None):
     """

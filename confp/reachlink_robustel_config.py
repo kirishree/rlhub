@@ -10,8 +10,8 @@ hub_ip_whitelist = "185.69.209.245/32"
 router_ip = "192.168.0.1"
 username = "admin"
 password = "admin"
-urllogin = "https://reachlink.cloudetel.com/auth"
-url = "https://reachlink.cloudetel.com/get_robustelspoke_config"
+urllogin = "https://reachlink.cloudetel.com/beapi/auth"
+url = "https://reachlink.cloudetel.com/beapi/get_robustelspoke_config"
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
     time.sleep(wait_time)  # Wait for the command to be processed  

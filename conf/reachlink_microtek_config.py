@@ -9,8 +9,8 @@ hub_ip = "185.69.209.251"
 router_ip = "192.168.88.1"
 username = "admin"
 password = ""
-urllogin = "https://reachlinktest.cloudetel.com/auth"
-url = "https://reachlinktest.cloudetel.com/get_microtekspoke_config"
+urllogin = "https://reachlinktest.cloudetel.com/beapi/auth"
+url = "https://reachlinktest.cloudetel.com/beapi/get_microtekspoke_config"
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
     time.sleep(wait_time)  # Wait for the command to be processed  

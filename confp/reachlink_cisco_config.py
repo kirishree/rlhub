@@ -6,8 +6,8 @@ import requests
 import getpass
 import re
 import ipaddress
-urllogin = "https://reachlink.cloudetel.com/auth"
-url = "https://reachlink.cloudetel.com/get_ciscospoke_config"
+urllogin = "https://reachlink.cloudetel.com/beapi/auth"
+url = "https://reachlink.cloudetel.com/beapi/get_ciscospoke_config"
 def find_com_port(description=None):
     """
     Automatically find the COM port to which the Cisco router is connected.
