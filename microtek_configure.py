@@ -403,7 +403,7 @@ def interfacedetails(data):
         collectaddr = []
         for info1 in data1: 
             print("info1", info1)  
-            if " I " in info1:
+            if " I " in info1[0]:
                 continue        
             for addrinfo in info1:
                 addrinfostrip = addrinfo.strip()                
