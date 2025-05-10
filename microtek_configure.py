@@ -401,13 +401,9 @@ def interfacedetails(data):
                 data1.append(addressinfo)
                 addressinfo = []
         collectaddr = []
-        for info1 in data1: 
-            print("info1", info1)  
-            if " I " in info1[0]:
-                continue        
+        for info1 in data1:             
             for addrinfo in info1:
-                addrinfostrip = addrinfo.strip()                
-
+                addrinfostrip = addrinfo.strip()            
                 if "address=" in addrinfostrip:
                     intfcaddress = addrinfostrip.split("address=")[1].split(" ")[0]
                     
@@ -467,6 +463,9 @@ def interfaceconfig(data):
                 break  
         addresses_info = output.split("\n")   
         for addr in addresses_info:
+            addr = addr.strip()
+                # Clean up extra spaces or non-visible characters using regex
+            addr = re.sub(r'\s+', ' ', addr)  # Replace multiple spaces with a single space
             if "address=" in addr:
                     intfcname = addr.split("interface=")[1].split(" ")[0] 
                     if intfcname == data["intfc_name"]:                    
