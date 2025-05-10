@@ -468,10 +468,11 @@ def interfaceconfig(data):
             addr = re.sub(r'\s+', ' ', addr)  # Replace multiple spaces with a single space
             if "address=" in addr:
                     intfcname = addr.split("interface=")[1].split(" ")[0] 
-                    print(intfcname)
-                    if intfcname == data["intfc_name"]:                    
+                    #print(intfcname)
+                    if intfcname == data["intfc_name"]: 
+                            print(intfcname)                   
                             removeitemno = addr.split(" ")[1]   
-                            print(removeitemno)                         
+                            print("remove",removeitemno)                         
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
         
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
