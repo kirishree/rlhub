@@ -394,18 +394,20 @@ def interfacedetails(data):
         addresses_info = addressoutput.split("\n")[1:-1]
         addressinfo = []
         data1 =[]      
-        for addr in addresses_info:
-            if " I " in addr:
-                continue
+        for addr in addresses_info:            
             if addr.strip():
                 addressinfo.append(addr)
             else:
                 data1.append(addressinfo)
                 addressinfo = []
         collectaddr = []
-        for info1 in data1:           
+        for info1 in data1: 
+            print("info1", info1)  
+            if " I " in info1:
+                continue        
             for addrinfo in info1:
-                addrinfostrip = addrinfo.strip()
+                addrinfostrip = addrinfo.strip()                
+
                 if "address=" in addrinfostrip:
                     intfcaddress = addrinfostrip.split("address=")[1].split(" ")[0]
                     
