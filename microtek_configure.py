@@ -3,6 +3,8 @@ import time
 import ipaddress
 import re
 import logging
+from decouple import config
+openvpn_network = config('OPENVPN_NETWORK')
 logger = logging.getLogger('reachlink')
 def pingspoke(data):   
     # Define the router details
@@ -101,15 +103,26 @@ def addroute(data):
             )
         # Execute the ping command
         subnets = data["subnet_info"]
+        not_added_route = []
+        route_conflict = False
         for subnet in subnets:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip route add dst-address={subnet["subnet"]} gateway={subnet["gateway"]}')
+            corrected_dst = ipaddress.ip_network(subnet["subnet"], strict=False)           
+            corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+            ip_obj = ipaddress.ip_address(corrected_dst.split("/")[0])
+            if ip_obj in corrected_subnet:
+                    response = [{"message": f"Error while adding route due to route conflict {openvpn_network}"}]
+                    route_conflict = True
+                    break  
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip route add dst-address={corrected_dst} gateway={subnet["gateway"]}')
             # Read the actual output and errors
             output = stdout.read().decode()
-            error = stderr.read().decode()
-
-            print("Output:\n", output)
-            print("Error:\n", error)
-        response = [{"message": "Route(s) added"}]
+            if output:
+                not_added_route.append(corrected_dst)
+        if not route_conflict:
+            if len(not_added_route) == 0:       
+                response = [{"message": "Route(s) added"}]
+            else:
+                response = [{"message": f"Error: {not_added_route} not added"}]
         logger.info(
             f"{response}",
             extra={

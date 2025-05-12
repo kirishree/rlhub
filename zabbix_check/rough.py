@@ -54,7 +54,8 @@ data = {}
 #data['password'] = "cejavak731@wermink.com"
 data = {'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMThlMWY2NjJhNzU0ODgzODhmN2E2YWMzODQyODRhNCIsInVzZXJfaWQiOiI5NTZjNTYwY2FlYjE0Y2U4ODY0NzcxMDFkZWUwM2QxYSIsImNsYWltcyI6WyJsb2dpbiIsInVzZXIiXSwidG9rZW5faWQiOiI1ZGJkNTc2ZC03ZmFiLTRhNzYtODg3My0zODc2NzM4MGE1Y2MiLCJleHAiOjE3NDUxNDEwNTYsImlzcyI6Imh0dHBzOi8vY2xvdWRldGVsLmNvbSIsImlhdCI6MTc0NTA1NDY1Nn0.LynIDV_3q5ROVwg2FC2V_tEZgW8-lZQ1Ew5Her6MWKc'}
 #get_organization_id(data)
-corrected_dst = ipaddress.ip_network('10.8.0.22/24', strict=False)  
+corrected_dst = ipaddress.ip_network('10.8.0.22/24', strict=False) 
+
 print("corrrr",corrected_dst)              
 dst_netmask = str(ipaddress.IPv4Network(corrected_dst.netmask))
 print("dst", dst_netmask)
@@ -131,4 +132,4 @@ def check_onboarding(username, password):
                 return 'Not Subscribed for any services', False
     except:
         return 'Internal Server Error', False
-check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
+#check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
