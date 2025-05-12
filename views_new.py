@@ -1958,10 +1958,9 @@ def add_route_spoke(request):
             data["router_password"] = router_info["router_password"]
             status = router_configure.addroute(data)
             if status:
-                response = [{"message": "Successfully route added"}]
+                response = [{"message": "Route(s) added"}]
             else:
-                response = [{"message":"Error in adding route"}]
-            print("check",response)
+                response = [{"message":"Error in adding route. Pl try again!"}]            
         elif "robustel" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -1969,7 +1968,7 @@ def add_route_spoke(request):
             response = robustel_configure.addstaticroute(data)         
     except Exception as e:
         logger.error(f"Error: Adding route in Spoke:{e}")
-        response = [{"message": f"Error: while adding route"}]
+        response = [{"message": f"Error: while adding route. Pl try again!"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
