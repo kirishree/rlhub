@@ -106,7 +106,7 @@ def addroute(data):
         not_added_route = []
         route_conflict = False
         for subnet in subnets:
-            corrected_dst = ipaddress.ip_network(subnet["subnet"], strict=False)           
+            corrected_dst = str(ipaddress.ip_network(subnet["subnet"], strict=False))        
             corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
             dstip = corrected_dst.split("/")[0]
             ip_obj = ipaddress.ip_address(dstip)
