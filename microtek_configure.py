@@ -103,9 +103,12 @@ def addroute(data):
         subnets = data["subnet_info"]
         for subnet in subnets:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route add dst-address={subnet["subnet"]} gateway={subnet["gateway"]}')
-            print("in", stdin)
-            print("out", stdout)
-            print("error", stderr)
+            # Read the actual output and errors
+            output = stdout.read().decode()
+            error = stderr.read().decode()
+
+            print("Output:\n", output)
+            print("Error:\n", error)
         response = [{"message": "Route(s) added"}]
         logger.info(
             f"{response}",
