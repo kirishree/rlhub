@@ -1037,7 +1037,7 @@ def delstaticroute(data):
                             addrstrip = addr.strip()                            
                             removeitemno = addrstrip.split(" ")[0]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')                            
-        response = [{"message": f"Route {data['routes_info']} deleted"}]        
+        response = [{"message": f"Route: {data['routes_info'][0]['destination']} deleted"}]        
     except Exception as e:
         logger.error(
             f"Error while deleting route {data['routes_info']}",
