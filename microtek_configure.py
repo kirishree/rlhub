@@ -2,6 +2,8 @@ import paramiko
 import time
 import ipaddress
 import re
+import logging
+logger = logging.getLogger('reachlink')
 def pingspoke(data):   
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -13,8 +15,19 @@ def pingspoke(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "pingspoke",
+                "exception": str(e)
+            }
+            )
         # Execute the ping command
         stdin, stdout, stderr = ssh_client.exec_command(f'/ping {data["subnet"]} count 5')
         final_output = " "
@@ -33,17 +46,33 @@ def pingspoke(data):
                 print("Timeout reached. Terminating the ping command.")
                 break
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error while ping spoke",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "pingspoke",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
-        ssh_client.close()
-    print("final_output", final_output)    
+        ssh_client.close() 
     if "avg-rtt=" in final_output:
         avg_rtt = final_output.split(" ")[4].split("=")[1]        
     elif "packet-loss=100%" in final_output:
         avg_rtt = "-1"
     else:
         avg_rtt = "0"
+    logger.info(
+            f"ping result {avg_rtt}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "pingspoke",
+                "exception": ""
+            }
+            )
     return avg_rtt
 
 def addroute(data):   
@@ -57,15 +86,43 @@ def addroute(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "addroute",
+                "exception": str(e)
+            }
+            )
         # Execute the ping command
         subnets = data["subnet_info"]
         for subnet in subnets:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route add dst-address={subnet["subnet"]} gateway={subnet["gateway"]}')
         response = [{"message": "Route(s) added"}]
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "addroute",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding route",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "addroute",
+                "exception": str(e)
+            }
+            )
         response = [{"message":"Error while adding route. Pl try again!"}] 
     finally:
         # Close the SSH connection
@@ -82,8 +139,19 @@ def traceroute(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "traceroute",
+                "exception": str(e)
+            }
+            )
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/tool traceroute {data["trace_ip"]}')
         # Initialize variables for output collection
@@ -103,7 +171,15 @@ def traceroute(data):
                 print("Timeout reached. Terminating the traceroute command.")
                 break         
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error while traceroute in Microtek Spoke",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "traceroute",
+                "exception": str(e)
+            }
+            )        
         return "Error while traceroute in Microtek Spoke"        
     finally:
         # Close the SSH connection
@@ -113,11 +189,10 @@ def traceroute(data):
         out = output.strip().split("\r")
         final = out[0]
         for out1 in out:
-          if not out1.strip():
-             print("hi")
-             i = 1
-          if i == 1:
-             final +=out1        
+            if not out1.strip():             
+                i = 1
+            if i == 1:
+                final +=out1        
         return final
 
 def routingtable1(data):   
@@ -131,8 +206,19 @@ def routingtable1(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "routingtable1",
+                "exception": str(e)
+            }
+            )
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print')
         # Initialize variables for output collection
@@ -210,8 +296,19 @@ def routingtable(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "routingtable",
+                "exception": str(e)
+            }
+            )
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
         # Initialize variables for output collection
@@ -230,8 +327,16 @@ def routingtable(data):
                 print("Timeout reached. Terminating the traceroute command.")
                 break         
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return "Error while traceroute in Microtek Spoke"        
+        logger.error(
+            f"Error while getting routing table in Microtek Spoke",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "routingtable",
+                "exception": str(e)
+            }
+            )
+        return "Error while getting routing table in Microtek Spoke"        
     finally:
         # Close the SSH connection
         ssh_client.close()        
@@ -896,8 +1001,19 @@ def delstaticroute(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:            
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
         # Initialize variables for output collection
@@ -909,8 +1025,7 @@ def delstaticroute(data):
             if stdout.channel.recv_ready():
                 output += stdout.channel.recv(2048).decode()  # Read available data    
             # Break if timeout is reached
-            if time.time() - start_time > timeout:
-                print("Timeout reached. Terminating the traceroute command.")
+            if time.time() - start_time > timeout:                
                 break  
         route_info = output.split("\n") 
         for routes in data["routes_info"]:  
@@ -918,14 +1033,23 @@ def delstaticroute(data):
                 if "dst-address=" in addr:
                     dstaddr = addr.split("dst-address=")[1].split(" ")[0]                   
                     gateway = addr.split("gateway=")[1].split(" ")[0]
-                    #print("dstaddr", dstaddr)                    
+                    print("dstaddr", dstaddr)  
+                    print("gateway", gateway)                      
                     if dstaddr == routes["destination"] and gateway == routes["gateway"]:                            
                             addrstrip = addr.strip()                            
                             removeitemno = addrstrip.split(" ")[0]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')                            
         response = [{"message": f"Route {data['routes_info']} deleted"}]        
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error while deleting route {data['routes_info']}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
         response = [{"message": f"Error while deleting route {data['routes_info']}. Pl try again!"}]          
     finally:
         # Close the SSH connection
