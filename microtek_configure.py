@@ -348,7 +348,7 @@ def routingtable(data):
                 break         
     except Exception as e:
         logger.error(
-            f"Error while getting routing table in Microtek Spoke",
+            f"Error while getting routing table",
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
@@ -423,8 +423,20 @@ def interfacedetails(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "get_interface_details",
+                "exception": str(e)
+            }
+            )
+            return []
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface print detail')
         # Initialize variables for output collection
@@ -459,8 +471,16 @@ def interfacedetails(data):
                 print("Timeout reached. Terminating the traceroute command.")
                 break         
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return "Error while traceroute in Microtek Spoke"        
+        logger.error(
+            f"Error while getting interface details",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "get_interface_details",
+                "exception": str(e)
+            }
+            )
+        return []        
     finally:
         # Close the SSH connection
         ssh_client.close()            
@@ -568,8 +588,21 @@ def interfaceconfig(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
+            response = [{"message":"Error: SSH connection error"}]
+            return response
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
@@ -656,8 +689,25 @@ def interfaceconfig(data):
                 routersubnet = str(ipaddress.ip_network(newaddr["address"], strict=False))
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
         response = [{"message": f"Interface {data['intfc_name']} updated"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": ""
+            }
+            )
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error in interface config",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
         response = [{"message": f"Error while updating interface {data['intfc_name']}"}]          
     finally:
         # Close the SSH connection
@@ -674,8 +724,20 @@ def createvlaninterface(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "create_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message":"Error: SSH connection timeout"}]
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -711,8 +773,25 @@ def createvlaninterface(data):
         for newaddr in data["addresses"]:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
         response = [{"message": f"Interface {vlan_int_name} created "}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "create_interface",
+                "exception": " "
+            }
+            )
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error in interface create",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "create_interface",
+                "exception": str(e)
+            }
+            )
         response = [{"message": f"Error while creating interface {data['link']}"}]          
     finally:
         # Close the SSH connection
@@ -730,8 +809,20 @@ def createtunnelinterface(data):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     greintfcname = "gretunnel" + data["tunnel_intfc_name"] 
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        except Exception as e:
+            logger.error(
+            f"SSH Connection time out",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "create_tunnel_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error: SSH connection timeout"}]
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -767,8 +858,26 @@ def createtunnelinterface(data):
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
         response = [{"message": f"Tunnel interface {greintfcname} created "}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "create_tunnel_interface",
+                "exception": " "
+            }
+            )
+
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error in tunnel interface create",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "create_tunnel_interface",
+                "exception": str(e)
+            }
+            )
         response = [{"message": f"Error while creating Tunnel interface {greintfcname}. Pl try again!"}]          
     finally:
         # Close the SSH connection
@@ -785,8 +894,20 @@ def deletevlaninterface(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection timeout",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message":"Error: SSH Connection timeout"}]
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan print detail')
         # Initialize variables for output collection
@@ -819,8 +940,25 @@ def deletevlaninterface(data):
                             ssh_client.close()       
                             return response
         response = [{"message": f"Error no such interface {data['intfc_name']}"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": " "
+            }
+            )
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error while deleting interface",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
         response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]
           
     finally:
@@ -1049,6 +1187,9 @@ def delstaticroute(data):
                 break  
         route_info = output.split("\n") 
         for routes in data["routes_info"]:  
+            if "0.0.0.0" in routes["destination"] or "10.8.0.0/24" in routes["destination"]:
+                response = [{"message": f"Error: Route {routes['destination']} deletion is prohibited "}]
+                break
             for addr in route_info:
                 if "dst-address=" in addr and "gateway=" in addr:                    
                     dstaddr = addr.split("dst-address=")[1].split(" ")[0]                   
@@ -1057,7 +1198,7 @@ def delstaticroute(data):
                             addrstrip = addr.strip()                            
                             removeitemno = addrstrip.split(" ")[0]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')                            
-        response = [{"message": f"Route: {data['routes_info'][0]['destination']} deleted"}]        
+                            response = [{"message": f"Route: {data['routes_info'][0]['destination']} deleted"}]        
         logger.info(
             f"{response}",
             extra={
