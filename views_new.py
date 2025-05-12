@@ -253,7 +253,17 @@ def login_or_register(request):
 
     if not username or not password:
         return Response({"error": "Username and password are required"}, status=400)
-
+    if username ==  super_user_name:
+        # Authenticate existing user
+        user = authenticate(username=username, password=password)
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = "admin"  # Assuming 'role' is a field on your user model
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
     # Authenticate existing user
     user = authenticate(username=username, password=password)
 
