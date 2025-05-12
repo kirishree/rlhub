@@ -1064,7 +1064,7 @@ def delstaticroute(data):
                 "device_type": "Microtek",
                 "device_ip": router_ip,
                 "api_endpoint": "delete_static_route",
-                "exception": str(e)
+                "exception": " "
             }
             )
     except Exception as e:

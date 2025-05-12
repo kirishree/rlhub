@@ -672,11 +672,11 @@ def addstaticroute(data):
         subnets = data["subnet_info"]  
         for subnet in subnets:        
             subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
-            if subnet_key:
-                destination = subnet[subnet_key].split("/")[0]
+            if subnet_key:                
                 corrected_dst = ipaddress.ip_network(subnet[subnet_key], strict=False)                
                 dst_netmask = str(ipaddress.IPv4Network(corrected_dst.netmask)).split("/")[0]              
                 corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+                destination = str(corrected_dst).split("/")[0]
                 ip_obj = ipaddress.ip_address(destination)
                 if ip_obj in corrected_subnet:
                     response = [{"message": f"Error while adding route due to address conflict {destination}"}]
