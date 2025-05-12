@@ -1030,8 +1030,7 @@ def delstaticroute(data):
         route_info = output.split("\n") 
         for routes in data["routes_info"]:  
             for addr in route_info:
-                if "dst-address=" in addr:
-                    print(addr)
+                if "dst-address=" in addr and "gateway=" in addr:                    
                     dstaddr = addr.split("dst-address=")[1].split(" ")[0]                   
                     gateway = addr.split("gateway=")[1].split(" ")[0]                                      
                     if dstaddr == routes["destination"] and gateway == routes["gateway"]:                            
