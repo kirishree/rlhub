@@ -63,13 +63,14 @@ def addroute(data):
         subnets = data["subnet_info"]
         for subnet in subnets:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route add dst-address={subnet["subnet"]} gateway={subnet["gateway"]}')
+        response = [{"message": "Route(s) added"}]
     except Exception as e:
         print(f"An error occurred: {e}")
-        return "Error while adding route to Microtek Spoke"
+        response = [{"message":"Error while adding route. Pl try again!"}] 
     finally:
         # Close the SSH connection
-        ssh_client.close()
-        return "Route(s) added"
+        ssh_client.close()        
+        return response
 
 def traceroute(data):   
    # Define the router details
