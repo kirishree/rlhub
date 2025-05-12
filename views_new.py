@@ -266,7 +266,6 @@ def login_or_register(request):
         })
     # Authenticate existing user
     user = authenticate(username=username, password=password)
-
     if user:
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
