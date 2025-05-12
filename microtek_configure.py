@@ -608,7 +608,7 @@ def interfaceconfig(data):
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
                 ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
                 if ip_obj in corrected_subnet:  
-                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
+                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr['address']}"}]
                     ssh_client.close()            
                     return response
         for newaddr in data["new_addresses"]:
@@ -1038,6 +1038,15 @@ def delstaticroute(data):
                             removeitemno = addrstrip.split(" ")[0]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')                            
         response = [{"message": f"Route: {data['routes_info'][0]['destination']} deleted"}]        
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
     except Exception as e:
         logger.error(
             f"Error while deleting route {data['routes_info']}",
