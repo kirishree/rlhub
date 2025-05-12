@@ -121,8 +121,10 @@ def check_onboarding(username, password):
                 from_date = datetime.utcfromtimestamp(timestamp)
                 # Add Duration to get to_date
                 to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
+                print("2date",to_date)
+                print(type(to_date))
                 if current_datetime < to_date:
-                    return 'True', user_role, org_id, user_id, first_name, last_name
+                    return 'True', user_role, org_id, user_id, first_name, last_name, str(to_date)
             else:
                     return 'Not Subscribed for ReachLink', False
         else:

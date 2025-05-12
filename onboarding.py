@@ -773,11 +773,11 @@ def check_login_onboarding(username, password):
                 # Add Duration to get to_date
                 to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
                 if current_datetime < to_date:
-                    return 'True', user_role, org_id, user_id, first_name, last_name, org_name
+                    return 'True', user_role, org_id, user_id, first_name, last_name, org_name, str(to_date)
             else:
-                    return 'Not Subscribed for ReachLink', False, False, False, False, False, False
+                    return 'Not Subscribed for ReachLink', False, False, False, False, False, False, False
         else:
-                return 'Not Subscribed for any services', False, False, False, False, False, False
+                return 'Not Subscribed for any services', False, False, False, False, False, False, False
     except:
-        return 'Internal Server Error', False, False, False, False, False, False
+        return 'Internal Server Error', False, False, False, False, False, False, False
 
