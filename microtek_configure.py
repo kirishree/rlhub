@@ -108,7 +108,8 @@ def addroute(data):
         for subnet in subnets:
             corrected_dst = ipaddress.ip_network(subnet["subnet"], strict=False)           
             corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
-            ip_obj = ipaddress.ip_address(corrected_dst.split("/")[0])
+            dstip = corrected_dst.split("/")[0]
+            ip_obj = ipaddress.ip_address(dstip)
             if ip_obj in corrected_subnet:
                     response = [{"message": f"Error while adding route due to route conflict {openvpn_network}"}]
                     route_conflict = True
