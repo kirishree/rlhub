@@ -59,7 +59,29 @@ iii = " switchport trunk allowed vlan 1,2,10,20,1002-1005"
 print(iii.split("1002-1005"))
 iiii = "% 192.168.50.0 overlaps with Loopback12"
 print(iiii.split("with")[1].split(" "))
-print("corrrr",corrected_dst)              
+print("corrrr",corrected_dst) 
+vlanname = "vlan100"
+print("valid",  vlanname.split("vlan")[1] )     
+
+
+vlanname = " interface FastEthernet"
+print("intname",  vlanname.strip().split("interface")[1] )  
+
+comm = "      switchport trunk allowed vlan 1,2,100,1002-1005         111"
+print(comm.strip())
+print("commm", comm.split(",100,")[0])
+print("commm", comm.split(",100,")[1])
+commmm = comm.split(",100,")[0] + ","  + comm.split(",100,")[1]
+print("commm", commmm)
+
+
+
+
+
+
+
+
+
 dst_netmask = str(ipaddress.IPv4Network(corrected_dst.netmask))
 print("dst", dst_netmask)
 destination = "10.8.0.22"

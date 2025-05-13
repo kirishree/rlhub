@@ -529,7 +529,7 @@ def createvlaninterface(data):
         send_command(shell, 'end')
         # Save the configuration
         send_command(shell, 'write memory')   
-        response = [{"message": f"Interface {data['link']}.{data['vlan_id']} created"}] 
+        response = [{"message": f"Interface vlan{data['vlan_id']} created"}] 
     # Close the SSH connection
     ssh_client.close()
     logger.info(
@@ -759,14 +759,30 @@ def deletevlaninterface(data):
         output = send_command_wo(shell, 'enable')
         if "Password" in output:  # Prompt for enable password
             send_command_wo(shell, password)
+        if "vlan" in data["intfc_name"].lower():
+            vlanid = data["intfc_name"].lower().split("vlan")[1]
+            output = get_command_output(shell, f'sh run | section include interface')
+            interfacedetails = output.split("\n")       
+            for intfc in interfacedetails: 
+                if "interface" in intfc:
+                    intfc_name = intfc.strip().split("interface")[1]
+                if "allowed vlan" in intfc:
+                    if f",{vlanid}," in intfc:
+                        vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]
+                        break
+                if "access vlan" in intfc:
+                    if vlanid == intfc.strip().split("vlan")[1]:
+                        vlancommand = "no" + intfc
+                        break     
         send_command(shell, 'configure terminal')
-        #if "vlan" in data["intfc_name"].lower():
-
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
         if " not be deleted" in deleteoutput:
             response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
         else:
+            send_command(shell, f'interface {intfc_name}')
+            send_command(shell, f'no {vlancommand}')
+            send_command_wo(shell, 'end')
             response = [{"message": f"Interface {data['intfc_name']} deleted"}]
    
         # Save the configuration
