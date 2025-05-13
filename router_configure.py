@@ -466,26 +466,40 @@ def createvlaninterface(data):
     vlan_ip = data["addresses"][0].split("/")[0]
     subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
     netmask = str(subnet.netmask)
-
+    # Send the command and get the output
+    output = get_command_output(shell, f'sh run | section include interface {data["link"]}')
+    interfacedetails = output.split("\n")       
+    vlanavailable = False
+    for intfc in interfacedetails: 
+        if "allowed vlan" in intfc:
+            vlanavailable = True
+            vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
+    if not vlanavailable:
+        vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"
     send_command(shell, 'configure terminal')
     send_command(shell, f'vlan {data["vlan_id"]}')
     send_command(shell, f'end')
     send_command(shell, 'configure terminal')
     send_command(shell, f'interface vlan {data["vlan_id"]}')
-    send_command(shell, f'ip address {vlan_ip} {netmask}')
-    send_command(shell, 'no shutdown')
-    send_command(shell, 'end')
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'interface {data["link"]}')
-    send_command(shell, 'switchport mode access')
-    send_command(shell, f'switchport access vlan {data["vlan_id"]}')
-    send_command(shell, 'end')
-    # Save the configuration
-    send_command(shell, 'write memory')    
+    ipoutput = get_command_output(shell, f'ip address {vlan_ip} {netmask}')
+    if "overlaps" in ipoutput:
+        overlap_intfc = ipoutput.split("with")[1].split(" ")[1]
+        response = [{"message": f"Error: while configuring vlan due to address conflict {overlap_intfc}"}]
+    else:
+        send_command(shell, 'no shutdown')
+        send_command(shell, 'end')
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'interface {data["link"]}')
+        send_command(shell, 'switchport mode trunk')
+        send_command(shell, f'{vlancommand}')
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')   
+        response = [{"message": f"Interface {data['link']}.{data['vlan_id']} created"}] 
     # Close the SSH connection
     ssh_client.close()
     logger.info(
-            f"Interface {data['link']}.{data['vlan_id']} created",
+            f"{response}",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
@@ -493,7 +507,7 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
-    return [{"message": f"Interface {data['link']}.{data['vlan_id']} created"}]
+    return response
 
 def createsubinterface(data):
     # Define the router details
