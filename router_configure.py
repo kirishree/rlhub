@@ -435,10 +435,21 @@ def createvlaninterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data['router_password']
+    if data['link'].lower() == "fastethernet4":
+        response = [{"message": "Error: Don't create a VLAN directly on a Layer 3 interface"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createvlan_interface",
+                "exception": ""
+            }
+            )
+        return response
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
@@ -466,16 +477,39 @@ def createvlaninterface(data):
     vlan_ip = data["addresses"][0].split("/")[0]
     subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
     netmask = str(subnet.netmask)
-    # Send the command and get the output
-    output = get_command_output(shell, f'sh run | section include interface {data["link"]}')
-    interfacedetails = output.split("\n")       
-    vlanavailable = False
-    for intfc in interfacedetails: 
-        if "allowed vlan" in intfc:
-            vlanavailable = True
-            vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
-    if not vlanavailable:
-        vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"
+    if data['link'].lower() == "fastethernet3":
+        # Send the command and get the output
+        output = get_command_output(shell, f'sh run | section include interface {data["link"]}')
+        interfacedetails = output.split("\n")       
+        vlanavailable = False
+        vlanmode = f'switchport mode trunk'
+        for intfc in interfacedetails: 
+            if "allowed vlan" in intfc:
+                vlanavailable = True
+                vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
+        if not vlanavailable:
+            vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"
+    else:
+        # Send the command and get the output
+        output = get_command_output(shell, f'sh run | section include interface {data["link"]}')
+        interfacedetails = output.split("\n") 
+        for intfc in interfacedetails: 
+            if "switchport access vlan" in intfc:
+                vlan_link = intfc.strip().split("vlan")[1]
+                response = [{"message":f"Error: {data['link']} is linked with vlan {vlan_link}. Pl delete it before proceed"}]                
+                ssh_client.close()
+                logger.info(
+                    f"{response}",
+                    extra={
+                        "device_type": "Cisco",
+                        "device_ip": router_ip,
+                        "api_endpoint": "createvlan_interface",
+                        "exception": ""
+                    }
+                )
+                return response
+        vlanmode = f'switchport mode access'
+        vlancommand = f"switchport access vlan {data['vlan_id']}"
     send_command(shell, 'configure terminal')
     send_command(shell, f'vlan {data["vlan_id"]}')
     send_command(shell, f'end')
@@ -490,7 +524,7 @@ def createvlaninterface(data):
         send_command(shell, 'end')
         send_command(shell, 'configure terminal')
         send_command(shell, f'interface {data["link"]}')
-        send_command(shell, 'switchport mode trunk')
+        send_command(shell, f'{vlanmode}')
         send_command(shell, f'{vlancommand}')
         send_command(shell, 'end')
         # Save the configuration
@@ -726,6 +760,8 @@ def deletevlaninterface(data):
         if "Password" in output:  # Prompt for enable password
             send_command_wo(shell, password)
         send_command(shell, 'configure terminal')
+        if "vlan" in data["intfc_name"].lower():
+
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
         if " not be deleted" in deleteoutput:
