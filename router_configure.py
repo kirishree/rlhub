@@ -785,7 +785,7 @@ def deletevlaninterface(data):
             response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
         else:
             send_command(shell, f'interface {intfc_name}')
-            send_command(shell, f'no {vlancommand}')
+            send_command(shell, f'{vlancommand}')
             send_command_wo(shell, 'end')
         response = [{"message": f"Interface {data['intfc_name']} deleted"}]
    
