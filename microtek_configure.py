@@ -214,16 +214,16 @@ def traceroute(data):
         #return output.strip()
         i = 0
         cleaned_output = clean_traceroute_output(output) 
-        out = cleaned_output.split("/n")
-        print(out)
+        out = cleaned_output.strip.split("\r\n")        
         final = out[0]
+        if not out[-1]:
+            out = out[:-1]
         for out1 in out:
-            if not out1.strip():             
-                i = 1
-            if i == 1:
-                final +=out1 
-              
-        return cleaned_output
+            if not out1:  
+                final = out[0]            
+            if out1:
+                final +=out1              
+        return final
 
 def routingtable1(data):   
    # Define the router details

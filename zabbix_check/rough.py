@@ -73,6 +73,12 @@ print("commm", comm.split(",100,")[0])
 print("commm", comm.split(",100,")[1])
 commmm = comm.split(",100,")[0] + ","  + comm.split(",100,")[1]
 print("commm", commmm)
+out = ['', '123', '124', '']
+if out[-1]:
+    print(out[-1])
+else:
+    out = out[:-1]
+print(out)
 
 
 
