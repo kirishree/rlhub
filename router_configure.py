@@ -630,7 +630,7 @@ def createvlaninterface(data):
         if "Vlan can not be added." in vlanmodeout2:
             send_command(shell, f'end')
             send_command(shell, 'configure terminal')
-            send_command(shell, f'no vlan{data["vlan_id"]}')
+            send_command(shell, f'no interface vlan{data["vlan_id"]}')
             send_command(shell, f'end')
             if " Maximum number of 8 vlan(s) in the database" in vlanmodeout2:
                 response = [{"message": f"Error: Maximum number of 8 vlan(s) only allowed"}] 
