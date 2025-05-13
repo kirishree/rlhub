@@ -518,7 +518,7 @@ def createvlaninterface(data):
     ipoutput = get_command_output(shell, f'ip address {vlan_ip} {netmask}')
     if "overlaps" in ipoutput:
         overlap_intfc = ipoutput.split("with")[1].split(" ")[1]
-        response = [{"message": f"Error: while configuring vlan due to address conflict {overlap_intfc}"}]
+        response = [{"message": f"Error: while configuring vlan due to address conflict {ipoutput}"}]
     else:
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
@@ -784,6 +784,7 @@ def deletevlaninterface(data):
         if " not be deleted" in deleteoutput:
             response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
         else:
+            send_command(shell, 'configure terminal')
             send_command(shell, f'interface {intfc_name}')
             send_command(shell, f'{vlancommand}')
             send_command_wo(shell, 'end')
