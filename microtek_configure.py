@@ -214,7 +214,7 @@ def traceroute(data):
         #return output.strip()
         i = 0
         cleaned_output = clean_traceroute_output(output) 
-        out = cleaned_output.strip().split("\r\n")        
+        out = cleaned_output.split("\r")        
         final = out[0]
         if not out[-1]:
             out = out[:-1]
