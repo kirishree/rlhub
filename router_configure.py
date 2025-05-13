@@ -485,7 +485,7 @@ def createvlaninterface(data):
     # Close the SSH connection
     ssh_client.close()
     logger.info(
-            f"Interface {data['link']} created",
+            f"Interface {data['link']}.{data['vlan_id']} created",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
@@ -493,7 +493,7 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
-    return [{"message": f"Interface {data['link']} created"}]
+    return [{"message": f"Interface {data['link']}.{data['vlan_id']} created"}]
 
 def createsubinterface(data):
     # Define the router details
@@ -544,7 +544,7 @@ def createsubinterface(data):
     # Close the SSH connection
     ssh_client.close()
     logger.info(
-            f"Sub-Interface {subinterfacename} created",
+            f"Sub-Interface {subinterfacename}.{data['vlan_id']} created",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
@@ -552,7 +552,7 @@ def createsubinterface(data):
                 "exception": ""
             }
             )
-    return [{"message": f"Sub-Interface {subinterfacename} created"}]
+    return [{"message": f"Sub-Interface {subinterfacename}.{data['vlan_id']} created"}]
 
 def createloopbackinterface(data):
     # Define the router details
