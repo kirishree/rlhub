@@ -35,15 +35,15 @@ def pingspoke(data):
         final_output = " "
         # Read the output in real-time
         start_time = time.time()
-        timeout = 5  # Stop after 10 seconds
+        timeout = 8  # Stop after 10 seconds
         while True:
             line = stdout.readline()
             if not line:  # No more output
                 break            
-            out = line.strip()
-            print("outtttt", out)
+            out = line.strip()            
             if "sent=" in out:
                 final_output = out
+                break
             # Stop the loop after the timeout
             if time.time() - start_time > timeout:
                 print("Timeout reached. Terminating the ping command.")
