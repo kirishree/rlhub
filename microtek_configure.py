@@ -213,14 +213,16 @@ def traceroute(data):
         ssh_client.close()
         #return output.strip()
         i = 0
-        out = output.strip().split("\r")
+        cleaned_output = clean_traceroute_output(output) 
+        out = cleaned_output.split("/n")
+        print(out)
         final = out[0]
         for out1 in out:
             if not out1.strip():             
                 i = 1
             if i == 1:
                 final +=out1 
-        cleaned_output = clean_traceroute_output(output)       
+              
         return cleaned_output
 
 def routingtable1(data):   
