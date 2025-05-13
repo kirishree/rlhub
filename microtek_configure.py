@@ -41,6 +41,7 @@ def pingspoke(data):
             if not line:  # No more output
                 break            
             out = line.strip()
+            print("outtttt", out)
             if "sent=" in out:
                 final_output = out
             # Stop the loop after the timeout
@@ -67,7 +68,7 @@ def pingspoke(data):
     else:
         avg_rtt = "0"
     logger.info(
-            f"ping result {avg_rtt}",
+            f"ping result {final_output}",
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
