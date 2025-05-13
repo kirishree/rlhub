@@ -524,8 +524,10 @@ def createvlaninterface(data):
         send_command(shell, 'end')
         send_command(shell, 'configure terminal')
         send_command(shell, f'interface {data["link"]}')
-        send_command(shell, f'{vlanmode}')
-        send_command(shell, f'{vlancommand}')
+        vlanmodeout = get_command_output(shell, f'{vlanmode}')
+        print(vlanmodeout)
+        vlanmodeout2 = get_command_output(shell, f'{vlancommand}')
+        print(vlanmodeout2)
         send_command(shell, 'end')
         # Save the configuration
         send_command(shell, 'write memory')   
