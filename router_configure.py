@@ -779,18 +779,18 @@ def deletevlaninterface(data):
                         break   
         print(vlancommand)  
         send_command(shell, 'configure terminal')
-        #send_command(shell, f'no interface {data["intfc_name"]}')
-        #deleteoutput = send_command_wo(shell, 'end')
-        #if " not be deleted" in deleteoutput:
-        #    response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
-        #else:
-        #    send_command(shell, f'interface {intfc_name}')
-        #    send_command(shell, f'no {vlancommand}')
-        #    send_command_wo(shell, 'end')
+        send_command(shell, f'no interface {data["intfc_name"]}')
+        deleteoutput = send_command_wo(shell, 'end')
+        if " not be deleted" in deleteoutput:
+            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
+        else:
+            send_command(shell, f'interface {intfc_name}')
+            send_command(shell, f'no {vlancommand}')
+            send_command_wo(shell, 'end')
         response = [{"message": f"Interface {data['intfc_name']} deleted"}]
    
-        # Save the configuration
-        #send_command(shell, 'write memory')    
+        #Save the configuration
+        send_command(shell, 'write memory')    
         # Close the SSH connection
         ssh_client.close()
     except Exception as e:
