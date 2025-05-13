@@ -760,7 +760,7 @@ def deletevlaninterface(data):
         if "Password" in output:  # Prompt for enable password
             send_command_wo(shell, password)
         send_command(shell, 'configure terminal')
-        if "vlan" in data["intfc_name"].lower():
+        #if "vlan" in data["intfc_name"].lower():
 
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
