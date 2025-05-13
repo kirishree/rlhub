@@ -773,11 +773,11 @@ def deletevlaninterface(data):
                         vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]
                         break
                 if "access vlan" in intfc:
-                    print("access vlan", intfc )
+                    print("switchport access vlan", intfc )
                     if vlanid == intfc.strip().split("vlan")[1]:
                         vlancommand = "no" + intfc
                         break   
-        print(vlancommand)  
+        print("vlanomamnd", vlancommand)  
         send_command(shell, 'configure terminal')
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
