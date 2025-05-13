@@ -150,6 +150,12 @@ def addroute(data):
         ssh_client.close()        
         return response
 
+def clean_traceroute_output(raw_output):
+    # This regex matches ANSI escape sequences
+    ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+    cleaned_output = ansi_escape.sub('', raw_output)
+    return cleaned_output
+
 def traceroute(data):   
    # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -158,7 +164,6 @@ def traceroute(data):
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
         try:
             # Connect to the router
@@ -184,6 +189,7 @@ def traceroute(data):
         while not stdout.channel.exit_status_ready():  # Wait for the command to complete
             if stdout.channel.recv_ready():
                 output += stdout.channel.recv(1024).decode()  # Read available data
+
                 if data["trace_ip"] in output:
                     break
             
@@ -213,8 +219,9 @@ def traceroute(data):
             if not out1.strip():             
                 i = 1
             if i == 1:
-                final +=out1        
-        return final
+                final +=out1 
+        cleaned_output = clean_traceroute_output(output)       
+        return cleaned_output
 
 def routingtable1(data):   
    # Define the router details
