@@ -211,19 +211,25 @@ def traceroute(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-        #return output.strip()
-        i = 0
-        cleaned_output = clean_traceroute_output(output) 
-        out = cleaned_output.split("\r")        
+        #return output.strip()       
+        cleaned_output = clean_traceroute_output(output)
+        out = cleaned_output.split("\r")
         final = out[0]
-        if not out[-1]:
+        lastline = out[-1].strip()
+        lastline = re.sub(r'\s+', ' ', lastline)        
+        if not lastline:
+            print("lasttt", out[-1])
             out = out[:-1]
         for out1 in out:
-            if not out1:  
-                final = out[0]            
+            emptyidentify = out1.strip()
+            emptyidentify = re.sub(r'\s+', ' ', emptyidentify)
+            #print("out1", out1)
+            if not emptyidentify:                
+                final = out[0]
             if out1:
-                final +=out1              
+                final +=out1
         return final
+
 
 def routingtable1(data):   
    # Define the router details
