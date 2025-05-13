@@ -2302,14 +2302,14 @@ def traceroute_spoke(request):
         data["router_username"] = router_info["router_username"]
         data["router_password"] = router_info["router_password"]
         trace_result = microtek_configure.traceroute(data)   
-        response_msg = {"message": trace_result}            
+        response_msg = [{"message": trace_result}]        
         return JsonResponse(response_msg,safe=False) 
     if "robustel" in data["uuid"]:
         #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
         data["router_username"] = router_info["router_username"]
         data["router_password"] = router_info["router_password"]
         trace_result = robustel_configure.traceroute(data)   
-        response_msg = {"message": trace_result}            
+        response_msg = [{"message": trace_result}]           
         return JsonResponse(response_msg,safe=False) 
     if "ciscodevice" in data["uuid"]:        
         #device_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})        
@@ -2318,10 +2318,10 @@ def traceroute_spoke(request):
                 data["router_username"] = router_info["router_username"]
                 data["router_password"] = router_info["router_password"]        
                 trace_result = router_configure.traceroute(data)   
-                response_msg = {"message": trace_result}   
+                response_msg = [{"message": trace_result} ]  
                 print("traceroute spoke",response_msg)    
         else:
-            response_msg = {"message": "Error in connecting HUB"} 
+            response_msg = [{"message": "Error in connecting HUB"} ]
         return JsonResponse(response_msg,safe=False)   
     if host_ip:
         tunnel_ip = data["tunnel_ip"].split("/")[0] 
@@ -2336,7 +2336,7 @@ def traceroute_spoke(request):
             if response.status_code == 200:              
                 try:
                     content = response.content.decode(response.encoding or 'utf-8', errors='ignore')
-                    response_msg = {"message": content}
+                    response_msg = [{"message": content}]
                     return JsonResponse(response_msg,safe=False)
                 except Exception as e:
                    print(e)
