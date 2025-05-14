@@ -650,6 +650,18 @@ def createsubinterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data['router_password']
+    if data['link'].lower() != "fastethernet4":
+        response = [{"message": "Error: Doesn't support subinterface on a Layer 2 interface"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createsub_interface",
+                "exception": ""
+            }
+            )
+        return response
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
