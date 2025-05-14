@@ -88,6 +88,7 @@ print(out)
 
 
 
+
 dst_netmask = str(ipaddress.IPv4Network(corrected_dst.netmask))
 print("dst", dst_netmask)
 destination = "10.8.0.22"

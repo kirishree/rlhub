@@ -877,17 +877,21 @@ def deletevlaninterface(data):
             interfacedetails = output.split("\n")       
             for intfc in interfacedetails: 
                 if "interface" in intfc:
-                    intfc_name = intfc.strip().split("interface")[1]
-                if "allowed vlan" in intfc:
-                    if f",{vlanid}," in intfc:
-                        print("allowed vlan", intfc)
-                        vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]
-                        break
+                    intfc_name = intfc.strip().split("interface")[1]                
                 if "access vlan" in intfc:
                     print("switchport access vlan", intfc )
                     if vlanid == intfc.strip().split("vlan")[1]:
                         vlancommand = "no" + intfc
-                        break          
+                        break  
+        logger.info(
+            f"{vlancommand} & {intfc_name}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "delete_interface",
+                "exception": ""
+            }
+            )                
         send_command(shell, 'configure terminal')
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
