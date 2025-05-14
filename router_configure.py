@@ -651,7 +651,7 @@ def createsubinterface(data):
     username = data["router_username"]
     password = data['router_password']
     if data['link'].lower() != "fastethernet4":
-        response = [{"message": "Error: Doesn't support subinterface on a Layer 2 interface"}]
+        response = [{"message": "Error: Layer 2 interface doesn't support subinterface"}]
         logger.info(
             f"{response}",
             extra={
