@@ -690,31 +690,34 @@ def createsubinterface(data):
     if "Password" in output:  # Prompt for enable password
         send_command_wo(shell, password)
     subinterface_ip = data["addresses"][0].split("/")[0]
-    subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-    netmask = str(subnet.netmask)
+    subnetip = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+    netmask1 = str(subnetip.netmask)
     subinterfacename = data["link"] + "." + str(data["vlan_id"])
-
     send_command(shell, 'configure terminal')
     send_command(shell, f'interface {subinterfacename}')
-    send_command(shell, f'encapsulation dot1Q {data["vlan_id"]}')
-    send_command(shell, f'ip address {subinterface_ip} {netmask}')
+    send_command(shell, f'encapsulation dot1Q {data["vlan_id"]}')    
+    ipoutput = get_command_output(shell, f'ip address {subinterface_ip} {netmask1}')
     send_command(shell, 'no shutdown')
     send_command(shell, 'end')
+    if "overlaps" in ipoutput:        
+        response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict{ipoutput}"}]
+    else:
+        response = [{"message": f"Sub-Interface {subinterfacename} created"}]
    
     # Save the configuration
     send_command(shell, 'write memory')    
     # Close the SSH connection
     ssh_client.close()
     logger.info(
-            f"Sub-Interface {subinterfacename}.{data['vlan_id']} created",
+            f"{response}",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "api_endpoint": "createsub_interface",
                 "exception": ""
             }
             )
-    return [{"message": f"Sub-Interface {subinterfacename}.{data['vlan_id']} created"}]
+    return response
 
 def createloopbackinterface(data):
     # Define the router details
