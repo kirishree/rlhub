@@ -498,17 +498,31 @@ def createvlaninterface(data):
     if "overlaps" in ipoutput:
         overlap_intfc = ipoutput.split("with")[1].split(" ")[1]
         response = [{"message": f"Error: while configuring vlan due to address conflict {ipoutput}"}]
+        send_command(shell, 'end')
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'no interface vlan {data["vlan_id"]}')
+        send_command(shell, 'end')
+
     else:
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
         send_command(shell, 'configure terminal')
         send_command(shell, f'interface {data["link"]}')
         vlanmodeout = get_command_output(shell, f'{vlanmode}')        
-        vlanmodeout2 = get_command_output(shell, f'{vlancommand}')        
-        send_command(shell, 'end')
+        vlanmodeout2 = get_command_output(shell, f'{vlancommand}')   
+        if "Vlan can not be added." in vlanmodeout2:
+            send_command(shell, f'end')
+            send_command(shell, 'configure terminal')
+            send_command(shell, f'no interface vlan{data["vlan_id"]}')            
+            if " Maximum number of 8 vlan(s) in the database" in vlanmodeout2:
+                response = [{"message": f"Error: Maximum number of 8 vlan(s) only allowed"}] 
+            else:
+                response = [{"message": f"Error: Interface vlan{data['vlan_id']} not created. Pl try again!"}] 
+        else:
+            response = [{"message": f"Interface vlan{data['vlan_id']} created"}]      
+        send_command(shell, 'end')        
         # Save the configuration
-        send_command(shell, 'write memory')   
-        response = [{"message": f"Interface vlan{data['vlan_id']} created"}] 
+    send_command(shell, 'write memory')     
     # Close the SSH connection
     ssh_client.close()
     logger.info(
