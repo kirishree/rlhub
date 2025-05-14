@@ -1134,6 +1134,7 @@ def get_interface_cisco(data):
                         intfctype = "ether"
                     elif "vlan" in intfcname.lower():
                         intfctype = "VLAN"
+                        vlan_link = intfcname.lower().split("vlan")[1]
                     elif "loopback" in intfcname.lower():
                         intfctype = "Loopback"
                     elif "tunnel" in intfcname.lower():

@@ -79,7 +79,8 @@ if out[-1]:
 else:
     out = out[:-1]
 print(out)
-
+intfc = "vlan1001"
+print("vlanid", intfc.split("vlan"))
 
 
 
