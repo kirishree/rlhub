@@ -876,10 +876,10 @@ def deletevlaninterface(data):
             output = get_command_output(shell, f'sh run | section include interface')
             interfacedetails = output.split("\n")       
             for intfc in interfacedetails: 
+                print("intfc", intfc)
                 if "interface" in intfc:
                     intfc_name = intfc.strip().split("interface")[1]                
-                if "access vlan" in intfc:
-                    print("switchport access vlan", intfc )
+                if "access vlan" in intfc:                    
                     if vlanid == intfc.strip().split("vlan")[1]:
                         vlancommand = "no" + intfc
                         break  
@@ -903,7 +903,7 @@ def deletevlaninterface(data):
                 send_command(shell, f'interface {intfc_name}')
                 send_command(shell, f'{vlancommand}')
                 send_command_wo(shell, 'end')
-        response = [{"message": f"Interface {data['intfc_name']} deleted"}]   
+            response = [{"message": f"Interface {data['intfc_name']} deleted"}]   
         #Save the configuration
         send_command(shell, 'write memory')    
         # Close the SSH connection
@@ -918,6 +918,8 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
+        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]   
+        
     logger.info(
             f"{response}",
             extra={
