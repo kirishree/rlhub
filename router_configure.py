@@ -1156,7 +1156,10 @@ def get_interface_cisco(data):
                 intfcname = intfc.strip().split(" ")[1]
                 cidraddr = []
                 netmask = "None"
-                vlan_link = "None"                
+                if "vlan" in intfcname.lower():
+                    vlan_link = intfcname.lower().split("vlan")[1]
+                else:
+                    vlan_link = "None"                
             else:
                 if "no ip address" in intfc:
                     cidraddr.append({"IPv4address" :"unassigned", "primary": True})
