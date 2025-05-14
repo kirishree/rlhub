@@ -1151,13 +1151,11 @@ def get_interface_cisco(data):
                                  "addresses":cidraddr,                                 
                                  "vlan_link": vlan_link,
                                  "gateway": '-'                        
-                                })
-                 
+                                })                 
                 intfcname = intfc.strip().split(" ")[1]
                 cidraddr = []
                 netmask = "None"
-                vlan_link = "None"
-                
+                vlan_link = "None"                
             else:
                 if "no ip address" in intfc:
                     cidraddr.append({"IPv4address" :"unassigned", "primary": True})
@@ -1179,19 +1177,22 @@ def get_interface_cisco(data):
                 if "dot1Q" in intfc:
                     if len(intfc.strip().split(" ")) > 2:
                         vlan_link = intfc.strip().split(" ")[2]   
+        intfcdetails.append({"interface_name": intfcname,
+                                 "type": intfctype,                                 
+                                 "addresses":cidraddr,                                 
+                                 "vlan_link": vlan_link,
+                                 "gateway": '-'                        
+                                })   
         # Disable paging
         get_command_output(shell, 'terminal length 0', wait_time=1)
-
         # Send the command and get the output
         output = get_command_output(shell, 'show ip int brief')
         interfacedetails = output.split("\n")[2:-1]
         intfcdetailsnew = []
-        for intfcinfo in interfacedetails:
-            
+        for intfcinfo in interfacedetails:            
             intfcinfo = intfcinfo.strip()
             # Clean up extra spaces or non-visible characters using regex
             intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
- #           print(f"After regex cleanup: '{intfcinfo}'")
             intfcname = intfcinfo.split(" ")[0]
             intfctype = "-"            
             if "virtual-access" not in intfcname.lower():
