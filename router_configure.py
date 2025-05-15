@@ -1084,6 +1084,7 @@ def interfaceconfig(data):
                 ipoutput = get_command_output(shell, f"ip address {interface_ip} {netmask}") 
                 if "overlaps" in ipoutput:   
                     overlap_intfc = ipoutput.split("overlaps with")[1].split(" ")
+                    print("overlap_intfc", overlap_intfc)
                     overlapintfc = False
                     if len(overlap_intfc) > 1:
                         overlapintfc = overlap_intfc[0]
@@ -1098,6 +1099,7 @@ def interfaceconfig(data):
                secipoutput = get_command_output(shell, f"ip address {interface_ip} {netmask} sec")        
                if "overlaps" in secipoutput:   
                     overlap_intfc = secipoutput.split("overlaps with")[1].split(" ")
+                    print("secoverlap_intfc", overlap_intfc)
                     overlapintfc = False
                     if len(overlap_intfc) > 1:
                         overlapintfc = overlap_intfc[0]
