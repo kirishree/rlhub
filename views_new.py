@@ -1614,8 +1614,8 @@ def create_sub_interface_spoke(request):
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "create_sub_interface_spoke" }
                     )
-        if "robustel" in data["uuid"]:
-            response = [{"message": f"Error: This Robustel device doesn't support Sub Interface"}]            
+        if "robustel" in data["uuid"] or "microtek" in data["uuid"]:
+            response = [{"message": f"Error: This device doesn't support Sub Interface"}]            
             return JsonResponse(response, safe=False)
         for int_addr in data["addresses"]:
             if (validate_ip(int_addr)):
@@ -1650,12 +1650,6 @@ def create_sub_interface_spoke(request):
             except requests.exceptions.RequestException as e:
                 print("disconnected")
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
-        elif "microtek" in data["uuid"]:
-            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.createvlaninterface(data)                 
-            return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
             if data["link"].lower() == "fastethernet4":
                 data["router_username"] = router_info["router_username"]
