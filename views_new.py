@@ -2940,10 +2940,8 @@ def interface_config_hub(request):
             if hub_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
-                data["router_password"] = hub_info["router_password"]
-                print(data)
-            response = router_configure.interfaceconfig(data)
-            print(response)
+                data["router_password"] = hub_info["router_password"]                
+            response = router_configure.interfaceconfig(data)            
     except Exception as e:
         logger.error(f"Error: Interface configure HUB:{e}")
         response = [{"message": f"Error: interface config"}]

@@ -496,8 +496,16 @@ def createvlaninterface(data):
     send_command(shell, f'interface vlan {data["vlan_id"]}')
     ipoutput = get_command_output(shell, f'ip address {vlan_ip} {netmask}')
     if "overlaps" in ipoutput:
-        overlap_intfc = ipoutput.split("with")[1].split(" ")[1]
-        response = [{"message": f"Error: while configuring vlan due to address conflict {ipoutput}"}]
+        overlap_intfc = ipoutput.split("overlaps with")[1].split(" ")
+        overlapintfc = False
+        if len(overlap_intfc) > 1:
+            overlapintfc = overlap_intfc[0]
+        elif len(overlap_intfc) == 1:
+            overlapintfc = overlap_intfc[0].split("\r")[0]
+        if overlapintfc:
+            response = [{"message": f"Error: while configuring vlan due to address conflict with {overlapintfc}"}]
+        else:
+            response = [{"message": f"Error: while configuring vlan due to address conflict"}]
         send_command(shell, 'end')
         send_command(shell, 'configure terminal')
         send_command(shell, f'no interface vlan {data["vlan_id"]}')
@@ -699,8 +707,17 @@ def createsubinterface(data):
     ipoutput = get_command_output(shell, f'ip address {subinterface_ip} {netmask1}')
     send_command(shell, 'no shutdown')
     send_command(shell, 'end')
-    if "overlaps" in ipoutput:        
-        response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict{ipoutput}"}]
+    if "overlaps" in ipoutput:   
+        overlap_intfc = ipoutput.split("overlaps with")[1].split(" ")
+        overlapintfc = False
+        if len(overlap_intfc) > 1:
+            overlapintfc = overlap_intfc[0]
+        elif len(overlap_intfc) == 1:
+            overlapintfc = overlap_intfc[0].split("\r")[0]
+        if overlapintfc:
+            response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict with {overlapintfc}"}]
+        else:
+            response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict."}]        
     else:
         response = [{"message": f"Sub-Interface {subinterfacename} created"}]
    
@@ -1019,6 +1036,115 @@ def interfaceconfig(data):
         if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():
             response = [{"message": f"Error Not able to configure IP on layer 2 interface"}]
             return response
+        if "virtual-template" in data["intfc_name"].lower():
+            response = [{"message": f"Error Not able to configure IP on {data['intfc_name']} interface"}]
+            return response
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
+            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        send_command(shell, "configure terminal")
+        send_command(shell, f"interface {data['intfc_name']}")
+        send_command(shell, "no ip address")
+        send_command(shell, 'end')
+        response = [{"message": f"Interface {data['intfc_name']} updated"}]
+        send_command(shell, "configure terminal")
+        send_command(shell, f"interface {data['intfc_name']}")         
+        for newaddr in data["new_addresses"]:
+            interface_ip = newaddr['address'].split("/")[0]
+            subnet = ipaddress.IPv4Network(newaddr['address'], strict=False)  # Allow non-network addresses
+            netmask = str(subnet.netmask)
+            if newaddr['primary'].lower() == "true":
+                ipoutput = get_command_output(shell, f"ip address {interface_ip} {netmask}") 
+                if "overlaps" in ipoutput:   
+                    overlap_intfc = ipoutput.split("overlaps with")[1].split(" ")
+                    overlapintfc = False
+                    if len(overlap_intfc) > 1:
+                        overlapintfc = overlap_intfc[0]
+                    elif len(overlap_intfc) == 1:
+                        overlapintfc = overlap_intfc[0].split("\r")[0]
+                    if overlapintfc:
+                        response = [{"message": f"Error: {newaddr['address']} is not assigned due to address conflict with {overlapintfc}"}]
+                    else:
+                        response = [{"message": f"Error: {newaddr['address']} is not assigned due to address conflict."}]  
+                    break
+            else:
+               secipoutput = get_command_output(shell, f"ip address {interface_ip} {netmask} sec")        
+               if "overlaps" in secipoutput:   
+                    overlap_intfc = secipoutput.split("overlaps with")[1].split(" ")
+                    overlapintfc = False
+                    if len(overlap_intfc) > 1:
+                        overlapintfc = overlap_intfc[0]
+                    elif len(overlap_intfc) == 1:
+                        overlapintfc = overlap_intfc[0].split("\r")[0]
+                    if overlapintfc:
+                        response = [{"message": f"Error: {newaddr['address']} is not assigned due to address conflict with {overlapintfc}"}]
+                    else:
+                        response = [{"message": f"Error: {newaddr['address']} is not assigned due to address conflict."}]  
+                    break          
+        send_command(shell, "no shutdown")
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')    
+        # Close the SSH connection
+        ssh_client.close()
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "interface_config",
+                "exception": ""
+            }
+            )
+    except Exception as e:
+        response = [{"message": f"Error while updating the interface {data['intfc_name']} "}]
+        logger.error(
+            f"Error while configuring interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createtunnel_interface",
+                "exception": str(e)
+            }
+            )    
+    return response
+
+def interfaceconfig1(data):
+    try:
+        # Define the router details
+        if data["intfc_name"].lower() == "fastethernet4" or data["intfc_name"].lower() == "dialer1":
+            response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
+            return response
+        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():
+            response = [{"message": f"Error Not able to configure IP on layer 2 interface"}]
+            return response
         router_ip = data["tunnel_ip"].split("/")[0]
         username = data["router_username"]
         password = data['router_password']
@@ -1111,6 +1237,7 @@ def interfaceconfig(data):
             }
             )
     return response
+
 
 def get_interface_cisco(data):
     """
