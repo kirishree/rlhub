@@ -766,10 +766,18 @@ def createloopbackinterface(data):
     loopback_ip = data["addresses"][0].split("/")[0]
     subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
     netmask = str(subnet.netmask)
-
+    response = [{"message": f"Interface {data['loopback_intfc_name']} created"}]
     send_command(shell, 'configure terminal')
     send_command(shell, f'interface {data["loopback_intfc_name"]}')
-    send_command(shell, f'ip address {loopback_ip} {netmask}')
+    ipoutput = get_command_output(shell, f'ip address {loopback_ip} {netmask}')    
+    if "overlaps" in ipoutput:
+        overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
+        overlapintfc = False                              
+        overlapintfc = overlap_intfc[0].split("\r")[0]
+        if overlapintfc:
+            response = [{"message": f"{data['loopback_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict with {overlapintfc}"}]
+        else:
+            response = [{"message": f"{data['loopback_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict"}]
     send_command(shell, 'no shutdown')
     send_command(shell, 'end')
     # Save the configuration
@@ -777,7 +785,7 @@ def createloopbackinterface(data):
     # Close the SSH connection
     ssh_client.close()
     logger.info(
-            f"Interface {data['loopback_intfc_name']} created",
+            f"{response}",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
@@ -785,8 +793,7 @@ def createloopbackinterface(data):
                 "exception": ""
             }
             )
-    return [{"message": f"Interface {data['loopback_intfc_name']} created"}]
-
+    return response
 def adduser(data):
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -987,10 +994,18 @@ def createtunnelinterface(data):
         tunnel_ip = data["addresses"][0].split("/")[0]
         subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
         netmask = str(subnet.netmask)
-
+        response = [{"message": f"Interface {data['tunnel_intfc_name']} created"}]
         send_command(shell, 'configure terminal')
         send_command(shell, f'interface {data["tunnel_intfc_name"]}')
-        send_command(shell, f'ip address {tunnel_ip} {netmask}')
+        ipoutput = get_command_output(shell, f'ip address {tunnel_ip} {netmask}')           
+        if "overlaps" in ipoutput:
+            overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
+            overlapintfc = False                              
+            overlapintfc = overlap_intfc[0].split("\r")[0]
+            if overlapintfc:
+                response = [{"message": f"{data['tunnel_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict with {overlapintfc}"}]
+            else:
+                response = [{"message": f"{data['tunnel_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict"}]
         send_command(shell, "ip tcp adjust-mss 1450")
         send_command(shell, f"tunnel source {data['link']}")
         send_command(shell, f"tunnel destination {data['destination_ip']}")
@@ -1000,18 +1015,8 @@ def createtunnelinterface(data):
         send_command(shell, 'write memory')           
         # Close the SSH connection
         ssh_client.close()
-    except Exception as e:
-        logger.error(
-            f"Error while creating tunnel interface",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "api_endpoint": "createtunnel_interface",
-                "exception": str(e)
-            }
-            )
-    logger.info(
-            f"Interface {data['tunnel_intfc_name']} created",
+        logger.info(
+            f"{response}",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
@@ -1019,7 +1024,18 @@ def createtunnelinterface(data):
                 "exception": ""
             }
             )
-    return [{"message": f"Interface {data['tunnel_intfc_name']} created"}]
+    except Exception as e:
+        response = [{"message": f"Error while creating tunnel interface"}]
+        logger.error(
+            response,
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "api_endpoint": "createtunnel_interface",
+                "exception": str(e)
+            }
+            )    
+    return response
 
 def interfaceconfig(data):
     try:
