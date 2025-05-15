@@ -893,15 +893,15 @@ def deletevlaninterface(data):
                  #   if vlanid == intfc.strip().split("vlan")[1]:
                  #       vlancommand = "no" + intfc
                  #       break  
-        logger.info(
-            f"{vlancommand} & {intfc_name}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
-                "exception": ""
-            }
-            )                
+            logger.info(
+                    f"{vlancommand} & {intfc_name}",
+                    extra={
+                        "device_type": "Cisco",
+                        "device_ip": router_ip,
+                        "api_endpoint": "delete_interface",
+                        "exception": ""
+                    }
+                )                
         send_command(shell, 'configure terminal')
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
@@ -928,8 +928,7 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
-        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]   
-        
+        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]      
     logger.info(
             f"{response}",
             extra={
