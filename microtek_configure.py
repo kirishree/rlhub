@@ -26,7 +26,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "pingspoke",
+                "be_api_endpoint": "pingspoke",
                 "exception": str(e)
             }
             )
@@ -54,7 +54,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "pingspoke",
+                "be_api_endpoint": "pingspoke",
                 "exception": str(e)
             }
             )
@@ -72,7 +72,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "pingspoke",
+                "be_api_endpoint": "pingspoke",
                 "exception": ""
             }
             )
@@ -98,7 +98,7 @@ def addroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "addroute",
+                "be_api_endpoint": "addroute",
                 "exception": str(e)
             }
             )
@@ -130,7 +130,7 @@ def addroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "addroute",
+                "be_api_endpoint": "addroute",
                 "exception": ""
             }
             )
@@ -140,7 +140,7 @@ def addroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "addroute",
+                "be_api_endpoint": "addroute",
                 "exception": str(e)
             }
             )
@@ -174,7 +174,7 @@ def traceroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "traceroute",
+                "be_api_endpoint": "traceroute",
                 "exception": str(e)
             }
             )
@@ -203,7 +203,7 @@ def traceroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "traceroute",
+                "be_api_endpoint": "traceroute",
                 "exception": str(e)
             }
             )        
@@ -251,7 +251,7 @@ def routingtable1(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "routingtable1",
+                "be_api_endpoint": "routingtable1",
                 "exception": str(e)
             }
             )
@@ -341,7 +341,7 @@ def routingtable(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "routingtable",
+                "be_api_endpoint": "routingtable",
                 "exception": str(e)
             }
             )
@@ -368,7 +368,7 @@ def routingtable(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "routingtable",
+                "be_api_endpoint": "routingtable",
                 "exception": str(e)
             }
             )
@@ -448,7 +448,7 @@ def interfacedetails(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "get_interface_details",
+                "be_api_endpoint": "get_interface_details",
                 "exception": str(e)
             }
             )
@@ -492,7 +492,7 @@ def interfacedetails(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "get_interface_details",
+                "be_api_endpoint": "get_interface_details",
                 "exception": str(e)
             }
             )
@@ -613,7 +613,7 @@ def interfaceconfig(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": str(e)
             }
             )
@@ -710,7 +710,7 @@ def interfaceconfig(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": ""
             }
             )
@@ -720,7 +720,7 @@ def interfaceconfig(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": str(e)
             }
             )
@@ -749,7 +749,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "create_interface",
+                "be_api_endpoint": "create_interface",
                 "exception": str(e)
             }
             )
@@ -794,7 +794,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "create_interface",
+                "be_api_endpoint": "create_interface",
                 "exception": " "
             }
             )
@@ -804,7 +804,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "create_interface",
+                "be_api_endpoint": "create_interface",
                 "exception": str(e)
             }
             )
@@ -834,7 +834,7 @@ def createtunnelinterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "create_tunnel_interface",
+                "be_api_endpoint": "create_tunnel_interface",
                 "exception": str(e)
             }
             )
@@ -879,7 +879,7 @@ def createtunnelinterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "create_tunnel_interface",
+                "be_api_endpoint": "create_tunnel_interface",
                 "exception": " "
             }
             )
@@ -890,7 +890,7 @@ def createtunnelinterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "create_tunnel_interface",
+                "be_api_endpoint": "create_tunnel_interface",
                 "exception": str(e)
             }
             )
@@ -919,7 +919,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
+                "be_api_endpoint": "delete_interface",
                 "exception": str(e)
             }
             )
@@ -961,7 +961,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
+                "be_api_endpoint": "delete_interface",
                 "exception": " "
             }
             )
@@ -971,7 +971,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
+                "be_api_endpoint": "delete_interface",
                 "exception": str(e)
             }
             )
@@ -1184,7 +1184,7 @@ def delstaticroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": str(e)
             }
             )
@@ -1220,7 +1220,7 @@ def delstaticroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": " "
             }
             )
@@ -1230,7 +1230,7 @@ def delstaticroute(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": str(e)
             }
             )

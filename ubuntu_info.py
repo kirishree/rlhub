@@ -139,7 +139,7 @@ def get_routing_table_ubuntu():
             extra={
                 "device_type": "ReachlinkServer",
                 "device_ip": hub_ip,
-                "api_endpoint": "get_routing_table",
+                "be_api_endpoint": "get_routing_table",
                 "exception": str(e)
             }
             )        
@@ -190,7 +190,7 @@ def deactivate(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "deactivate",
+                            "be_api_endpoint": "deactivate",
                             "exception": ""
                         }
             ) 
@@ -202,7 +202,7 @@ def deactivate(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "deactivate",
+                            "be_api_endpoint": "deactivate",
                             "exception": str(e)
                         }
                 ) 
@@ -213,7 +213,7 @@ def deactivate(data):
                             extra={
                                 "device_type": "ReachlinkServer",
                                 "device_ip": hub_ip,
-                                "api_endpoint": "deactivate",
+                                "be_api_endpoint": "deactivate",
                                 "exception": str(e)
                             }
                 )
@@ -231,7 +231,7 @@ def deactivate(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "deactivate",
+                            "be_api_endpoint": "deactivate",
                             "exception": ""
                         }
             ) 
@@ -244,7 +244,7 @@ def deactivate(data):
                     extra={
                         "device_type": "ReachlinkServer",
                         "device_ip": hub_ip,
-                        "api_endpoint": "deactivate",
+                        "be_api_endpoint": "deactivate",
                         "exception": str(e)
                     }
                 )
@@ -255,7 +255,7 @@ def deactivate(data):
             extra={
                 "device_type": "ReachlinkServer",
                 "device_ip": hub_ip,
-                "api_endpoint": "deactivate",
+                "be_api_endpoint": "deactivate",
                 "exception": str(e)
             }
             ) 
@@ -286,7 +286,7 @@ def activate(data):
             extra={
                 "device_type": "ReachlinkServer",
                 "device_ip": tunnel_ip,
-                "api_endpoint": "activate",
+                "be_api_endpoint": "activate",
                 "exception": str(e) if e else ""
             }
             )  
@@ -296,7 +296,7 @@ def activate(data):
             extra={
                 "device_type": "ReachlinkServer",
                 "device_ip": tunnel_ip,
-                "api_endpoint": "activate",
+                "be_api_endpoint": "activate",
                 "exception": str(e)
             }
             )  
@@ -351,7 +351,7 @@ def diagnostics(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "pinghub",
+                            "be_api_endpoint": "pinghub",
                             "exception": ""
                         }
             )
@@ -618,7 +618,7 @@ def addstaticroute_ubuntu(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "add_static_route",
+                            "be_api_endpoint": "add_static_route",
                             "exception": ""
                         }
             )
@@ -628,7 +628,7 @@ def addstaticroute_ubuntu(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "add_static_route",
+                            "be_api_endpoint": "add_static_route",
                             "exception": str(e)
                         }
             )
@@ -709,7 +709,7 @@ def get_interface_details_ubuntu(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "get_interface_info",
+                            "be_api_endpoint": "get_interface_info",
                             "exception": str(e)
                         }
             )        
@@ -866,7 +866,7 @@ def interface_config(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "interface_config",
+                            "be_api_endpoint": "interface_config",
                             "exception": ""
                         }
             )  
@@ -876,7 +876,7 @@ def interface_config(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "interface_config",
+                            "be_api_endpoint": "interface_config",
                             "exception": str(e)
                         }
             )    
@@ -940,7 +940,7 @@ def create_vlan_interface(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "create_vlan_interface",
+                            "be_api_endpoint": "create_vlan_interface",
                             "exception": ""
                         }
             )  
@@ -950,7 +950,7 @@ def create_vlan_interface(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "create_vlan",
+                            "be_api_endpoint": "create_vlan",
                             "exception": str(e)
                         }
             )   
@@ -1000,7 +1000,7 @@ def create_tunnel_interface(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "create_tunnel_interface",
+                            "be_api_endpoint": "create_tunnel_interface",
                             "exception": ""
                         }
             )  
@@ -1010,7 +1010,7 @@ def create_tunnel_interface(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "create_tunnel_interface",
+                            "be_api_endpoint": "create_tunnel_interface",
                             "exception": str(e)
                         }
             )   
@@ -1085,7 +1085,7 @@ def delstaticroute_ubuntu(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "delete_static_route",
+                            "be_api_endpoint": "delete_static_route",
                             "exception": ""
                         }
             )  
@@ -1095,7 +1095,7 @@ def delstaticroute_ubuntu(data):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "delete_static_route",
+                            "be_api_endpoint": "delete_static_route",
                             "exception": str(e)
                         }
             )   
@@ -1186,7 +1186,7 @@ def get_dialer_ip(devicename):
                         extra={
                             "device_type": "ReachlinkServer",
                             "device_ip": hub_ip,
-                            "api_endpoint": "add_cisco_rl",
+                            "be_api_endpoint": "add_cisco_rl",
                             "exception": str(e)
                         }
             )   

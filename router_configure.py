@@ -67,7 +67,7 @@ def addroute(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "add_static_route",
+                "be_api_endpoint": "add_static_route",
                 "exception": str(e)
             }
             )
@@ -116,7 +116,7 @@ def delroute(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": str(e)
             }
             )
@@ -202,7 +202,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "ping",
+                "be_api_endpoint": "ping",
                 "exception": str(e)
             }
             )
@@ -227,7 +227,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "pingspoke",
+                "be_api_endpoint": "pingspoke",
                 "exception": ""
             }
             )
@@ -251,7 +251,7 @@ def traceroute(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "traceroute",
+                "be_api_endpoint": "traceroute",
                 "exception": str(e)
             }
             )
@@ -324,7 +324,7 @@ def get_routingtable_cisco(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "get_routing_table",
+                "be_api_endpoint": "get_routing_table",
                 "exception": str(e)
             }
             )
@@ -403,7 +403,7 @@ def delstaticroute(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": str(e)
             }
             )
@@ -442,7 +442,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "be_api_endpoint": "createvlan_interface",
                 "exception": ""
             }
             )
@@ -459,7 +459,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "be_api_endpoint": "createvlan_interface",
                 "exception": str(e)
             }
             )
@@ -535,7 +535,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "be_api_endpoint": "createvlan_interface",
                 "exception": ""
             }
             )
@@ -553,7 +553,7 @@ def createvlaninterface1(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "be_api_endpoint": "createvlan_interface",
                 "exception": ""
             }
             )
@@ -570,7 +570,7 @@ def createvlaninterface1(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "be_api_endpoint": "createvlan_interface",
                 "exception": str(e)
             }
             )
@@ -601,7 +601,7 @@ def createvlaninterface1(data):
                     extra={
                         "device_type": "Cisco",
                         "device_ip": router_ip,
-                        "api_endpoint": "createvlan_interface",
+                        "be_api_endpoint": "createvlan_interface",
                         "exception": ""
                     }
             )
@@ -644,7 +644,7 @@ def createvlaninterface1(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createvlan_interface",
+                "be_api_endpoint": "createvlan_interface",
                 "exception": ""
             }
             )
@@ -662,7 +662,7 @@ def createsubinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createsub_interface",
+                "be_api_endpoint": "createsub_interface",
                 "exception": ""
             }
             )
@@ -679,7 +679,7 @@ def createsubinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createsub_interface",
+                "be_api_endpoint": "createsub_interface",
                 "exception": str(e)
             }
             )
@@ -724,7 +724,7 @@ def createsubinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createsub_interface",
+                "be_api_endpoint": "createsub_interface",
                 "exception": ""
             }
             )
@@ -748,7 +748,7 @@ def createloopbackinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createloopback_interface",
+                "be_api_endpoint": "createloopback_interface",
                 "exception": str(e)
             }
             )
@@ -789,7 +789,7 @@ def createloopbackinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createloopback_interface",
+                "be_api_endpoint": "createloopback_interface",
                 "exception": ""
             }
             )
@@ -813,7 +813,7 @@ def adduser(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "adduser",
+                "be_api_endpoint": "adduser",
                 "exception": str(e)
             }
             )
@@ -850,7 +850,7 @@ def adduser(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "adduser",
+                "be_api_endpoint": "adduser",
                 "exception": str(e)
             }
             )
@@ -879,7 +879,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
+                "be_api_endpoint": "delete_interface",
                 "exception": str(e)
             }
             )
@@ -916,7 +916,7 @@ def deletevlaninterface(data):
                     extra={
                         "device_type": "Cisco",
                         "device_ip": router_ip,
-                        "api_endpoint": "delete_interface",
+                        "be_api_endpoint": "delete_interface",
                         "exception": ""
                     }
                 )                
@@ -942,7 +942,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
+                "be_api_endpoint": "delete_interface",
                 "exception": str(e)
             }
             )
@@ -952,7 +952,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_interface",
+                "be_api_endpoint": "delete_interface",
                 "exception": ""
             }
             )
@@ -977,7 +977,7 @@ def createtunnelinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createtunnel_interface",
+                "be_api_endpoint": "createtunnel_interface",
                 "exception": str(e)
             }
             )
@@ -1020,7 +1020,7 @@ def createtunnelinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createtunnel_interface",
+                "be_api_endpoint": "createtunnel_interface",
                 "exception": ""
             }
             )
@@ -1031,7 +1031,7 @@ def createtunnelinterface(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createtunnel_interface",
+                "be_api_endpoint": "createtunnel_interface",
                 "exception": str(e)
             }
             )    
@@ -1065,7 +1065,7 @@ def interfaceconfig(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": str(e)
             }
             )
@@ -1123,7 +1123,7 @@ def interfaceconfig(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": ""
             }
             )
@@ -1134,7 +1134,7 @@ def interfaceconfig(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createtunnel_interface",
+                "be_api_endpoint": "createtunnel_interface",
                 "exception": str(e)
             }
             )    
@@ -1165,7 +1165,7 @@ def interfaceconfig1(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": str(e)
             }
             )
@@ -1227,7 +1227,7 @@ def interfaceconfig1(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "createtunnel_interface",
+                "be_api_endpoint": "createtunnel_interface",
                 "exception": str(e)
             }
             )
@@ -1236,7 +1236,7 @@ def interfaceconfig1(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": ""
             }
             )
@@ -1264,7 +1264,7 @@ def get_interface_cisco(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "get_interface",
+                "be_api_endpoint": "get_interface",
                 "exception": str(e)
             }
             )
@@ -1384,7 +1384,7 @@ def get_interface_cisco(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "get_interface",
+                "be_api_endpoint": "get_interface",
                 "exception": str(e)
             }
             )
@@ -1412,7 +1412,7 @@ def removeuser(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "remove user",
+                "be_api_endpoint": "remove user",
                 "exception": str(e)
             }
             )
@@ -1449,7 +1449,7 @@ def removeuser(data):
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "api_endpoint": "remove user",
+                "be_api_endpoint": "remove user",
                 "exception": str(e)
             }
             )

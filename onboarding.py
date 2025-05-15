@@ -56,7 +56,7 @@ def organization_name(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "organization_",
+                            "be_api_endpoint": "organization_",
                             "exception": str(e)
                         }
             )         
@@ -82,7 +82,7 @@ def authenticate_user(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "authenticat_user",
+                            "be_api_endpoint": "authenticat_user",
                             "exception": ""
                         }
                 ) 
@@ -140,7 +140,7 @@ def authenticate_user(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "authenticat_user",
+                            "be_api_endpoint": "authenticat_user",
                             "exception": ""
                         }
                 ) 
@@ -151,7 +151,7 @@ def authenticate_user(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "authenticat_user",
+                            "be_api_endpoint": "authenticat_user",
                             "exception": ""
                         }
                 ) 
@@ -162,7 +162,7 @@ def authenticate_user(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "authenticat_user",
+                            "be_api_endpoint": "authenticat_user",
                             "exception": ""
                         }
                 ) 
@@ -173,7 +173,7 @@ def authenticate_user(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "authenticat_user",
+                            "be_api_endpoint": "authenticat_user",
                             "exception": str(e)
                         }
                 )
@@ -219,7 +219,7 @@ def get_organization_id(data):
                         extra={
                             "device_type": "NA",
                             "device_ip": "NA",
-                            "api_endpoint": "get_organization_id",
+                            "be_api_endpoint": "get_organization_id",
                             "exception": str(e)
                         }
                 )
@@ -291,7 +291,7 @@ def check_user(data, newuser):
                                                 extra={
                                                         "device_type": "Cisco",
                                                         "device_ip": device["cisco_hub_info"]["hub_ip"],
-                                                        "api_endpoint": "add_cisco_hub",
+                                                        "be_api_endpoint": "add_cisco_hub",
                                                         "exception": ""
                                                     }
                                     )
@@ -311,7 +311,7 @@ def check_user(data, newuser):
                                                 extra={
                                                         "device_type": "CiscoSpoke",
                                                         "device_ip": cispoke.get("dialerip", ""),
-                                                        "api_endpoint": "add_cisco_device",
+                                                        "be_api_endpoint": "add_cisco_device",
                                                         "exception": ""
                                                     }
                                             )
@@ -330,7 +330,7 @@ def check_user(data, newuser):
                                                 extra={
                                                         "device_type": "Robustel",
                                                         "device_ip": rospoke["spokedevice_name"],
-                                                        "api_endpoint": "add_cisco_device",
+                                                        "be_api_endpoint": "add_cisco_device",
                                                         "exception": ""
                                                     }
                                             )
@@ -351,7 +351,7 @@ def check_user(data, newuser):
                                                 extra={
                                                         "device_type": "Microtek",
                                                         "device_ip": mispoke["spokedevice_name"],
-                                                        "api_endpoint": "add_cisco_device",
+                                                        "be_api_endpoint": "add_cisco_device",
                                                         "exception": ""
                                                     }
                                             )
@@ -370,7 +370,7 @@ def check_user(data, newuser):
                                                 extra={
                                                         "device_type": "CiscoSpoke",
                                                         "device_ip": cispoke["spokedevice_name"],
-                                                        "api_endpoint": "add_cisco_device",
+                                                        "be_api_endpoint": "add_cisco_device",
                                                         "exception": ""
                                                     }
                                             )
@@ -392,7 +392,7 @@ def check_user(data, newuser):
                                                 extra={
                                                         "device_type": "ReachLinkSpoke",
                                                         "device_ip": ubspoke["spokedevice_name"],
-                                                        "api_endpoint": "login",
+                                                        "be_api_endpoint": "login",
                                                         "exception": ""
                                                     }
                                             )
@@ -515,7 +515,7 @@ def check_user(data, newuser):
                                     extra={
                                             "device_type": spokedevice_name,
                                             "device_ip": spokedevice_name,
-                                            "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                            "be_api_endpoint": "login, add_cisco_device, add_cisco_hub",
                                             "exception": ""
                                     }
                                 )
@@ -532,7 +532,7 @@ def check_user(data, newuser):
                                     extra={
                                             "device_type": "",
                                             "device_ip": "",
-                                            "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                            "be_api_endpoint": "login, add_cisco_device, add_cisco_hub",
                                             "exception": ""
                                     }
                                 )
@@ -549,7 +549,7 @@ def check_user(data, newuser):
                         extra={
                                 "device_type": "",
                                 "device_ip": "",
-                                "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                "be_api_endpoint": "login, add_cisco_device, add_cisco_hub",
                                 "exception": ""
                             }
             )
@@ -561,7 +561,7 @@ def check_user(data, newuser):
                         extra={
                                 "device_type": "",
                                 "device_ip": "",
-                                "api_endpoint": "login, add_cisco_device, add_cisco_hub",
+                                "be_api_endpoint": "login, add_cisco_device, add_cisco_hub",
                                 "exception": str(e)
                             }
             )

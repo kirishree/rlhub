@@ -78,7 +78,7 @@ def get_routingtable_robustel(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "get_routing_table",
+                "be_api_endpoint": "get_routing_table",
                 "exception": str(e)
             }
             )
@@ -157,7 +157,7 @@ def get_routingtable_robustel(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "get_routing_table",
+                "be_api_endpoint": "get_routing_table",
                 "exception": str(e)
             }
             )    
@@ -192,7 +192,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "pingspoke",
+                "be_api_endpoint": "pingspoke",
                 "exception": str(e)
             }
             )
@@ -216,7 +216,7 @@ def pingspoke(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "pingspoke",
+                "be_api_endpoint": "pingspoke",
                 "exception": str(e)
             }
             )
@@ -254,7 +254,7 @@ def traceroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "trace",
+                "be_api_endpoint": "trace",
                 "exception": str(e)
             }
             )
@@ -270,7 +270,7 @@ def traceroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "trace",
+                "be_api_endpoint": "trace",
                 "exception": str(e)
             }
             )
@@ -301,7 +301,7 @@ def get_interface_robustel(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "get_interface_info",
+                "be_api_endpoint": "get_interface_info",
                 "exception": str(e)
             }
             )
@@ -379,7 +379,7 @@ def get_interface_robustel(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "trace",
+                "be_api_endpoint": "trace",
                 "exception": str(e)
             }
             )
@@ -406,7 +406,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "create_vlan_interface",
+                "be_api_endpoint": "create_vlan_interface",
                 "exception": ""
             }
             )
@@ -424,7 +424,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "create_vlan_interface",
+                "be_api_endpoint": "create_vlan_interface",
                 "exception": str(e)
             }
             )
@@ -466,7 +466,7 @@ def createvlaninterface(data):
                         extra={
                             "device_type": "Robustel",
                             "device_ip": router_ip,
-                            "api_endpoint": "create_vlan_interface",
+                            "be_api_endpoint": "create_vlan_interface",
                             "exception": ""
                         }
                 )
@@ -479,7 +479,7 @@ def createvlaninterface(data):
                     extra={
                         "device_type": "Robustel",
                         "device_ip": router_ip,
-                        "api_endpoint": "create_vlan_interface",
+                        "be_api_endpoint": "create_vlan_interface",
                         "exception": ""
                         }
                     )
@@ -522,7 +522,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "create_vlan_interface",
+                "be_api_endpoint": "create_vlan_interface",
                 "exception": ""
             }
             )
@@ -532,7 +532,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "create_vlan_interface",
+                "be_api_endpoint": "create_vlan_interface",
                 "exception": str(e)
             }
             )
@@ -561,7 +561,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_vlan_interface",
+                "be_api_endpoint": "delete_vlan_interface",
                 "exception": str(e)
             }
             )
@@ -594,7 +594,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_vlan_interface",
+                "be_api_endpoint": "delete_vlan_interface",
                 "exception": ""
             }
             )     
@@ -605,7 +605,7 @@ def deletevlaninterface(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_vlan_interface",
+                "be_api_endpoint": "delete_vlan_interface",
                 "exception": str(e)
             }
             )
@@ -635,7 +635,7 @@ def addstaticroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "add_static_route",
+                "be_api_endpoint": "add_static_route",
                 "exception": str(e)
             }
             )
@@ -661,7 +661,7 @@ def addstaticroute(data):
                         extra={
                             "device_type": "Robustel",
                             "device_ip": router_ip,
-                            "api_endpoint": "add_static_route",
+                            "be_api_endpoint": "add_static_route",
                             "exception": ""
                         }
                 )
@@ -707,7 +707,7 @@ def addstaticroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "add_static_route",
+                "be_api_endpoint": "add_static_route",
                 "exception": ""
             }
             )    
@@ -718,7 +718,7 @@ def addstaticroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "add_static_route",
+                "be_api_endpoint": "add_static_route",
                 "exception": str(e)
             }
             )
@@ -747,7 +747,7 @@ def delstaticroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": str(e)
             }
             )
@@ -785,7 +785,7 @@ def delstaticroute(data):
                             extra={
                                 "device_type": "Robustel",
                                 "device_ip": router_ip,
-                                "api_endpoint": "delete_static_route",
+                                "be_api_endpoint": "delete_static_route",
                                 "exception": ""
                                 }
                         )  
@@ -796,7 +796,7 @@ def delstaticroute(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "delete_static_route",
+                "be_api_endpoint": "delete_static_route",
                 "exception": str(e)
             }
             )
@@ -826,7 +826,7 @@ def interface_config(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": str(e)
             }
             )
@@ -867,7 +867,7 @@ def interface_config(data):
                         extra={
                             "device_type": "Robustel",
                             "device_ip": router_ip,
-                            "api_endpoint": "interface_config",
+                            "be_api_endpoint": "interface_config",
                             "exception": ""
                         }
                     )
@@ -934,7 +934,7 @@ def interface_config(data):
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
-                                                "api_endpoint": "interface_config",
+                                                "be_api_endpoint": "interface_config",
                                                 "exception": ""
                                         }
                                     )
@@ -943,7 +943,7 @@ def interface_config(data):
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
-                                                "api_endpoint": "interface_config",
+                                                "be_api_endpoint": "interface_config",
                                                 "exception": str(e)
                                         }
                                     )
@@ -1007,7 +1007,7 @@ def interface_config(data):
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
-                                                "api_endpoint": "interface_config",
+                                                "be_api_endpoint": "interface_config",
                                                 "exception": ""
                                         }
                                     )  
@@ -1027,7 +1027,7 @@ def interface_config(data):
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
-                                                "api_endpoint": "interface_config",
+                                                "be_api_endpoint": "interface_config",
                                                 "exception": ""
                                         }
                                     )
@@ -1036,7 +1036,7 @@ def interface_config(data):
                                         extra={
                                                 "device_type": "Robustel",
                                                 "device_ip": router_ip,
-                                                "api_endpoint": "interface_config",
+                                                "be_api_endpoint": "interface_config",
                                                 "exception": str(e)
                                         }
                                     )
@@ -1045,7 +1045,7 @@ def interface_config(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": ""
             }
             )
@@ -1055,7 +1055,7 @@ def interface_config(data):
             extra={
                 "device_type": "Robustel",
                 "device_ip": router_ip,
-                "api_endpoint": "interface_config",
+                "be_api_endpoint": "interface_config",
                 "exception": str(e)
             }
             )

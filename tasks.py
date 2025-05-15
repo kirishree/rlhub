@@ -93,7 +93,7 @@ def setass_task(self, response, devicename):
                         extra={
                             "device_type": devicename,
                             "device_ip": newspokedevicename,
-                            "api_endpoint": "celery_task",
+                            "be_api_endpoint": "celery_task",
                             "exception": ""
                         }
             )    
@@ -105,7 +105,7 @@ def setass_task(self, response, devicename):
                         extra={
                             "device_type": devicename,
                             "device_ip": newspokedevicename,
-                            "api_endpoint": "celery_task",
+                            "be_api_endpoint": "celery_task",
                             "exception": ""
                         }
             ) 
@@ -115,7 +115,7 @@ def setass_task(self, response, devicename):
                         extra={
                             "device_type": devicename,
                             "device_ip": response,
-                            "api_endpoint": "celery_task",
+                            "be_api_endpoint": "celery_task",
                             "exception": str(e)
                         }
             ) 
