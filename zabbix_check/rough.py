@@ -81,6 +81,8 @@ else:
 print(out)
 intfc = "vlan1001"
 print("vlanid", intfc.split("vlan"))
+rr = "ii with vlan\r "
+print(rr.split("ii with ")[1].split(" ")[0].split("\r")[0])
 
 
 
