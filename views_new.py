@@ -2831,17 +2831,15 @@ def vlan_interface_delete_hub(request):
             cache1_key = f"HUB_details_{data['uuid']}"
             hub_info = cache.get_or_set(
                         cache1_key,
-                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]}),
                         timeout=300
                         )    
             #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]})
             if hub_info:
                 data["tunnel_ip"] = data["hub_ip"]
                 data["router_username"] = hub_info["router_username"]
-                data["router_password"] = hub_info["router_password"]
-                print(data)
-                response = router_configure.deletevlaninterface(data)
-                print(response) 
+                data["router_password"] = hub_info["router_password"]                
+                response = router_configure.deletevlaninterface(data)                
         elif data["hub_ip"] == hub_ip:
             response = [] 
             intfc_name = data["intfc_name"] 
