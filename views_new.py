@@ -350,7 +350,8 @@ def login_or_register(request):
         refresh['onboarding_last_name'] = getattr(user, 'onboarding_last_name', "NA")
         refresh['onboarding_org_name'] = getattr(user, 'onboarding_org_name', "NA")
         refresh = RefreshToken.for_user(user)        
-        if current_datetime < getattr(user, 'subscription_till', "NA"):             
+        if current_datetime < getattr(user, 'subscription_till', "NA"): 
+            print("hiii date is there")            
             refresh['subscription_till'] = getattr(user, 'subscription_till', "NA")            
             return Response({
                 "access": str(refresh.access_token),
