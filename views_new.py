@@ -343,16 +343,21 @@ def login_or_register(request):
     if user:
         # Generate JWT tokens        
         refresh = RefreshToken.for_user(user)
-        current_datetime = datetime.now() 
+        current_datetime = datetime.now()         
         refresh['role'] = getattr(user, 'role', 'org-user')
         refresh['onboarding_org_id'] = getattr(user, 'onboarding_org_id', 'NA')
         refresh['onboarding_user_id'] = getattr(user, 'onboarding_user_id', 'NA')
         refresh['onboarding_first_name'] = getattr(user, 'onboarding_first_name', "NA")
         refresh['onboarding_last_name'] = getattr(user, 'onboarding_last_name', "NA")
         refresh['onboarding_org_name'] = getattr(user, 'onboarding_org_name', "NA")
-        refresh = RefreshToken.for_user(user)        
-        if current_datetime < getattr(user, 'subscription_till', "NA"): 
-            print("hiii date is there")            
+        subscription_till_str = getattr(user, 'subscription_till', None)
+        if subscription_till_str:
+            subscription_till = datetime.strptime(subscription_till_str, "%Y-%m-%d %H:%M:%S")
+        else:
+            return Response({            
+                                    "message": "Error ingetting subscription"
+                                })  
+        if current_datetime < subscription_till:              
             refresh['subscription_till'] = getattr(user, 'subscription_till', "NA")            
             return Response({
                 "access": str(refresh.access_token),
