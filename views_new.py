@@ -341,7 +341,8 @@ def login_or_register(request):
     # Authenticate existing user
     user = authenticate(username=username, password=password)
     if user:
-        # Generate JWT tokens
+        # Generate JWT tokens        
+        refresh = RefreshToken.for_user(user)
         current_datetime = datetime.now() 
         refresh['role'] = getattr(user, 'role', 'org-user')
         refresh['onboarding_org_id'] = getattr(user, 'onboarding_org_id', 'NA')
