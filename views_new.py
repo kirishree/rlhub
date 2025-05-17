@@ -362,7 +362,7 @@ def login_or_register(request):
             return Response({
                # "access": str(refresh.access_token),
                # "refresh": str(refresh),
-                "message": "User authenticated successfully"
+                "message": "Subscription Expired"
             })
         else:
             details = coll_registered_organization.find_one({"organization_id":getattr(user, 'onboarding_org_id', 'NA')})
