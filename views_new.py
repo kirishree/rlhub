@@ -333,6 +333,13 @@ def login_or_register(request):
         # Generate JWT tokens for new user
         refresh = RefreshToken.for_user(user)
         refresh['role'] = "admin"  # Assuming 'role' is a field on your user model
+        logger.info(
+            f"Admin Logged in",
+            extra={                
+                "be_api_endpoint": "login",
+                "exception": ""
+            }
+            )
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
@@ -354,7 +361,14 @@ def login_or_register(request):
         if subscription_till_str:
             subscription_till = datetime.strptime(subscription_till_str, "%Y-%m-%d %H:%M:%S")         
         if current_datetime < subscription_till:              
-            refresh['subscription_till'] = getattr(user, 'subscription_till', "NA")            
+            refresh['subscription_till'] = getattr(user, 'subscription_till', "NA") 
+            logger.info(
+            f"{username} logged in",
+            extra={                
+                "be_api_endpoint": "login",
+                "exception": ""
+            }
+            )           
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
@@ -363,10 +377,17 @@ def login_or_register(request):
         else:
             details = coll_registered_organization.find_one({"organization_id":getattr(user, 'onboarding_org_id', 'NA')})
             if details:
-                if current_datetime < details["subscription_to"] :
+                if current_datetime > details["subscription_to"] :
                     renew_status, subs_msg, subsription_todate = onboarding.check_subscription_renewed_login(username, password, getattr(user, 'onboarding_org_id', 'NA'))
                     if renew_status:
                         refresh['subscription_till'] = subsription_todate
+                        logger.info(
+                            f"{username} logged in & Subscription renewed",
+                            extra={                
+                                "be_api_endpoint": "login",
+                                "exception": ""
+                            }
+                            )   
                         return Response({
                             "access": str(refresh.access_token),
                             "refresh": str(refresh),
@@ -374,6 +395,13 @@ def login_or_register(request):
                         })
                     else:
                         refresh['subscription_till'] = str(details["subscription_to"])
+                        logger.info(
+                            f"{username} logged in & {subs_msg}",
+                            extra={                
+                                "be_api_endpoint": "login",
+                                "exception": ""
+                            }
+                            )  
                         return Response({   
                                     "access": str(refresh.access_token),
                                     "refresh": str(refresh),         
@@ -415,12 +443,25 @@ def login_or_register(request):
         refresh['onboarding_first_name'] = user.onboarding_first_name
         refresh['onboarding_last_name'] = user.onboarding_last_name
         refresh['onboarding_org_name'] = user.onboarding_org_name
+        logger.info(
+                            f"New user: {username} added ",
+                            extra={                
+                                "be_api_endpoint": "login",
+                                "exception": ""
+                            }
+                            )  
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
             "message": True
         })
     else:
+        logger.error(f"New user: {username} not added due to {onboard_status} ",
+                            extra={                
+                                "be_api_endpoint": "login",
+                                "exception": ""
+                            }
+                    )  
         return Response({            
             "message": False,
             "msg_status": onboard_status
