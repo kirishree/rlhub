@@ -246,7 +246,7 @@ def login_or_register_old(request):
         })
     
 @api_view(['POST'])
-def login_or_register(request):
+def login_or_register_ol(request):
     username = request.data.get("username")
     password = request.data.get("password")
 
@@ -321,6 +321,104 @@ def login_or_register(request):
             "message": onboard_status
         })
     
+@api_view(['POST'])
+def login_or_register(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+    if not username or not password:
+        return Response({"error": "Username and password are required"}, status=400)
+    if username ==  super_user_name:
+        # Authenticate existing user
+        user = authenticate(username=username, password=password)
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = "admin"  # Assuming 'role' is a field on your user model
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
+    # Authenticate existing user
+    user = authenticate(username=username, password=password)
+    if user:
+        # Generate JWT tokens
+        current_datetime = datetime.now() 
+        refresh['role'] = getattr(user, 'role', 'org-user')
+        refresh['onboarding_org_id'] = getattr(user, 'onboarding_org_id', 'NA')
+        refresh['onboarding_user_id'] = getattr(user, 'onboarding_user_id', 'NA')
+        refresh['onboarding_first_name'] = getattr(user, 'onboarding_first_name', "NA")
+        refresh['onboarding_last_name'] = getattr(user, 'onboarding_last_name', "NA")
+        refresh['onboarding_org_name'] = getattr(user, 'onboarding_org_name', "NA")
+        refresh = RefreshToken.for_user(user)        
+        if current_datetime < getattr(user, 'subscription_till', "NA"):             
+            refresh['subscription_till'] = getattr(user, 'subscription_till', "NA")            
+            return Response({
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "message": "User authenticated successfully"
+            })
+        else:
+            details = coll_registered_organization.find_one({"organization_id":getattr(user, 'onboarding_org_id', 'NA')})
+            if details:
+                if current_datetime < details["subscription_to"] :
+                    renew_status, subs_msg, subsription_todate = onboarding.check_subscription_renewed_login(username, password, getattr(user, 'onboarding_org_id', 'NA'))
+                    if renew_status:
+                        refresh['subscription_till'] = subsription_todate
+                        return Response({
+                            "access": str(refresh.access_token),
+                            "refresh": str(refresh),
+                            "message": "User authenticated successfully"
+                        })
+                    else:
+                        return Response({            
+                                    "message": subs_msg
+                                })  
+                else:
+                    refresh['subscription_till'] = details["subscription_to"]
+                    return Response({
+                            "access": str(refresh.access_token),
+                            "refresh": str(refresh),
+                            "message": "User authenticated successfully"
+                        })
+    # Perform your custom validation before creating a new user (add logic here)
+    # Example: Check if username meets your policy, etc.
+    onboard_status, onuser_role, onorg_id, user_id, first_name, last_name, org_name, to_date = onboarding.check_login_onboarding_new(username, password)
+    if onboard_status == "True":
+        if onuser_role == "ADMIN":
+            onuser_role = "org-admin"
+        else:
+            onuser_role = "org-user"
+        # Create new user
+        user = User.objects.create_user(username=username, 
+                                        password=password,
+                                        role=onuser_role,
+                                        onboarding_org_id=onorg_id,
+                                        onboarding_user_id=user_id,
+                                        onboarding_first_name=first_name,
+                                        onboarding_last_name=last_name,
+                                        onboarding_org_name=org_name,
+                                        subscription_till=to_date
+                                        )
+        # Generate JWT tokens for new user
+        refresh = RefreshToken.for_user(user)
+        # Manually add custom claim for 'role'
+        refresh['role'] = user.role  # Assuming 'role' is a field on your user model
+        refresh['subscription_till'] = user.subscription_till
+        refresh['onboarding_org_id'] = user.onboarding_org_id
+        refresh['onboarding_user_id'] = user.onboarding_user_id
+        refresh['onboarding_first_name'] = user.onboarding_first_name
+        refresh['onboarding_last_name'] = user.onboarding_last_name
+        refresh['onboarding_org_name'] = user.onboarding_org_name
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "User registered and authenticated successfully"
+        })
+    else:
+        return Response({            
+            "message": onboard_status
+        })
+       
 @api_view(['POST'])
 def login_or_register_new(request):
     username = request.data.get("username")
@@ -434,7 +532,7 @@ def add_cisco_device(request: HttpRequest):
             data["username"] = org_info["regusers"][0]["username"]
             orgstatus = True
         else:
-            orgstatus = False  
+            orgstatus = False          
     elif "access_token" in data:
         orgname, orgstatus = onboarding.organization_name(data)
     if not orgstatus:        

@@ -85,7 +85,16 @@ rr = "ii with vlan\r "
 print(rr.split("ii with ")[1].split(" ")[0].split("\r")[0])
 
 
-
+def checkkk(user):
+    if user == "a":
+        return True, user
+    else:
+        return "not a", user
+chstatus, user1 = checkkk("b")
+if chstatus:
+    print("hi", chstatus)
+else:
+    print("hiii", chstatus)
 
 
 

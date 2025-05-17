@@ -772,7 +772,7 @@ def check_login_onboarding(username, password):
                 from_date = datetime.utcfromtimestamp(timestamp)
                 # Add Duration to get to_date
                 to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
-                if current_datetime < to_date:
+                if current_datetime < to_date:                               
                     return 'True', user_role, org_id, user_id, first_name, last_name, org_name, str(to_date)
             else:
                     return 'Not Subscribed for ReachLink', False, False, False, False, False, False, False
@@ -780,4 +780,166 @@ def check_login_onboarding(username, password):
                 return 'Not Subscribed for any services', False, False, False, False, False, False, False
     except:
         return 'Internal Server Error', False, False, False, False, False, False, False
+    
+def check_login_onboarding_new(username, password):
+    try:
+        data_login = {
+                    "email": username,
+                    "password": password
+                 }
+        # Send a POST request with the data
+        login_response = requests.post(url+"auth/login", json=data_login)
+        if login_response.status_code == 200:
+        # Parse the JSON response
+            loginjson_response = login_response.json()
+            access_token = loginjson_response["data"]["access_token"]
+        else:
+            return 'Invalid Login & password'
+        headers = {
+                    "Authorization": f"Bearer {access_token}"
+                  }
+        user_response = requests.get(url+"users/me", headers=headers)
+        current_datetime = datetime.now() 
+        if user_response.status_code == 200:
+            userjson_response = user_response.json()            
+            user_info = userjson_response["data"]["user"]
+            user_role = user_info["role"]
+            org_id = user_info["org_id"]
+            user_id = user_info["id"]
+            first_name = user_info["first_name"]
+            last_name = user_info["last_name"]
+            details = coll_registered_organization.find_one({"organization_id":org_id})
+            if details:
+                if current_datetime < details["subscription_to"]:
+                    registered_users = details["regusers"]
+                    user_already_reg = False
+                    for reguser in registered_users:
+                        if reguser["username"] == username:
+                            user_already_reg = True
+                            break
+                    if not user_already_reg:
+                        registered_users.append({"username":username,
+                                                "userid":user_id,
+                                                "first_name":first_name,
+                                                "last_name": last_name,
+                                                "user_role": user_role
+                                            })
+                        query = {"organization_id": org_id}
+                        update_data = {"$set": {"regusers": registered_users}
+                                       }
+                        coll_registered_organization.update_many(query, update_data)
+                    return 'True', user_role, org_id, user_id, first_name, last_name, org_name, str(details["subscription_to"])        
+            else:
+                get_organization_name = requests.get(url+"org/", headers=headers)
+                org_response = get_organization_name.json()
+                org_name = org_response["data"]["company_name"].replace(" ", "")
+                service_response = requests.get(url+"services/", headers=headers)
+                if service_response.status_code == 200:
+                    servicejson_response = service_response.json()
+                    services_info = servicejson_response["data"]["services"]
+                    subscription_status = False
+                    for service in services_info:
+                        if service["name"] == "link":
+                            subscription_status = True
+                    if subscription_status:                
+                        subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                        subsjson_response = subscription_response.json()
+                        timestamp = int(subsjson_response["data"]["created_at"])
+                        # Convert Unix timestamp to datetime
+                        from_date = datetime.utcfromtimestamp(timestamp)
+                        # Add Duration to get to_date
+                        to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
+                        if current_datetime < to_date:
+                            coll_registered_organization.insert_one({
+                                "organization_id": subsjson_response["data"]["org_id"],
+                                "regusers": [{  "username":username,
+                                                "userid":user_id,
+                                                "first_name":first_name,
+                                                "last_name": last_name,
+                                                "user_role": user_role
+                                            }],
+                                "subscription_from":from_date,
+                                "subscription_to":to_date,                        
+                                "total_users": subsjson_response["data"]["users"],
+                                "remaining_users": subsjson_response["data"]["users"],
+                                "registered_devices":[{"reachlink_hub_info": {
+                                                "uuid": "reachlinkserver.net",
+                                                "host_id": hub_host_id,
+                                                "itemid_received": hub_item_id_received,
+                                                "itemid_sent": hub_item_id_sent,
+                                                "branch_location": "Reachlink_server",
+                                                "hub_ip": hub_ip
+                                                },
+                                                "microtek_spokes_info":[],
+                                                "robustel_spokes_info": [],
+                                                "cisco_spokes_info": [],
+                                                "ubuntu_spokes_info": []
+                                                }
+                                                ],
+                                "organization_name": organization_name                                           
+                                })
+                            return 'True', user_role, org_id, user_id, first_name, last_name, org_name, str(to_date)
+                        else:
+                            return 'Subscription expired', False, False, False, False, False, False, False
+                    else:
+                        return 'Not Subscribed for ReachLink', False, False, False, False, False, False, False
+                else:
+                    return 'Not Subscribed for any services', False, False, False, False, False, False, False
+        else:
+            return 'Error in getting User Info', False, False, False, False, False, False, False
+    except:
+        return 'Internal Server Error', False, False, False, False, False, False, False
 
+def check_subscription_renewed_login(username, password, organization_id):
+    try:
+        data_login = {
+                    "email": username,
+                    "password": password
+                 }
+            # Send a POST request with the data
+        login_response = requests.post(url+"auth/login", json=data_login)
+        if login_response.status_code == 200:
+            # Parse the JSON response
+            loginjson_response = login_response.json()
+            access_token = loginjson_response["data"]["access_token"]
+        else:
+            return "Invalid login & password"        
+        headers = {
+                    "Authorization": f"Bearer {access_token}"
+                  }
+        service_response = requests.get(url+"services/", headers=headers)
+        if service_response.status_code == 200:
+            servicejson_response = service_response.json()
+            services_info = servicejson_response["data"]["services"]
+            subscription_status = False
+            for service in services_info:
+                if service["name"] == "link":
+                    subscription_status = True
+            if subscription_status:
+                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                subsjson_response = subscription_response.json()
+                timestamp = int(subsjson_response["data"]["created_at"])
+                # Convert Unix timestamp to datetime
+                from_date = datetime.utcfromtimestamp(timestamp)
+                # Add Duration to get to_date
+                to_date = from_date + relativedelta(months=int(subsjson_response["data"]["duration"]))
+                details = coll_registered_organization.find_one({"organization_id":organization_id})
+                if details:
+                    new_remaining_users = int(subsjson_response["data"]["users"]) - details["total_users"] + details["remaining_users"]
+                    if details["subscription_to"] != to_date or new_remaining_users > 0:
+                        query = {"organization_id": organization_id }
+                        update_data = {"$set": 
+                                       {"subscription_from": from_date, 
+                                        "subscription_to": to_date,
+                                        "total_users": subsjson_response["data"]["users"],
+                                        "remaining_users": new_remaining_users                                    
+                                        }
+                                       }
+                        coll_registered_organization.update_many(query, update_data)
+                        return True, "subscription_renewed", to_date
+            else:
+                return False, "Not subscribed for ReachLink", False
+        else:
+            return False, "not subscribed for any services", False         
+    except:
+        return False, "Internal Server Error", False
