@@ -336,7 +336,7 @@ def login_or_register(request):
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "message": "User registered and authenticated successfully"
+            "message": True
         })
     # Authenticate existing user
     user = authenticate(username=username, password=password)
@@ -352,17 +352,13 @@ def login_or_register(request):
         refresh['onboarding_org_name'] = getattr(user, 'onboarding_org_name', "NA")
         subscription_till_str = getattr(user, 'subscription_till', None)
         if subscription_till_str:
-            subscription_till = datetime.strptime(subscription_till_str, "%Y-%m-%d %H:%M:%S")
-        else:
-            return Response({            
-                                    "message": "Error in getting subscription"
-                                })  
+            subscription_till = datetime.strptime(subscription_till_str, "%Y-%m-%d %H:%M:%S")         
         if current_datetime < subscription_till:              
             refresh['subscription_till'] = getattr(user, 'subscription_till', "NA")            
             return Response({
-               # "access": str(refresh.access_token),
-               # "refresh": str(refresh),
-                "message": "Subscription Expired"
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "message": True
             })
         else:
             details = coll_registered_organization.find_one({"organization_id":getattr(user, 'onboarding_org_id', 'NA')})
@@ -374,18 +370,21 @@ def login_or_register(request):
                         return Response({
                             "access": str(refresh.access_token),
                             "refresh": str(refresh),
-                            "message": "User authenticated successfully"
+                            "message": True
                         })
                     else:
-                        return Response({            
-                                    "message": subs_msg
+                        refresh['subscription_till'] = str(details["subscription_to"])
+                        return Response({   
+                                    "access": str(refresh.access_token),
+                                    "refresh": str(refresh),         
+                                    "message": True
                                 })  
                 else:
-                    refresh['subscription_till'] = details["subscription_to"]
+                    refresh['subscription_till'] = str(details["subscription_to"])
                     return Response({
                             "access": str(refresh.access_token),
                             "refresh": str(refresh),
-                            "message": "User authenticated successfully"
+                            "message": True
                         })
     # Perform your custom validation before creating a new user (add logic here)
     # Example: Check if username meets your policy, etc.
@@ -419,11 +418,12 @@ def login_or_register(request):
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "message": "User registered and authenticated successfully"
+            "message": True
         })
     else:
         return Response({            
-            "message": onboard_status
+            "message": False,
+            "msg_status": onboard_status
         })
        
 @api_view(['POST'])
