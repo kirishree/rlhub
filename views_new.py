@@ -355,13 +355,13 @@ def login_or_register(request):
             subscription_till = datetime.strptime(subscription_till_str, "%Y-%m-%d %H:%M:%S")
         else:
             return Response({            
-                                    "message": "Error ingetting subscription"
+                                    "message": "Error in getting subscription"
                                 })  
         if current_datetime < subscription_till:              
             refresh['subscription_till'] = getattr(user, 'subscription_till', "NA")            
             return Response({
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
+               # "access": str(refresh.access_token),
+               # "refresh": str(refresh),
                 "message": "User authenticated successfully"
             })
         else:
