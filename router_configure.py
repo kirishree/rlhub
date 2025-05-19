@@ -488,19 +488,7 @@ def createvlaninterface(data):
 
     vlan_ip = data["addresses"][0].split("/")[0]
     subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-    netmask = str(subnet.netmask)
-    
-    # Send the command and get the output
-    output = get_command_output(shell, f'sh run | section include interface {data["link"]}')
-    interfacedetails = output.split("\n")       
-    vlanavailable = False
-    vlanmode = f'switchport mode trunk'
-    for intfc in interfacedetails: 
-        if "allowed vlan" in intfc:
-            vlanavailable = True
-            vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
-    if not vlanavailable:
-        vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"        
+    netmask = str(subnet.netmask)    
     send_command(shell, 'configure terminal')
     send_command(shell, f'vlan {data["vlan_id"]}')
     send_command(shell, f'end')
@@ -523,21 +511,28 @@ def createvlaninterface(data):
     else:
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
-        send_command(shell, 'configure terminal')
-        send_command(shell, f'interface {data["link"]}')
-        vlanmodeout = get_command_output(shell, f'{vlanmode}')        
-        vlanmodeout2 = get_command_output(shell, f'{vlancommand}')   
-        if "Vlan can not be added." in vlanmodeout2:
-            send_command(shell, f'end')
+        for link_intfc in data["link"]:
+            output = get_command_output(shell, f'sh run | section include interface {link_intfc}')
+            interfacedetails = output.split("\n")       
+            vlanavailable = False
+            vlanmode = f'switchport mode trunk'
+            for intfc in interfacedetails: 
+                if "allowed vlan" in intfc:
+                    vlanavailable = True
+                    vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
+            if not vlanavailable:
+                vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"      
             send_command(shell, 'configure terminal')
-            send_command(shell, f'no interface vlan{data["vlan_id"]}')            
-            if " Maximum number of 8 vlan(s) in the database" in vlanmodeout2:
-                response = [{"message": f"Error: Maximum number of 8 vlan(s) only allowed"}] 
+            send_command(shell, f'interface {link_intfc}')
+            vlanmodeout = get_command_output(shell, f'{vlanmode}')        
+            vlanmodeout2 = get_command_output(shell, f'{vlancommand}')   
+            if "Vlan can not be added." in vlanmodeout2:                            
+                response = [{"message": f"Error: vlan{data['vlan_id']} not linked with {link_intfc} "}]   
+                send_command(shell, 'end')
+                break
             else:
-                response = [{"message": f"Error: Interface vlan{data['vlan_id']} not created. Pl try again!"}] 
-        else:
-            response = [{"message": f"Interface vlan{data['vlan_id']} created"}]      
-        send_command(shell, 'end')        
+                response = [{"message": f"Interface vlan{data['vlan_id']} created"}]      
+                send_command(shell, 'end')        
         # Save the configuration
     send_command(shell, 'write memory')     
     # Close the SSH connection
