@@ -600,6 +600,9 @@ def interfaceconfig(data):
     if data["intfc_name"] == "ether1" or data["intfc_name"] == "Base Tunnel" or data["intfc_name"] == "Overlay Tunnel":
         response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
         return response
+    if "ether" in data["intfc_name"] and "." not in data["intfc_name"]:
+        response = [{"message": f"Error don't try to assign IP on layer 2 interface"}]
+        return response
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -735,7 +738,18 @@ def createvlaninterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
-
+    if data['link'][0] == "ether1":
+        response = [{"message": "Error: Don't create a VLAN directly on a Layer 3 interface"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "createvlan_interface",
+                "exception": ""
+            }
+            )
+        return response
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -784,8 +798,8 @@ def createvlaninterface(data):
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
                     return response
-        vlan_int_name = f"{data['link']}.{data['vlan_id']}"
-        stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"]}')  
+        vlan_int_name = f"{data['link'][0]}.{data['vlan_id']}"
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"][0]}')  
         for newaddr in data["addresses"]:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
         response = [{"message": f"Interface {vlan_int_name} created "}]
