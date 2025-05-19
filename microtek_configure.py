@@ -545,8 +545,8 @@ def interfacedetails(data):
                 statusintfc = "up"    
             else:
                 statusintfc = "down"
-            if interfacename != "ether2" and interfacename != "ether3" and interfacename != "ether4" and interfacename != "ether5":
-                collect.append({"interface_name":interfacename,
+            #if interfacename != "ether2" and interfacename != "ether3" and interfacename != "ether4" and interfacename != "ether5":
+            collect.append({"interface_name":interfacename,
                                 "mac_address": macaddress,
                                 "type": typeinfo,
                                 "mtu": mtu,
