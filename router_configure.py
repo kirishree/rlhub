@@ -271,6 +271,9 @@ def traceroute(data):
     traceout = status.split("\r")
     final_out = ""
     for traceline in traceout:
+        print("hi")
+        print("final out", final_out)
+        print(traceline)
         if "type escape" in traceline.lower():
             continue
         if "tracing the route" in traceline.lower():
