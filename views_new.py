@@ -2513,8 +2513,7 @@ def traceroute_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]        
                 trace_result = router_configure.traceroute(data)   
-                response = [{"message": trace_result}]   
-                print("traceroute hub",response)    
+                response = [{"message": trace_result}]                   
         else:
             response = [{"message": "Error in connecting HUB"}]        
     else:           
