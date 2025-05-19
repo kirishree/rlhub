@@ -447,9 +447,10 @@ def createvlaninterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data['router_password']
-    if data['link'].lower() == "fastethernet4":
-        response = [{"message": "Error: Don't create a VLAN directly on a Layer 3 interface"}]
-        logger.info(
+    for intfcname in data['link']:
+        if intfcname.lower() == "fastethernet4":
+            response = [{"message": "Pl remove  Layer 3 interface from Link interface"}]
+            logger.info(
             f"{response}",
             extra={
                 "device_type": "Cisco",
@@ -458,7 +459,7 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
-        return response
+            return response
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -511,7 +512,7 @@ def createvlaninterface(data):
     else:
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
-        for link_intfc in data["link"]:
+        for link_intfc in data["link"]:            
             output = get_command_output(shell, f'sh run | section include interface {link_intfc}')
             interfacedetails = output.split("\n")       
             vlanavailable = False
