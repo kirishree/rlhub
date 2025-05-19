@@ -268,9 +268,21 @@ def traceroute(data):
         send_command_wo(shell, password)
     host_ip = data.get('trace_ip', None) 
     status = send_command_ping(shell, f'trace ip {host_ip}', wait_time=5)
+    traceout = status.split("\r")
+    final_out = ""
+    for traceline in traceout:
+        if "type escape" in traceline.lower():
+            continue
+        if "tracing the route" in traceline.lower():
+            continue
+        if "info:" in traceline.lower():
+            continue
+        if "#" in traceline:
+            continue
+        final_out += traceline
     # Close the SSH connection
     ssh_client.close()
-    return status
+    return traceline
 
 
 def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=15):
