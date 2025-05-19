@@ -738,7 +738,7 @@ def createvlaninterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
-    if data['link'][0] == "ether1":
+    if data['link'] == "ether1":
         response = [{"message": "Error: Don't create a VLAN directly on a Layer 3 interface"}]
         logger.info(
             f"{response}",
@@ -798,8 +798,8 @@ def createvlaninterface(data):
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
                     return response
-        vlan_int_name = f"{data['link'][0]}.{data['vlan_id']}"
-        stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"][0]}')  
+        vlan_int_name = f"{data['link']}.{data['vlan_id']}"
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"]}')  
         for newaddr in data["addresses"]:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
         response = [{"message": f"Interface {vlan_int_name} created "}]
