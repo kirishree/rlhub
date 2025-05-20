@@ -859,8 +859,7 @@ def deletevlaninterface(data):
         if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():
             print(data)
             response = [{"message": f"Error: Not able to delete physical interface"}]
-            return response
-        print("after", data)
+            return response        
         router_ip = data["tunnel_ip"].split("/")[0]
         username = data["router_username"]
         password = data['router_password']
@@ -887,13 +886,12 @@ def deletevlaninterface(data):
         # Add a delay to allow the shell to be ready
         time.sleep(1)
         # Enter enable mode
-        vlancommand = False
+        vlanlinkinfo = []
         output = send_command_wo(shell, 'enable')
         if "Password" in output:  # Prompt for enable password
             send_command_wo(shell, password)
         if "vlan" in data["intfc_name"].lower():
-            vlanid = data["intfc_name"].lower().split("vlan")[1]
-            print("vlanid", vlanid)
+            vlanid = data["intfc_name"].lower().split("vlan")[1]            
             output = get_command_output(shell, f'sh run | section include interface')
             interfacedetails = output.split("\n")       
             for intfc in interfacedetails:                 
@@ -902,14 +900,15 @@ def deletevlaninterface(data):
                 if "allowed vlan" in intfc:
                     if f",{vlanid}," in intfc:
                         print("allowed vlan", intfc)
-                        vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]
-                        break          
+                        vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]                        
+                        vlanlinkinfo.append({"intfc": intfc_name,
+                                             "vlancommand": vlancommand})         
                 #if "access vlan" in intfc:                    
                  #   if vlanid == intfc.strip().split("vlan")[1]:
                  #       vlancommand = "no" + intfc
                  #       break  
             logger.info(
-                    f"{vlancommand} & {intfc_name}",
+                    f"{vlanlinkinfo}",
                     extra={
                         "device_type": "Cisco",
                         "device_ip": router_ip,
@@ -923,10 +922,10 @@ def deletevlaninterface(data):
         if " not be deleted" in deleteoutput:
             response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
         else:
-            if vlancommand:
+            for linkvlan in vlanlinkinfo:
                 send_command(shell, 'configure terminal')
-                send_command(shell, f'interface {intfc_name}')
-                send_command(shell, f'{vlancommand}')
+                send_command(shell, f'interface {linkvlan["intfc"]}')
+                send_command(shell, f'{linkvlan["vlancommand"]}')
                 send_command_wo(shell, 'end')
             response = [{"message": f"Interface {data['intfc_name']} deleted"}]   
         #Save the configuration
