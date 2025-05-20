@@ -128,8 +128,7 @@ def new_client(client_name):
 
         # Output .ovpn file path
         output_file = os.path.expanduser(f"~/{client_name}.ovpn")
-        if not os.path.exists(client_cert_file):
-            print("path not exist")
+        if not os.path.exists(client_cert_file):            
             return False
         with open(output_file, "w") as ovpn:
             # Append client-common.txt
@@ -529,8 +528,7 @@ def login(request: HttpRequest):
     try:
         response, newuser = onboarding.check_user(data, newuser)        
         if newuser:
-            userStatus = onboarding.authenticate_user(data)
-            print(userStatus)
+            userStatus = onboarding.authenticate_user(data)            
             if userStatus:
                 response, newuser = onboarding.check_user(data, newuser)
             else:
@@ -538,11 +536,8 @@ def login(request: HttpRequest):
         if "spokedevice_name" in response[0]:
             client_name = response[0]["spokedevice_name"]
             output_file = os.path.expanduser(f"~/{client_name}.ovpn")
-            if not os.path.exists(output_file):
-                print("Generating new client")
-                new_client(client_name)    
-            else:
-                print("Client already available")
+            if not os.path.exists(output_file):                
+                new_client(client_name) 
             with open(output_file, 'r') as file:
                 conffile_content = file.read()
                 file.close()
@@ -564,63 +559,22 @@ def login(request: HttpRequest):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
-    data = json.loads(request.body)    
-    data['branch_location'] = data['branch_location'].lower()
-    global newuser
-    orgstatus = False
-    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+    try:
+        data = json.loads(request.body)         
+        data['branch_location'] = data['branch_location'].lower()
+        global newuser    
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "configure_spoke" }
-                    )
-    print(f"requested ip of add cisco device spoke:{public_ip}") 
-    if "organization_id" in data:
-        org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
-        if org_info:
-            orgname = org_info["organization_name"]
-            data["username"] = org_info["regusers"][0]["username"]
-            orgstatus = True
-        else:
-            orgstatus = False          
-    elif "access_token" in data:
-        orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:        
-        logger.error(
-            f"Error: Configure spoke: Error in getting organization name ",
-            extra={
-                "device_type": "ReachlinkServer",
-                "device_ip": hub_ip,
-                "be_api_endpoint": "configure spoke",
-                "exception": ""
-            }
-            ) 
-        json_response = [{"message": f"Error:Error in getting organization name"}]
-        response = HttpResponse(content_type='application/zip')
-        response['X-Message'] = json.dumps(json_response)
-        response["Access-Control-Expose-Headers"] = "X-Message"
-        return response
-    if data["device"].lower() == "robustel":        
-        data["uuid"] = data['branch_location'] + f"_{orgname}_robustel.net"
-        print(data)
-        data["username"] = "none"
-        data["password"] = "none"        
-        try:
-            response, newuser = onboarding.check_user(data, newuser)        
-            if newuser:
-                userStatus = onboarding.authenticate_user(data)
-                print(userStatus)
-                if userStatus:
-                    response, newuser = onboarding.check_user(data, newuser)
-                else:
-                    response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
-            if "spokedevice_name" in response[0]:
-                client_name = response[0]["spokedevice_name"]
-                # Path configuration
-                output_file = os.path.expanduser(f"~/{client_name}.ovpn")
-                if not os.path.exists(output_file):
-                    print("Generating new client")
-                    if not(new_client(client_name)):                        
-                        logger.error(
-                            f"Error: Configure Robustel Spoke: Issue with client certificate generation",
+                    )    
+        if "organization_id" in data:
+            org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
+            if org_info:
+                orgname = org_info["organization_name"]
+                data["username"] = org_info["regusers"][0]["username"]            
+            else:               
+                logger.error(
+                            f"Error: Configure spoke: Error in getting organization name ",
                             extra={
                                 "device_type": "ReachlinkServer",
                                 "device_ip": hub_ip,
@@ -628,47 +582,66 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": ""
                             }
                         ) 
-                        response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
-                        response1 = HttpResponse(content_type='text/plain')
-                        response1['X-Message'] = json.dumps(response)
-                        response1["Access-Control-Expose-Headers"] = "X-Message"
-                        return response1  
-                else:
-                    print("Client already available")
-                base_path = "/etc/openvpn/server"
-                ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
-                client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
-                client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
-                
-                with open(ca_cert_file, "r") as f:
-                    cacrt = f.read()
-                    f.close()
-                with open(client_cert_file, "r")as f:
-                    clientcrt = f.read()
-                    f.close()
-                with open(client_key_file, "r") as f:
-                    clientkey = f.read()
-                    f.close()
-                with open(robustel_exe_path, "rb") as f:
-                    robustelexe = f.read()
-                    f.close()
-                files_to_send = {
-                    "ca.crt": cacrt,
-                    "client.crt": clientcrt,
-                    "client.key": clientkey,
-                    "reachlink_robustel_config.exe": robustelexe  # Keep binary
-                }
-                # Create a buffer for the ZIP file
-                buffer = io.BytesIO()
-
-                # Create a ZIP archive
-                with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    for filename, content in files_to_send.items():
-                        zip_file.writestr(filename, content)
-
-                # Prepare the response
-                buffer.seek(0)
-                logger.info(
+                json_response = [{"message": f"Error:Error in getting organization name"}]
+                response = HttpResponse(content_type='application/zip')
+                response['X-Message'] = json.dumps(json_response)
+                response["Access-Control-Expose-Headers"] = "X-Message"
+                return response
+        if data["device"].lower() == "robustel":        
+            data["uuid"] = data['branch_location'] + f"_{orgname}_robustel.net"      
+            try:
+                response, newuser = onboarding.check_user(data, newuser) 
+                if "spokedevice_name" in response[0]:
+                    client_name = response[0]["spokedevice_name"]
+                    # Path configuration
+                    output_file = os.path.expanduser(f"~/{client_name}.ovpn")
+                    if not os.path.exists(output_file):                    
+                        if not(new_client(client_name)):                        
+                            logger.error(
+                                f"Error: Configure Robustel Spoke: Issue with client certificate generation",
+                                extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                                }
+                            ) 
+                            response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+                            response1 = HttpResponse(content_type='text/plain')
+                            response1['X-Message'] = json.dumps(response)
+                            response1["Access-Control-Expose-Headers"] = "X-Message"
+                            return response1                
+                    base_path = "/etc/openvpn/server"
+                    ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
+                    client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
+                    client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")                
+                    with open(ca_cert_file, "r") as f:
+                        cacrt = f.read()
+                        f.close()
+                    with open(client_cert_file, "r")as f:
+                        clientcrt = f.read()
+                        f.close()
+                    with open(client_key_file, "r") as f:
+                        clientkey = f.read()
+                        f.close()
+                    with open(robustel_exe_path, "rb") as f:
+                        robustelexe = f.read()
+                        f.close()
+                    files_to_send = {
+                            "ca.crt": cacrt,
+                            "client.crt": clientcrt,
+                            "client.key": clientkey,
+                            "reachlink_robustel_config.exe": robustelexe  # Keep binary
+                    }
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    logger.info(
                             f"New Robustel client: {client_name} added",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -677,15 +650,15 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": ""
                             }
                         ) 
-                json_response = [{"message": response[0]["message"]}]
-                response1 = HttpResponse(buffer, content_type='application/zip')
-                response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
-                response1['X-Message'] = json.dumps(json_response)
-                response1["Access-Control-Expose-Headers"] = "X-Message"
-                os.system("systemctl restart reachlink_test") 
-                return response1   
-            else:                
-                logger.error(
+                    json_response = [{"message": response[0]["message"]}]
+                    response1 = HttpResponse(buffer, content_type='application/zip')
+                    response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    os.system("systemctl restart reachlink_test") 
+                    return response1   
+                else:                
+                    logger.error(
                             f"Error: Configure Robustel Spoke:{response[0]['message']}",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -694,9 +667,9 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": ""
                             }
                         ) 
-                json_response = [{"message": f"Error:{response[0]['message']}"}]
-        except Exception as e:            
-            logger.error(
+                    json_response = [{"message": f"Error:{response[0]['message']}"}]
+            except Exception as e:            
+                logger.error(
                             f"Error: Configure Robustel Spoke",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -706,58 +679,46 @@ def add_cisco_device(request: HttpRequest):
                             }
                         ) 
             json_response = [{"message": f"Error:{response[0]['message']}"}]
-        response1 = HttpResponse(content_type='text/plain')
-        response1['X-Message'] = json.dumps(json_response)
-        response1["Access-Control-Expose-Headers"] = "X-Message"
-        return response1    
-    if "microtik" in data["device"].lower():        
-        data["uuid"] = data['branch_location'] + f"_{orgname}_microtek.net"        
-        data["username"] = "none"
-        data["password"] = "none"        
-        try:
-            response, newuser = onboarding.check_user(data, newuser)   
-            print("response", response)     
-            if newuser:
-                userStatus = onboarding.authenticate_user(data)
-                #print(userStatus)
-                if userStatus:
-                    response, newuser = onboarding.check_user(data, newuser)
-                else:
-                    response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
-            if "spokedevice_name" in response[0]:
-                client_name = response[0]["spokedevice_name"]
-                # Path configuration
-                output_file = os.path.expanduser(f"/root/{client_name}.ovpn")
-                if not os.path.exists(output_file):
-                    print("Generating new client")
-                    new_client(client_name)    
-                else:
-                    print("Client already available")                
-                base_path = "/etc/openvpn/server"
-                ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
-                client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
-                client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
-                with open(output_file, "r") as f:
-                    ovpnfile = f.read()
-                    f.close()                
-                with open(microtik_exe_path, "rb") as f:
-                    microtekexe = f.read()
-                    f.close()
-                files_to_send = {                    
-                    f"{client_name}.ovpn": ovpnfile,
-                    "reachlink_microtek_config.exe": microtekexe  # Keep binary
-                }
-                # Create a buffer for the ZIP file
-                buffer = io.BytesIO()
-
-                # Create a ZIP archive
-                with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    for filename, content in files_to_send.items():
-                        zip_file.writestr(filename, content)
-                # Prepare the response
-                buffer.seek(0)
-                json_response = [{"message": response[0]["message"]}]
-                logger.info(
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(json_response)
+            response1["Access-Control-Expose-Headers"] = "X-Message"
+            return response1    
+        if "microtik" in data["device"].lower():        
+            data["uuid"] = data['branch_location'] + f"_{orgname}_microtek.net"     
+            try:
+                response, newuser = onboarding.check_user(data, newuser)  
+                if "spokedevice_name" in response[0]:
+                    client_name = response[0]["spokedevice_name"]
+                    # Path configuration
+                    output_file = os.path.expanduser(f"/root/{client_name}.ovpn")
+                    if not os.path.exists(output_file):                        
+                        new_client(client_name)    
+                    else:
+                        print("Client already available")                
+                    base_path = "/etc/openvpn/server"
+                    ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
+                    client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
+                    client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
+                    with open(output_file, "r") as f:
+                        ovpnfile = f.read()
+                        f.close()                
+                    with open(microtik_exe_path, "rb") as f:
+                        microtekexe = f.read()
+                        f.close()
+                    files_to_send = {                    
+                        f"{client_name}.ovpn": ovpnfile,
+                        "reachlink_microtek_config.exe": microtekexe  # Keep binary
+                    }
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    json_response = [{"message": response[0]["message"]}]
+                    logger.info(
                             f"New Microtek {client_name} added",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -766,15 +727,15 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": ""
                             }
                         ) 
-                response1 = HttpResponse(buffer, content_type='application/zip')
-                response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
-                response1['X-Message'] = json.dumps(json_response)
-                response1["Access-Control-Expose-Headers"] = "X-Message"
-                os.system(f"python3 {reachlink_zabbix_path}")
-                os.system("systemctl restart reachlink_test")  
-                return response1 
-            else:                
-                logger.error(
+                    response1 = HttpResponse(buffer, content_type='application/zip')
+                    response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    os.system(f"python3 {reachlink_zabbix_path}")
+                    os.system("systemctl restart reachlink_test")  
+                    return response1 
+                else:                
+                    logger.error(
                             f"Error: Configure Microtek Spoke:{response[0]['message']}",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -783,9 +744,9 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": ""
                             }
                         )              
-                json_response = [{"message": f"Error:{response[0]['message']}"}]
-        except Exception as e:            
-            logger.error(
+                    json_response = [{"message": f"Error:{response[0]['message']}"}]
+            except Exception as e:            
+                logger.error(
                             f"Error: Configure Microtek Spoke",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -794,60 +755,53 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": str(e)
                             }
                         )     
-            json_response = [{"message": f"Error:{response[0]['message']}"}]
-        response1 = HttpResponse(content_type='text/plain')
-        response1['X-Message'] = json.dumps(json_response)
-        response1["Access-Control-Expose-Headers"] = "X-Message"
-        return response1
-    if data["device"].lower() == "cisco":     
-        if  data.get("dialer_ip", "") != hub_ip:
-            check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
-            if not check_hub_configured:
-                json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
-                response = HttpResponse(content_type='application/zip')
-                response['X-Message'] = json.dumps(json_response)
-                response["Access-Control-Expose-Headers"] = "X-Message"
-                return response
-            data["uuid"] = data['branch_location'] + f"_{orgname}_ciscodevice.net"
-        else:
-            data["uuid"] = data['branch_location'] + f"_{orgname}_cisco_ubuntu.net"
-        data["username"] = "none"
-        data["password"] = "none" 
-        try:
-            response, newuser = onboarding.check_user(data, newuser)
-            if newuser:
-                userStatus = onboarding.authenticate_user(data)            
-                if userStatus:
-                    response, newuser = onboarding.check_user(data, newuser)
-                else:
-                    response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
-            print(response)
-            if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
-                devicename = response[0]["spokedevice_name"]
-                devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
-                dialer_ip = data.get("dialer_ip", "")
-                if not devicedialerinfo: #New device
-                    routerpassword = hub_config.generate_router_password_cisco()
-                    routerusername = devicename.lower()
-                    if data.get("dialer_ip", "") != hub_ip:
-                        newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                json_response = [{"message": f"Error while configuring, pl try again!"}]
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(json_response)
+            response1["Access-Control-Expose-Headers"] = "X-Message"
+            return response1
+        if data["device"].lower() == "cisco":     
+            if  data.get("dialer_ip", "") != hub_ip:
+                check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
+                if not check_hub_configured:
+                    json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
+                    response = HttpResponse(content_type='application/zip')
+                    response['X-Message'] = json.dumps(json_response)
+                    response["Access-Control-Expose-Headers"] = "X-Message"
+                    return response
+                data["uuid"] = data['branch_location'] + f"_{orgname}_ciscodevice.net"
+            else:
+                data["uuid"] = data['branch_location'] + f"_{orgname}_cisco_ubuntu.net"
+            data["username"] = "none"
+            data["password"] = "none" 
+            try:
+                response, newuser = onboarding.check_user(data, newuser)                            
+                if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
+                    devicename = response[0]["spokedevice_name"]
+                    devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
+                    dialer_ip = data.get("dialer_ip", "")
+                    if not devicedialerinfo: #New device
+                        routerpassword = hub_config.generate_router_password_cisco()
+                        routerusername = devicename.lower()
+                        if data.get("dialer_ip", "") != hub_ip:
+                            newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                        else:
+                            newdialerinfo = ubuntu_info.get_dialer_ip(devicename)
                     else:
-                        newdialerinfo = ubuntu_info.get_dialer_ip(devicename)
-                else:
-                    routerpassword = devicedialerinfo["router_password"]
-                    routerusername = devicedialerinfo["router_username"]
-                    if devicedialerinfo["dialer_hub_ip"] == dialer_ip: #same hub
-                        newdialerinfo= {"dialerip": devicedialerinfo["dialerip"],
+                        routerpassword = devicedialerinfo["router_password"]
+                        routerusername = devicedialerinfo["router_username"]
+                        if devicedialerinfo["dialer_hub_ip"] == dialer_ip: #same hub
+                            newdialerinfo= {"dialerip": devicedialerinfo["dialerip"],
                                         "dialerpassword": devicedialerinfo["dialerpassword"],
                                         "dialerusername": devicedialerinfo["dialerusername"],
                                         "hub_dialer_network":devicedialerinfo["hub_dialer_network"],
                                         "hub_dialer_netmask":devicedialerinfo["hub_dialer_netmask"]}
-                    else:
-                        if data.get("dialer_ip", "") != hub_ip:
-                            newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
                         else:
-                            newdialerinfo = ubuntu_info.get_dialer_ip(devicename)                 
-                if newdialerinfo:
+                            if data.get("dialer_ip", "") != hub_ip:
+                                newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                            else:
+                                newdialerinfo = ubuntu_info.get_dialer_ip(devicename)                 
+                    if newdialerinfo:
                         newdialerinfo["router_username"] = routerusername
                         newdialerinfo["router_password"] = routerpassword
                         newdialerinfo["spokedevice_name"] = devicename
@@ -926,7 +880,7 @@ def add_cisco_device(request: HttpRequest):
                         coll_registered_organization.update_many(query, update_data)                                          
                         dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
                         coll_tunnel_ip.insert_one(dialerinfo)                    
-                else:
+                    else:
                         logger.error(
                             f"Error:while generating dialerip for cisco",
                             extra={
@@ -942,26 +896,26 @@ def add_cisco_device(request: HttpRequest):
                         response["Access-Control-Expose-Headers"] = "X-Message"
                         return response                  
 
-                # Create a buffer for the ZIP file
-                buffer = io.BytesIO()
-                if data.get("dialer_ip", "") != hub_ip:
-                    # Create a ZIP archive
-                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                        # Read the EXE file and add it to the ZIP
-                        with open("reachlink_config.exe", "rb") as f:
-                            zip_file.writestr("reachlink_config.exe", f.read())
-                    # Prepare the response
-                    buffer.seek(0)
-                else:
-                    # Create a ZIP archive
-                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                        # Read the EXE file and add it to the ZIP
-                        with open("reachlink_cisco_config.exe", "rb") as f:
-                            zip_file.writestr("reachlink_config.exe", f.read())
-                    # Prepare the response
-                    buffer.seek(0)
-                json_response = [{"message": response[0]["message"]}]
-                logger.info(
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    if data.get("dialer_ip", "") != hub_ip:
+                        # Create a ZIP archive
+                        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                            # Read the EXE file and add it to the ZIP
+                            with open("reachlink_config.exe", "rb") as f:
+                                zip_file.writestr("reachlink_config.exe", f.read())
+                        # Prepare the response
+                        buffer.seek(0)
+                    else:
+                        # Create a ZIP archive
+                        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                            # Read the EXE file and add it to the ZIP
+                            with open("reachlink_cisco_config.exe", "rb") as f:
+                                zip_file.writestr("reachlink_config.exe", f.read())
+                        # Prepare the response
+                        buffer.seek(0)
+                    json_response = [{"message": response[0]["message"]}]
+                    logger.info(
                             f"response[0]['message']",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -970,20 +924,17 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": ""
                             }
                         )  
-                response = HttpResponse(buffer, content_type='application/zip')
-                response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
-                response['X-Message'] = json.dumps(json_response)
-                response["Access-Control-Expose-Headers"] = "X-Message"
-                #Currently registered device to show via frontend
-                registered_data = coll_tunnel_ip.find_one({"uuid": data["uuid"]})
-                print("regdata",registered_data)             
-                os.system(f"python3 {reachlink_zabbix_path}")
-                os.system("systemctl restart reachlink_test")            
-                return response
-            else:
-                json_response = [{"message": f"Error:{response[0]['message']}"}]
-        except Exception as e:
-            logger.error(
+                    response = HttpResponse(buffer, content_type='application/zip')
+                    response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response['X-Message'] = json.dumps(json_response)
+                    response["Access-Control-Expose-Headers"] = "X-Message"                        
+                    os.system(f"python3 {reachlink_zabbix_path}")
+                    os.system("systemctl restart reachlink_test")            
+                    return response
+                else:
+                    json_response = [{"message": f"Error:{response[0]['message']}"}]
+            except Exception as e:
+                logger.error(
                             "Error: Configure cisco spoke",
                             extra={
                                 "device_type": "ReachlinkServer",
@@ -992,12 +943,27 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": str(e)
                             }
                         )             
-            json_response = [{"message": f"Error:Internal Server Error, pl try again!"}]
-        print(json_response)
+                json_response = [{"message": f"Error:Internal Server Error, pl try again!"}]
+            response = HttpResponse(content_type='application/zip')
+            response['X-Message'] = json.dumps(json_response)
+            response["Access-Control-Expose-Headers"] = "X-Message"
+            return response
+    except Exception as e:
+        logger.error(
+                            "Error: Configure cisco spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        ) 
+        json_response = [{"message": f"Error while configuring spoke, pl try again!"}]
         response = HttpResponse(content_type='application/zip')
         response['X-Message'] = json.dumps(json_response)
         response["Access-Control-Expose-Headers"] = "X-Message"
         return response
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

@@ -663,18 +663,7 @@ def createsubinterface(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data['router_password']
-    if data['link'].lower() != "fastethernet4":
-        response = [{"message": "Error: Layer 2 interface doesn't support subinterface"}]
-        logger.info(
-            f"{response}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "createsub_interface",
-                "exception": ""
-            }
-            )
-        return response
+    data['link'] = "FastEthernet4"    
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -722,7 +711,6 @@ def createsubinterface(data):
             response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict."}]        
     else:
         response = [{"message": f"Sub-Interface {subinterfacename} created"}]
-   
     # Save the configuration
     send_command(shell, 'write memory')    
     # Close the SSH connection
