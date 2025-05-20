@@ -3262,10 +3262,14 @@ def traffic_report(request):
             response["Content-Disposition"] = 'attachment; filename="traffic_data.zip"'
             response["X-Message"] = json_message  # Ensure this is a JSON-encoded string
             response["Access-Control-Expose-Headers"] = "X-Message"
+            logger.info(f"Traffic data generated successfully.{data['filename']}",
+                    extra={ "be_api_endpoint": "traffic_report" }
+                    )
             return response             
-    except Exception as e:
-        print(f"Error: {e}")
-        logger.error(f"Error: Get Traffic report: {e}")
+    except Exception as e:        
+        logger.error(f"Error: Get Traffic report: {e}",
+                    extra={ "be_api_endpoint": "traffic_report",
+                           "exception": str(e)})
         response = [{"message": "Error Internal server problem."}]
     response1 = HttpResponse(content_type='text/plain')
     response1['X-Message'] = json.dumps(response)
