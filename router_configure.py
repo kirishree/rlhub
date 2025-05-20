@@ -521,6 +521,7 @@ def createvlaninterface(data):
                 if "allowed vlan" in intfc:
                     vlanavailable = True
                     vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
+                    break
             if not vlanavailable:
                 vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"      
             send_command(shell, 'configure terminal')
@@ -1288,7 +1289,7 @@ def get_interface_cisco(data):
                     if "ethernet" in intfcname.lower():
                         intfctype = "ether"
                     elif "vlan" in intfcname.lower():
-                        intfctype = "VLAN"
+                        intfctype = "VLAN"                        
                         vlan_link = intfcname.lower().split("vlan")[1]
                     elif "loopback" in intfcname.lower():
                         intfctype = "Loopback"
@@ -1330,7 +1331,7 @@ def get_interface_cisco(data):
                         if "secondary" in intfc:
                             primary = False
                         cidraddr.append({"IPv4address" :ipintf.with_prefixlen, "primary": primary})
-                if "vlan" in intfc:
+                if "vlan" in intfc and "add" not in intfc:
                     if len(intfc.strip().split("vlan")) > 1:
                         vlan_link = intfc.strip().split("vlan")[1]
                 if "dot1Q" in intfc:
