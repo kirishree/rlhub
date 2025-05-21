@@ -522,8 +522,11 @@ def createvlaninterface(data):
                     vlanavailable = True
                     vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
                 if "vlan add" in intfc:
+                    print("hi", vlancommand)
                     addvlan = intfc.split('vlan add')[1].split(",1002-1005")
+                    print("add vlan", addvlan)
                     vlancommand = vlancommand.split("1002-1005")[0] + f"{addvlan},1002-1005"
+                    print("hiiiii", vlancommand)
             if not vlanavailable:
                 vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"      
             send_command(shell, 'configure terminal')
