@@ -887,12 +887,33 @@ def deletevlaninterface(data):
             for intfc in interfacedetails:                 
                 if "interface" in intfc:
                     intfc_name = intfc.strip().split("interface")[1]      
-                if "allowed vlan" in intfc:
-                    if f",{vlanid}," in intfc:
-                        print("allowed vlan", intfc)
+                if "allowed vlan" in intfc and "add" not in intfc:
+                    if f",{vlanid}," in intfc: 
+                        vlanidpresent = True                       
                         vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]                        
                         vlanlinkinfo.append({"intfc": intfc_name,
-                                             "vlancommand": vlancommand})         
+                                             "vlancommand": vlancommand})   
+                    else:
+                        vlanidpresent = False
+                        vlancommand = intfc              
+                if "allowed vlan add" in intfc:
+                    if vlanidpresent:                                          
+                        vlancommand = vlancommand.split("1002-1005")[0] + intfc.split("add ")[1] 
+                        for vlanint in vlanlinkinfo:
+                            if intfc_name == vlanint["intfc"]:
+                                vlanint["vlancommand"]  = vlancommand
+                                break
+                    else:
+                        if f" {vlanid}," in intfc: # add 23,323,423,1002-1005
+                            vlancommand = vlancommand.split("1002-1005")[0] + intfc.split(f" {vlanid},")[1]
+                            vlanlinkinfo.append({"intfc": intfc_name,
+                                             "vlancommand": vlancommand}) 
+                        if f",{vlanid}," in intfc: # add 23,323,423,1002-1005
+                            vlancommand = vlancommand.split("1002-1005")[0] + intfc.split("add ")[1].split(",")[0] + intfc.split(f",{vlanid},")[1]
+                            vlanlinkinfo.append({"intfc": intfc_name,
+                                             "vlancommand": vlancommand}) 
+
+
                 #if "access vlan" in intfc:                    
                  #   if vlanid == intfc.strip().split("vlan")[1]:
                  #       vlancommand = "no" + intfc
