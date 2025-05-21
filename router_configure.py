@@ -516,17 +516,27 @@ def createvlaninterface(data):
             output = get_command_output(shell, f'sh run | section include interface {link_intfc}')
             interfacedetails = output.split("\n")       
             vlanavailable = False
+            vlanidalreadyavailable = False
             vlanmode = f'switchport mode trunk'
             for intfc in interfacedetails: 
                 if "allowed vlan" in intfc and "vlan add" not in intfc:
                     vlanavailable = True
-                    vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
-                if "vlan add" in intfc:
-                    print("hi", vlancommand)
-                    addvlan = intfc.split('vlan add ')[1].split(",1002-1005")[0]
-                    print("add vlan", addvlan)
-                    vlancommand = vlancommand.split("1002-1005")[0] + f"{addvlan},1002-1005"
-                    print("hiiiii", vlancommand)
+                    if f",{data['vlan_id']}," in intfc:
+                        vlanidalreadyavailable = True
+                    else:     
+                        vlanidalreadyavailable = False               
+                        vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
+                if "vlan add" in intfc: 
+                    if f",{data['vlan_id']}," in intfc:
+                        vlanidalreadyavailable = True  
+                    if f" {data['vlan_id']}," in intfc:
+                        vlanidalreadyavailable = True
+                    else:
+                        vlanidalreadyavailable = False                
+                        addvlan = intfc.split('vlan add ')[1].split(",1002-1005")[0]                    
+                        vlancommand = vlancommand.split("1002-1005")[0] + f"{addvlan},1002-1005"                    
+            if vlanidalreadyavailable:
+                continue
             if not vlanavailable:
                 vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"      
             send_command(shell, 'configure terminal')
