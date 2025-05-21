@@ -518,10 +518,12 @@ def createvlaninterface(data):
             vlanavailable = False
             vlanmode = f'switchport mode trunk'
             for intfc in interfacedetails: 
-                if "allowed vlan" in intfc:
+                if "allowed vlan" in intfc and "vlan add" not in intfc:
                     vlanavailable = True
                     vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
-                    break
+                if "vlan add" in intfc:
+                    addvlan = intfc.split('vlan add')[1].split(",1002-1005")
+                    vlancommand = vlancommand.split("1002-1005")[0] + f"{addvlan},1002-1005"
             if not vlanavailable:
                 vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"      
             send_command(shell, 'configure terminal')
@@ -599,22 +601,7 @@ def createvlaninterface1(data):
     netmask = str(subnet.netmask)
     # Send the command and get the output
     output = get_command_output(shell, f'sh run | section include interface {data["link"]}')
-    interfacedetails = output.split("\n") 
-    for intfc in interfacedetails: 
-        if "switchport access vlan" in intfc:
-            vlan_link = intfc.strip().split("vlan")[1]
-            response = [{"message":f"Error: {data['link']} is linked with vlan {vlan_link}. Pl delete it before proceed"}]                
-            ssh_client.close()
-            logger.info(
-                    f"{response}",
-                    extra={
-                        "device_type": "Cisco",
-                        "device_ip": router_ip,
-                        "be_api_endpoint": "createvlan_interface",
-                        "exception": ""
-                    }
-            )
-            return response
+    interfacedetails = output.split("\n")     
     vlanmode = f'switchport mode access'
     vlancommand = f"switchport access vlan {data['vlan_id']}"
     send_command(shell, 'configure terminal')
