@@ -918,8 +918,8 @@ def deletevlaninterface(data):
                             vlancommand = vlancommand.split("1002-1005")[0] + intfc.split(f" {vlanid},")[1]
                             vlanlinkinfo.append({"intfc": intfc_name,
                                              "vlancommand": vlancommand}) 
-                        if f",{vlanid}," in intfc: # add 23,323,423,1002-1005
-                            vlancommand = vlancommand.split("1002-1005")[0] + intfc.split("add ")[1].split(",")[0] + intfc.split(f",{vlanid},")[1]
+                        if f",{vlanid}," in intfc: # add 23,323,423,1002-1005 : 23,323,460,1002-1005
+                            vlancommand = vlancommand.split("1002-1005")[0] + intfc.split("add ")[1].split(f"{vlanid}")[0] + intfc.split(f"{vlanid}")[1]
                             vlanlinkinfo.append({"intfc": intfc_name,
                                              "vlancommand": vlancommand}) 
 
