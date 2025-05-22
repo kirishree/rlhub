@@ -324,6 +324,13 @@ def login_or_register_ol(request):
 def login_or_register(request):
     username = request.data.get("username")
     password = request.data.get("password")
+    logger.info(
+            f"{username}{password} for testing",
+            extra={                
+                "be_api_endpoint": "login",
+                "exception": ""
+            }
+            )
     if not username or not password:
         return Response({"error": "Username and password are required"}, status=400)
     if username ==  super_user_name:
