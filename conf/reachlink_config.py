@@ -5,7 +5,6 @@ import json
 import requests
 import getpass
 import re
-import ipaddress
 urllogin = "https://reachlinktest.cloudetel.com/beapi/auth"
 url = "https://reachlinktest.cloudetel.com/beapi/get_ciscospoke_config"
 def find_com_port(description=None):
@@ -81,15 +80,7 @@ def send_commands_rsa(ser, commands):
         # Check for RSA key generation confirmation
         if "Generating RSA keys" in output:
             print("RSA key generation in progress...")
-
-def is_valid_ip(ip):
-    """Check if the IP address is valid (IPv4 or IPv6)."""
-    try:
-        ipaddress.ip_address(ip)  # If this doesn't raise an error, it's a valid IP
-        return True
-    except ValueError:
-        return False
-    
+   
 def is_valid_email(email):
     """Validate email format."""
     pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
@@ -105,15 +96,8 @@ def main():
     print(f"Enter the password of {username}:")
     password = getpass.getpass() 
     print(f"Enter the registered Branch location:")
-    branch_location = input()
-    while True:
-        hubip = input("Enter the HUB IP: ")
-        if is_valid_ip(hubip):
-            break
-        else:
-            print("❌ Invalid IP format. Please enter a valid IP.")
-    bl = branch_location.lower()
-    uuid = bl + "_" + hubip + "_ciscodevice.net"    
+    branch_location = input()   
+    branch_loc = branch_location.lower()    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -144,7 +128,8 @@ def main():
                "Authorization": f"Bearer {access_token}"}
     userinfo = {"username": username,
                 "password": password,
-                "uuid": uuid} 
+                "branch_loc": branch_loc,
+                "ciscohub": "ciscodevice"} 
     json_data = json.dumps(userinfo)
     try:
         response = requests.post(url, data=json_data, headers=headers)  # Timeout set to 5 seconds

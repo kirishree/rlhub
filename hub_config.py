@@ -21,8 +21,7 @@ hub_ip = config('HUB_IP')
 def get_ciscohub_config(data):  
     current_datetime = datetime.now()
     try:
-        organization_id, data1 = onboarding.get_organization_id(data)
-        print("orgid", organization_id)  
+        organization_id, data1 = onboarding.get_organization_id(data)        
         if organization_id:            
             details = coll_registered_organization.find_one({"organization_id":organization_id})
             if details:                                                   

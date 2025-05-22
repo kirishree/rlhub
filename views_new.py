@@ -999,7 +999,6 @@ def add_cisco_hub(request: HttpRequest):
     print("cisco hub data", data)    
     if "organization_id" in data:
         org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
-        print("org_info", org_info)
         if org_info:
             orgname = org_info["organization_name"]
             data["username"] = org_info["regusers"][0]["username"]
@@ -1024,7 +1023,6 @@ def add_cisco_hub(request: HttpRequest):
         response["Access-Control-Expose-Headers"] = "X-Message"
         return response
     data["uuid"] = data['branch_location'] + f"_{orgname}_ciscohub.net"
-    print(data)
     data["username"] = "none"
     data["password"] = "none" 
     global newuser
@@ -3060,6 +3058,12 @@ def get_ciscohub_config(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "get_ciscohub_config" }
                     )
+    orgname, orgstatus = onboarding.organization_name(data)
+    if not orgstatus:
+        logger.error(f"Error: Get Configure Cisco Spoke: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name"}
+        return JsonResponse(json_response, safe=False)
+    data["uuid"] = data['branch_loc'] + f"_{orgname}_ciscohub.net"
     response = hub_config.get_ciscohub_config(data)
     return JsonResponse(response, safe=False)
 
@@ -3071,6 +3075,12 @@ def get_ciscospoke_config(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "get_ciscospoke_config" }
                     )
+    orgname, orgstatus = onboarding.organization_name(data)
+    if not orgstatus:
+        logger.error(f"Error: Get Configure Cisco Spoke: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name"}
+        return JsonResponse(json_response, safe=False)
+    data["uuid"] = data['branch_loc'] + f"_{orgname}_{data['ciscohub']}.net"    
     response = hub_config.get_ciscospoke_config(data)
     return JsonResponse(response, safe=False)
 
