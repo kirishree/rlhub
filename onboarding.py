@@ -794,7 +794,7 @@ def check_login_onboarding_new(username, password):
             loginjson_response = login_response.json()
             access_token = loginjson_response["data"]["access_token"]
         else:
-            return 'Invalid Login & password'
+            return 'Invalid Login & password', False, False, False, False, False, False, False
         headers = {
                     "Authorization": f"Bearer {access_token}"
                   }

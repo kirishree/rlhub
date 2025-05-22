@@ -342,7 +342,7 @@ def login_or_register(request):
         return Response({            
             "message": False,
             "msg_status": onboard_status
-        }, status=400)
+        })
           
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
