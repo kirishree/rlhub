@@ -111,7 +111,8 @@ def main():
             json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_authresponse = json.loads(json_authresponse)
             if "access" not in json_authresponse:
-                print(json_authresponse["message"])  
+                if not (json_authresponse["message"]):                
+                    print(json_authresponse["msg_status"])
                 print("Enter a key to exit...")
                 input()
                 return
@@ -123,7 +124,7 @@ def main():
             input()
             return
     except Exception as e:
-        print("Error while getting configuration: {e}")
+        print(f"Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
         return
@@ -153,7 +154,7 @@ def main():
             input()
             return
     except Exception as e:
-        print("Error while getting configuration: {e}")
+        print(f"Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
         return

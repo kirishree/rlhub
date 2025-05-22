@@ -102,8 +102,8 @@ def main():
     authinfo = json.dumps({"username": username,"password": password})
     try:
         authresponse = requests.post(urllogin, data= authinfo, headers= headers)    
-        print("auth", authresponse)
-        if authresponse:
+        authresponse.raise_for_status()
+        if authresponse.status_code == 200:   
             json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_authresponse = json.loads(json_authresponse)
             if "access" not in json_authresponse:
@@ -114,10 +114,7 @@ def main():
                 return
             else:
                 access_token = json_authresponse["access"]
-        else:
-            json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
-            json_authresponse = json.loads(json_authresponse)
-            print(json_authresponse)
+        else:            
             print("Error while authenticating data")
             print("Enter a key to exit...")
             input()
