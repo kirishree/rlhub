@@ -101,13 +101,13 @@ def main():
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
-        authresponse = requests.post(urllogin, data= authinfo, headers= headers)
-        authresponse.raise_for_status()
-        if authresponse.status_code == 200:           
+        authresponse = requests.post(urllogin, data= authinfo, headers= headers)    
+        if authresponse:
             json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
             json_authresponse = json.loads(json_authresponse)
             if "access" not in json_authresponse:
-                print(json_authresponse["message"])  
+                if not (json_authresponse["message"]):                
+                    print(json_authresponse["msg_status"])
                 print("Enter a key to exit...")
                 input()
                 return
