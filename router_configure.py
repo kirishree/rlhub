@@ -515,33 +515,36 @@ def createvlaninterface(data):
         for link_intfc in data["link"]:            
             output = get_command_output(shell, f'sh run | section include interface {link_intfc}')
             interfacedetails = output.split("\n")       
-            vlanavailable = False
-            vlanidalreadyavailable = False
+            vlanavailable = False            
             vlanmode = f'switchport mode trunk'
             for intfc in interfacedetails: 
-                if "allowed vlan" in intfc and "vlan add" not in intfc:
-                    vlanavailable = True
-                    if f",{data['vlan_id']}," in intfc:
-                        vlanidalreadyavailable = True
-                    else:     
-                        vlanidalreadyavailable = False               
-                        vlancommand = intfc.split("1002-1005")[0] + f"{data['vlan_id']},1002-1005"
-                if "vlan add" in intfc: 
-                    if f",{data['vlan_id']}," in intfc:
-                        vlanidalreadyavailable = True  
-                    if f" {data['vlan_id']}," in intfc:
-                        vlanidalreadyavailable = True
-                    else:
-                        vlanidalreadyavailable = False                
-                        addvlan = intfc.split('vlan add ')[1].split(",1002-1005")[0]                    
-                        vlancommand = vlancommand.split("1002-1005")[0] + f"{addvlan},1002-1005"                    
-            if vlanidalreadyavailable:
-                continue
+                if "vlan" in intfc and "add" not in intfc:    
+                    vlanavailable = True                
+                    if len(intfc.strip().split("vlan")) > 1:                        
+                            vlan_link = intfc.strip().split("vlan 1,")[1].split(",1002-1005")[0]
+                if "allowed vlan add" in intfc:                    
+                    if "1002-1005" not in intfc:
+                        vlan_link += ","
+                        vlan_link += intfc.strip().split("add ")[1]
+                    if ",1002-1005" in intfc:
+                        vlan_link += ","
+                        vlan_link += intfc.strip().split("add ")[1].split(",1002-1005")[0]                                
+            
             if not vlanavailable:
-                vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"      
+                vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"  
+            else:
+                firstid = vlan_link.split(",")[0]
+                if firstid == data['vlan_id']:
+                    continue
+                elif f",{data['vlan_id']}" in vlan_link or f",{data['vlan_id']}," in vlan_link: #checks at last & middle
+                    continue
+                else:
+                    vlancommand = f"switchport trunk allowed vlan 1,{vlan_link},{data['vlan_id']},1002-1005"  
             send_command(shell, 'configure terminal')
             send_command(shell, f'interface {link_intfc}')
-            vlanmodeout = get_command_output(shell, f'{vlanmode}')        
+            send_command(shell, f'{vlanmode}') 
+            if vlanavailable:
+                send_command(shell, f'no switchport trunk allowed vlan') 
             vlanmodeout2 = get_command_output(shell, f'{vlancommand}')   
             if "Vlan can not be added." in vlanmodeout2:                            
                 response = [{"message": f"Error: vlan{data['vlan_id']} not linked with {link_intfc} "}]   
