@@ -12,6 +12,7 @@ import logging
 logger = logging.getLogger('reachlink')
 from decouple import config
 mongo_uri = config('DB_CONNECTION_STRING')
+snmpcommunitystring = config('SNMP_COMMUNITY_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_spoke_disconnect = db_tunnel["spoke_disconnect"]
@@ -949,3 +950,36 @@ def check_subscription_renewed_login(username, password, organization_id):
             return False, "not subscribed for any services", False         
     except:
         return False, "Internal Server Error", False
+
+def get_microtek_config(data):
+    current_datetime = datetime.now()
+    try:
+        details = coll_registered_organization.find_one({"organization_id":data["orgid"]})
+        if details:                                                   
+            if current_datetime < details["subscription_to"]:
+                registered_devices_info = details["registered_devices"]  
+                expiry_date_original = str(details["subscription_to"]).split(" ")[0]                 
+                for devices in registered_devices_info:
+                    if "microtek_spokes_info" in devices:
+                        for device in devices["microtek_spokes_info"]:
+                            if device['uuid'] == data["uuid"]:  
+                                response =[{ "message": 'This Microtek Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":device["spokedevice_name"],
+                                                "organization_id":data["orgid"],
+                                                "router_username": device["router_username"],
+                                                "router_password": device["router_password"]
+                                                }]                                   
+                                return response
+                        response = [{"message": f"This Branch location ({data['branch_loc']}) was not configuared in {data['orgname']} organization."}]
+            else:
+                response = [{"message": "Your subscription was expired. Kindly renew it"}]
+        else:
+            response = [{"message": "This organization is not registered with ReachLink"}]         
+    except Exception as e:
+        logger.debug(f"Error in get Microtek spoke",
+                    extra={ "be_api_endpoint": "get_microtek_config",
+                           "exception": str(e)}
+                    )
+        response = [{"message": "Some internal error. Pl try again"}]
+    return response

@@ -64,11 +64,14 @@ from decouple import config
 from datetime import timedelta
 import zabbix_gen_report
 import zabbix_ping_report
+import jwt
 from .tasks import setass_task 
 newuser = False
 dummy_expiry_date = ""
 mongo_uri = config('DB_CONNECTION_STRING')
 super_user_name = config('SUPER_USER_NAME')
+SECRET_KEY = config('DJANGO_SECRET_KEY')
+ALGORITHM = 'HS256' 
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
 coll_registered_organization = db_tunnel["registered_organization"]
@@ -2914,22 +2917,38 @@ def get_ciscospoke_config(request: HttpRequest):
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
-def get_microtekspoke_config(request: HttpRequest):
-    global newuser
+def get_microtekspoke_config(request: HttpRequest):    
     data = json.loads(request.body) 
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "get_microtekspoke_config" }
                     )
-    orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)
+    orgname = decodedtoken.get("onboarding_org_name", False)
+    orgid = decodedtoken.get("onboarding_org_id", False)
+    if not orgname or not orgid:
         logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
-        json_response = {"message": f"Error:Error in getting organization name"}
-        return JsonResponse(json_response, safe=False)
+        json_response = {"message": f"Error:Error in getting organization name or id"}
+        return JsonResponse(json_response, safe=False)     
+    
     data["uuid"] = data['branch_loc'] + f"_{orgname}_microtek.net"
-    response, newuser = onboarding.check_user(data, newuser)
-    if "This Microtek Spoke is already Registered" in response[0]["message"]:
-        #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
+    data["orgid"] = orgid
+    data["orgname"] = orgname
+    response = onboarding.get_microtek_config(data)
+    if "This Microtek Spoke is already Registered" in response[0]["message"]:           
         spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],
                         "router_username": response[0]["router_username"],
                         "router_password": response[0]["router_password"],
@@ -2938,8 +2957,7 @@ def get_microtekspoke_config(request: HttpRequest):
                         }        
         setass_task.apply_async(args=[response, "microtek"], countdown=60)
     else:
-        spokedetails= {"message": response[0]["message"]}
-    
+        spokedetails= {"message": response[0]["message"]}    
     return JsonResponse(spokedetails, safe=False)
 
 @api_view(['POST'])  
