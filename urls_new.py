@@ -23,8 +23,7 @@ from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
-urlpatterns = [
-    path('beapi/admin/', admin.site.urls),
+urlpatterns = [   
     path('beapi/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('beapi/homepage_info', homepage_info, name='homepage_info'),
     path('beapi/adminhomepage_info', adminhomepage_info, name='adminhomepage_info'),

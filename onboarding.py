@@ -778,7 +778,13 @@ def check_login_onboarding(username, password):
                     return 'Not Subscribed for ReachLink', False, False, False, False, False, False, False
         else:
                 return 'Not Subscribed for any services', False, False, False, False, False, False, False
-    except:
+    except Exception as e:
+        logger.error(f"New user: {username} not added.",
+                            extra={                
+                                "be_api_endpoint": "login",
+                                "exception": str(e)
+                            }
+                    )  
         return 'Internal Server Error', False, False, False, False, False, False, False
     
 def check_login_onboarding_new(username, password):
