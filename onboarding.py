@@ -971,7 +971,40 @@ def get_microtek_config(data):
                                                 "router_password": device["router_password"]
                                                 }]                                   
                                 return response
-                        response = [{"message": f"This Branch location ({data['branch_loc']}) was not configuared in {data['orgname']} organization."}]
+                        response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
+            else:
+                response = [{"message": "Your subscription was expired. Kindly renew it"}]
+        else:
+            response = [{"message": "This organization is not registered with ReachLink"}]         
+    except Exception as e:
+        logger.debug(f"Error in get Microtek spoke",
+                    extra={ "be_api_endpoint": "get_microtek_config",
+                           "exception": str(e)}
+                    )
+        response = [{"message": "Some internal error. Pl try again"}]
+    return response
+
+def get_robustel_config(data):
+    current_datetime = datetime.now()
+    try:
+        details = coll_registered_organization.find_one({"organization_id":data["orgid"]})
+        if details:                                                   
+            if current_datetime < details["subscription_to"]:
+                registered_devices_info = details["registered_devices"]  
+                expiry_date_original = str(details["subscription_to"]).split(" ")[0]                 
+                for devices in registered_devices_info:
+                    if "robustel_spokes_info" in devices:
+                        for device in devices["robustel_spokes_info"]:
+                            if device['uuid'] == data["uuid"]:  
+                                response =[{ "message": 'This Robustel Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":device["spokedevice_name"],
+                                                "organization_id":data["orgid"],
+                                                "router_username": device["router_username"],
+                                                "router_password": device["router_password"]
+                                                }]                                   
+                                return response
+                        response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]
         else:

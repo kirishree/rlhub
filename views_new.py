@@ -2969,13 +2969,30 @@ def get_robustelspoke_config(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "get_robustelspoke_config" }
                     )
-    orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:
-        logger.error(f"Error: Get Configure Robustel HUB: Error in getting organization name ")
-        json_response = {"message": f"Error:Error in getting organization name"}
-        return JsonResponse(json_response, safe=False)
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])      
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)
+    orgname = decodedtoken.get("onboarding_org_name", False)
+    orgid = decodedtoken.get("onboarding_org_id", False)
+    if not orgname or not orgid:
+        logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name or id"}
+        return JsonResponse(json_response, safe=False)     
     data["uuid"] = data['branch_loc'] + f"_{orgname}_robustel.net"
-    response, newuser = onboarding.check_user(data, newuser)
+    data["orgid"] = orgid
+    data["orgname"] = orgname   
+    response = onboarding.get_robustel_config(data)
     if "This Robustel Spoke is already Registered" in response[0]["message"]:
         #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
         spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],                        
