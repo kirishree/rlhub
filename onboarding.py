@@ -882,7 +882,7 @@ def check_login_onboarding_new(username, password):
                                                 "ubuntu_spokes_info": []
                                                 }
                                                 ],
-                                "organization_name": organization_name                                           
+                                "organization_name": org_name                                           
                                 })
                             return 'True', user_role, org_id, user_id, first_name, last_name, org_name, str(to_date)
                         else:
