@@ -94,7 +94,12 @@ def main():
         else:
             print("❌ Invalid email format. Please enter a valid email.")
     print(f"Enter the password of {username}:")
-    password = getpass.getpass() 
+    while True:
+        password = getpass.getpass()
+        if not password.strip():
+            print("Password cannot be empty. Please try again.")
+        else:
+            break
     print(f"Enter the registered Branch location:")
     branch_location = input()    
     branch_loc = branch_location.lower()    
@@ -113,6 +118,7 @@ def main():
                 input()
                 return
             else:
+                print("Login Successfull. Getting configuration...")   
                 access_token = json_authresponse["access"]
         else:            
             print("Error while authenticating data")
@@ -153,6 +159,7 @@ def main():
         print("Enter a key to exit...")
         input()
         return
+    print("Start to configure")
     # Step 1: Identify the COM port
     target_description = "USB-to-Serial"
     com_port = find_com_port(target_description)
