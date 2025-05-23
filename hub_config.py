@@ -7,6 +7,8 @@ import random
 import string 
 import router_configure
 import ipaddress
+import logging
+logger = logging.getLogger('reachlink')
 mongo_uri = config('DB_CONNECTION_STRING')
 client = pymongo.MongoClient(mongo_uri)
 db_tunnel = client["reach_link"]
@@ -21,18 +23,16 @@ hub_ip = config('HUB_IP')
 def get_ciscohub_config(data):  
     current_datetime = datetime.now()
     try:
-        organization_id, data1 = onboarding.get_organization_id(data)        
-        if organization_id:            
-            details = coll_registered_organization.find_one({"organization_id":organization_id})
-            if details:                                                   
-                if current_datetime < details["subscription_to"]:
-                    registered_devices_info = details["registered_devices"]                  
-                    for device1 in registered_devices_info:
-                        if "cisco_hub_info" in device1:
-                            if device1["cisco_hub_info"]['uuid'] == data["uuid"]:  
-                                hubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})
-                                if hubinfo:
-                                    response ={ "message": 'This device is already Registered',
+        details = coll_registered_organization.find_one({"organization_id":data["orgid"]})
+        if details:                                                   
+            if current_datetime < details["subscription_to"]:
+                registered_devices_info = details["registered_devices"]                  
+                for device1 in registered_devices_info:
+                    if "cisco_hub_info" in device1:
+                        if device1["cisco_hub_info"]['uuid'] == data["uuid"]:  
+                            hubinfo = coll_hub_info.find_one({"uuid": data["uuid"]})
+                            if hubinfo:
+                                response ={ "message": 'This device is already Registered',
                                             "interface_wan_ip":hubinfo["hub_wan_ip_only"],
                                             "interface_wan_netmask":hubinfo["hub_wan_ip_netmask"],
                                             "interface_wan_gateway":hubinfo["hub_wan_ip_gateway"],
@@ -43,38 +43,39 @@ def get_ciscohub_config(data):
                                             "router_username": hubinfo["router_username"],
                                             "router_password": hubinfo["router_password"],
                                             "snmpcommunitystring": snmpcommunitystring,
-                                            }
-                                    return response
-                    response = {"message": "This HUB location was not configuared yet."}
-                else:
-                    response = {"message": "Your subscription was expired. Kindly renew it"} 
+                                            }                                
+                                return response
+                response = {"message": f"This HUB location {data['branch_loc']} was not configuared in {data['orgname']} organization"}
             else:
-                response = {"message": "This organization is not registered with ReachLink"} 
+                response = {"message": "Your subscription was expired. Kindly renew it"} 
         else:
-            response = {"message": "This username is not registered with CloudEtel"} 
-    except Exception as e:
-        print(f"Exception while get_hub_config end point: {e}")
+            response = {"message": "This organization is not registered with ReachLink"}         
+        logger.error(f"{response}",
+                    extra={ "be_api_endpoint": "get_ciscohub_config",
+                           "exeception": "" }
+                    )
+    except Exception as e:   
+        logger.error(f"Error in getting cisco hub configuration",
+                    extra={ "be_api_endpoint": "get_ciscohub_config",
+                           "exeception": str(e) }
+                    )     
         response = {"message": "Some internal error. Pl try again"}
     return response
 
 def get_ciscospoke_config(data):
     current_datetime = datetime.now()
     try:
-        organization_id, data1 = onboarding.get_organization_id(data)
-        print("orgid", organization_id)  
-        if organization_id:            
-            details = coll_registered_organization.find_one({"organization_id":organization_id})
-            print("details", details)
-            if details:                                                   
-                if current_datetime < details["subscription_to"]:
-                    registered_devices_info = details["registered_devices"]                  
-                    for device1 in registered_devices_info:
-                        if "cisco_spokes_info" in device1:
-                            for device in device1["cisco_spokes_info"]:
-                                if device['uuid'] == data["uuid"]:  
-                                    spokeinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]})
-                                    if spokeinfo:
-                                        response ={ "message": 'This device is already Registered',
+        details = coll_registered_organization.find_one({"organization_id":data["orgid"]})
+        if details:                                                   
+            if current_datetime < details["subscription_to"]:
+                registered_devices_info = details["registered_devices"]                  
+                for device1 in registered_devices_info:
+                    if "cisco_spokes_info" in device1:
+                        for device in device1["cisco_spokes_info"]:
+                            if device['uuid'] == data["uuid"]:  
+                                spokeinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]})
+                                if spokeinfo:
+                                    response ={ "message": 'This device is already Registered',
                                             "interface_wan_ip": spokeinfo["router_wan_ip_only"],
                                             "interface_wan_netmask":spokeinfo["router_wan_ip_netmask"],
                                             "dialerserverip":spokeinfo["dialer_hub_ip"],
@@ -92,16 +93,21 @@ def get_ciscospoke_config(data):
                                             "spokedevice_name": spokeinfo["spokedevice_name"],
                                             "uuid": spokeinfo["uuid"]
                                             }
-                                        return response
-                    response = {"message": "This Branch location was not configuared yet."}
-                else:
-                    response = {"message": "Your subscription was expired. Kindly renew it"} 
+                                    return response
+                response = {"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}
             else:
-                response = {"message": "This organization is not registered with ReachLink"} 
+                response = {"message": "Your subscription was expired. Kindly renew it"} 
         else:
-            response = {"message": "This username is not registered with CloudEtel"} 
+            response = {"message": "This organization is not registered with ReachLink"} 
+        logger.error(f"{response}",
+                    extra={ "be_api_endpoint": "get_ciscospoke_config",
+                           "exeception": "" }
+                    )  
     except Exception as e:
-        print(f"Exception while get_hub_config end point: {e}")
+        logger.error(f"Error in getting cisco spoke configuration",
+                    extra={ "be_api_endpoint": "get_ciscospoke_config",
+                           "exeception": str(e) }
+                    )  
         response = {"message": "Some internal error. Pl try again"}
     return response
 

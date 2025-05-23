@@ -2889,12 +2889,29 @@ def get_ciscohub_config(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "get_ciscohub_config" }
                     )
-    orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:
-        logger.error(f"Error: Get Configure Cisco Spoke: Error in getting organization name ")
-        json_response = {"message": f"Error:Error in getting organization name"}
-        return JsonResponse(json_response, safe=False)
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])      
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)
+    orgname = decodedtoken.get("onboarding_org_name", False)
+    orgid = decodedtoken.get("onboarding_org_id", False)
+    if not orgname or not orgid:
+        logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name or id"}
+        return JsonResponse(json_response, safe=False)     
     data["uuid"] = data['branch_loc'] + f"_{orgname}_ciscohub.net"
+    data["orgid"] = orgid
+    data["orgname"] = orgname
     response = hub_config.get_ciscohub_config(data)
     return JsonResponse(response, safe=False)
 
@@ -2906,12 +2923,29 @@ def get_ciscospoke_config(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "get_ciscospoke_config" }
                     )
-    orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:
-        logger.error(f"Error: Get Configure Cisco Spoke: Error in getting organization name ")
-        json_response = {"message": f"Error:Error in getting organization name"}
-        return JsonResponse(json_response, safe=False)
-    data["uuid"] = data['branch_loc'] + f"_{orgname}_{data['ciscohub']}.net"    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])      
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)
+    orgname = decodedtoken.get("onboarding_org_name", False)
+    orgid = decodedtoken.get("onboarding_org_id", False)
+    if not orgname or not orgid:
+        logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name or id"}
+        return JsonResponse(json_response, safe=False)     
+    data["uuid"] = data['branch_loc'] + f"_{orgname}_{data['ciscohub']}.net" 
+    data["orgid"] = orgid
+    data["orgname"] = orgname        
     response = hub_config.get_ciscospoke_config(data)
     return JsonResponse(response, safe=False)
 

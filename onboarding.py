@@ -975,9 +975,13 @@ def get_microtek_config(data):
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]
         else:
-            response = [{"message": "This organization is not registered with ReachLink"}]         
+            response = [{"message": "This organization is not registered with ReachLink"}]  
+        logger.error(f"{response}",
+                    extra={ "be_api_endpoint": "get_microtek_config",
+                           "exception": ""}
+                    )       
     except Exception as e:
-        logger.debug(f"Error in get Microtek spoke",
+        logger.error(f"Error in get Microtek spoke",
                     extra={ "be_api_endpoint": "get_microtek_config",
                            "exception": str(e)}
                     )
@@ -1008,10 +1012,14 @@ def get_robustel_config(data):
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]
         else:
-            response = [{"message": "This organization is not registered with ReachLink"}]         
+            response = [{"message": "This organization is not registered with ReachLink"}]  
+        logger.error(f"{response}",
+                    extra={ "be_api_endpoint": "get_robustel_config",
+                           "exception": ""}
+                    )       
     except Exception as e:
-        logger.debug(f"Error in get Microtek spoke",
-                    extra={ "be_api_endpoint": "get_microtek_config",
+        logger.error(f"Error in get Microtek spoke",
+                    extra={ "be_api_endpoint": "get_robustel_config",
                            "exception": str(e)}
                     )
         response = [{"message": "Some internal error. Pl try again"}]
