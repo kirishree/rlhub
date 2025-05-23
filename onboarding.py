@@ -785,7 +785,7 @@ def check_login_onboarding(username, password):
                                 "exception": str(e)
                             }
                     )  
-        return 'Internal Server Error', False, False, False, False, False, False, False
+        return str(e), False, False, False, False, False, False, False
     
 def check_login_onboarding_new(username, password):
     try:
