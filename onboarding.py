@@ -893,8 +893,8 @@ def check_login_onboarding_new(username, password):
                     return 'Not Subscribed for any services', False, False, False, False, False, False, False
         else:
             return 'Error in getting User Info', False, False, False, False, False, False, False
-    except:
-        return 'Internal Server Error', False, False, False, False, False, False, False
+    except Exception as e:
+        return str(e), False, False, False, False, False, False, False
 
 def check_subscription_renewed_login(username, password, organization_id):
     try:
