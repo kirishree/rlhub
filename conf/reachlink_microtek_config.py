@@ -96,7 +96,8 @@ def main():
                 print("Enter a key to exit...")
                 input()
                 return
-            else:                
+            else:  
+                print("Login Successfull. Getting configuration...")              
                 access_token = json_authresponse["access"]                
         else:
             print("Error while authenticating data")
@@ -136,8 +137,7 @@ def main():
         print(f"Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
-        return
-    print(spokeinfo["message"]) 
+        return     
     print("Start to configure")
     set_openvpn_client(spokeinfo)
 
