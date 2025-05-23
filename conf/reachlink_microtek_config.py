@@ -78,7 +78,12 @@ def main():
         else:
             print("❌ Invalid email format. Please enter a valid email.")
     print(f"Enter the password of {username}:")
-    password = getpass.getpass() 
+    while True:
+        password = getpass.getpass()
+        if not password.strip():
+            print("Password cannot be empty. Please try again.")
+        else:
+            break
     print(f"Enter the registered device(branch) location:")
     branch_location = input()
     branch_loc = branch_location.lower()

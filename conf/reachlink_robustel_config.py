@@ -144,8 +144,13 @@ def main():
             break  # Exit the loop if email is valid
         else:
             print("❌ Invalid email format. Please enter a valid email.")
-    print(f"Enter the password of {username}:")
-    password = getpass.getpass()   
+    print(f"Enter the password of {username}:") 
+    while True:
+        password = getpass.getpass()
+        if not password.strip():
+            print("Password cannot be empty. Please try again.")
+        else:
+            break
     print(f"Enter the registered device(branch) location:")
     branch_location = input()
     branch_loc = branch_location.lower()    
@@ -163,9 +168,9 @@ def main():
                 print("Enter a key to exit...")
                 input()
                 return
-            else:                
-                access_token = json_authresponse["access"]
-                
+            else:      
+                print("Login Successfull. Getting configuration...")          
+                access_token = json_authresponse["access"]       
         else:
             print("Error while authenticating data")
             print("Enter a key to exit...")
@@ -192,8 +197,7 @@ def main():
             spokeinfo = json.loads(json_response)
             if  "This Robustel Spoke is already Registered" not in spokeinfo["message"]:
                 print(spokeinfo["message"])                
-            else:
-                print(spokeinfo["message"]) 
+            else:                
                 print("Start to configure")                
                 set_openvpn_client() 
                 return          
