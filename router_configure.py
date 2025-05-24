@@ -895,42 +895,53 @@ def deletevlaninterface(data):
             send_command_wo(shell, password)
         if "vlan" in data["intfc_name"].lower():
             vlanid = data["intfc_name"].lower().split("vlan")[1]            
-            output = get_command_output(shell, f'sh run | section include interface')
+            output = get_command_output(shell, f'sh run | section include interface Fast')
             interfacedetails = output.split("\n")       
+            intfc_name = "None"
+            intinfo = []
+            vlan_link = "None"
             for intfc in interfacedetails:                 
                 if "interface" in intfc:
-                    intfc_name = intfc.strip().split("interface")[1]      
-                if "allowed vlan" in intfc and "add" not in intfc:
-                    if f",{vlanid}," in intfc: 
-                        vlanidpresent = True                       
-                        vlancommand = intfc.split(f",{vlanid},")[0] + ","  + intfc.split(f",{vlanid},")[1]                        
-                        vlanlinkinfo.append({"intfc": intfc_name,
-                                             "vlancommand": vlancommand})   
-                    else:
-                        vlanidpresent = False
-                        vlancommand = intfc              
-                if "allowed vlan add" in intfc:
-                    if vlanidpresent:                                          
-                        vlancommand = vlancommand.split("1002-1005")[0] + intfc.split("add ")[1] 
-                        for vlanint in vlanlinkinfo:
-                            if intfc_name == vlanint["intfc"]:
-                                vlanint["vlancommand"]  = vlancommand
-                                break
-                    else:
-                        if f" {vlanid}," in intfc: # add 23,323,423,1002-1005
-                            vlancommand = vlancommand.split("1002-1005")[0] + intfc.split(f" {vlanid},")[1]
-                            vlanlinkinfo.append({"intfc": intfc_name,
-                                             "vlancommand": vlancommand}) 
-                        if f",{vlanid}," in intfc: # add 23,323,423,1002-1005 : 23,323,455,460,1002-1005
-                            vlancommand = vlancommand.split("1002-1005")[0] + intfc.split("add ")[1].split(f"{vlanid},")[0] + intfc.split(f"{vlanid},")[1]
-                            vlanlinkinfo.append({"intfc": intfc_name,
-                                             "vlancommand": vlancommand}) 
-
-
-                #if "access vlan" in intfc:                    
-                 #   if vlanid == intfc.strip().split("vlan")[1]:
-                 #       vlancommand = "no" + intfc
-                 #       break  
+                    if intfc_name != "None" and vlan_link != "None":
+                        intinfo.append({"interfacename": intfc_name,
+                                        "vlan_id": vlan_link})
+                        vlan_link = "None"
+                    intfc_name = intfc.strip().split("interface")[1]  
+                if "vlan" in intfc and "add" not in intfc:                    
+                    if len(intfc.strip().split("vlan")) > 1:                        
+                            vlan_link = intfc.strip().split("vlan 1,")[1].split(",1002-1005")[0]
+                if "allowed vlan add" in intfc:                    
+                    if "1002-1005" not in intfc:
+                        vlan_link += ","
+                        vlan_link += intfc.strip().split("add ")[1]
+                    if ",1002-1005" in intfc:
+                        vlan_link += ","
+                        vlan_link += intfc.strip().split("add ")[1].split(",1002-1005")[0]
+            
+            for interface in intinfo:
+                if f"{vlanid}" == interface["vlan_id"].split(",")[0]:  
+                    updated_vlan = interface["vlan_id"].split(",")
+                    vlanc = ""
+                    for i in range(0,len(updated_vlan)):                          
+                          if i != 0:
+                            vlanc += f"{updated_vlan[i]},"
+                    print("updatedvlan", updated_vlan)
+                    vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})                           
+                elif f",{vlanid}," in interface["vlan_id"]:
+                    updated_vlan = interface["vlan_id"].split(f",{vlanid},")
+                    vlancommand = f"switchport trunk allowed vlan 1,{updated_vlan[0]},{updated_vlan[1]},1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand}) 
+                elif f"{vlanid}" == interface["vlan_id"].split(f",")[-1]:
+                    updated_vlan = interface["vlan_id"].split(",")
+                    vlanc = ""
+                    for i in range(0,len(updated_vlan)-1):                                                  
+                        vlanc += f"{updated_vlan[i]},"                                     
+                    vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})                   
             logger.info(
                     f"{vlanlinkinfo}",
                     extra={
@@ -949,6 +960,7 @@ def deletevlaninterface(data):
             for linkvlan in vlanlinkinfo:
                 send_command(shell, 'configure terminal')
                 send_command(shell, f'interface {linkvlan["intfc"]}')
+                send_command(shell, "no switchport trunk allowed vlan")
                 send_command(shell, f'{linkvlan["vlancommand"]}')
                 send_command_wo(shell, 'end')
             response = [{"message": f"Interface {data['intfc_name']} deleted"}]   

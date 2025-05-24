@@ -96,8 +96,36 @@ if chstatus:
 else:
     print("hiii", chstatus)
 
+interface = {"vlan_id": "100,233,433,500,33", 
+             "interfacename": "f0"}
+vlanid = "33"
+vlanlinkinfo = []
 
-
+if f"{vlanid}" == interface["vlan_id"].split(",")[0]:                    
+                    updated_vlan = interface["vlan_id"].split(",")
+                    vlanc = ""
+                    for i in range(0,len(updated_vlan)):                          
+                          if i != 0:
+                            vlanc += f"{updated_vlan[i]},"
+                    print("updatedvlan", updated_vlan)
+                    vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})                    
+elif f",{vlanid}," in interface["vlan_id"]:
+                    updated_vlan = interface["vlan_id"].split(f",{vlanid},")
+                    vlancommand = f"switchport trunk allowed vlan 1,{updated_vlan[0]},{updated_vlan[1]},1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})   
+elif f"{vlanid}" == interface["vlan_id"].split(f",")[-1]:
+                    updated_vlan = interface["vlan_id"].split(",")
+                    vlanc = ""
+                    for i in range(0,len(updated_vlan)-1):                                                  
+                        vlanc += f"{updated_vlan[i]},"                                     
+                    vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})   
+print("vlancommand")
+print(vlanlinkinfo)
 
 
 
