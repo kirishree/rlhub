@@ -1398,12 +1398,13 @@ def get_interface_cisco(data):
             intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
             intfcname = intfcinfo.split(" ")[0]
             intfctype = "-"            
-            if "virtual-access" not in intfcname.lower():
+            if "virtual-access" not in intfcname.lower() or "deleted" not in intfcinfo:
                 intfcdetailsnew.append({"interface_name": intfcinfo.split(" ")[0],                                                                 
                                  "status": intfcinfo.split(" ")[4],
                                  "protocol": intfcinfo.split(" ")[5],
                                  "method": intfcinfo.split(" ")[3]
                                 }) 
+        print("test",intfcdetailsnew)
         interfaceinfo = []
         for info in intfcdetails:
             for infonew in intfcdetailsnew:
