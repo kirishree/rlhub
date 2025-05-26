@@ -176,8 +176,16 @@ def send_command_ping(shell, command, wait_time=5, buffer_size=4096, timeout=5, 
             if end_marker in full_output:
                 break
 
-    except Exception as e:
-        print(f"Timeout or error occurred while reading output: {e}")
+    except Exception as e:        
+        logger.error(
+            f"Timeout or error occurred while reading output",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": "",
+                "be_api_endpoint": "ping",
+                "exception": str(e)
+            }
+            )
 
     shell.settimeout(None)  # Reset the timeout to blocking after completing the command
 
@@ -306,8 +314,7 @@ def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=1
                 time.sleep(0.5)
             elif full_output.strip().endswith('#') or full_output.strip().endswith('>'):
                 break  # Break if the command prompt is reached
-        elif time.time() - start_time > max_wait:
-            print("Timeout waiting for command output.")
+        elif time.time() - start_time > max_wait:            
             break
         else:
             time.sleep(0.5)  # Avoid busy looping
@@ -363,7 +370,7 @@ def get_routingtable_cisco(data):
             routeinfo = routeinfo.strip()
             # Clean up extra spaces or non-visible characters using regex
             routeinfo = re.sub(r'\s+', ' ', routeinfo)  # Replace multiple spaces with a single space
-            #print(f"After regex cleanup: '{intfcinfo}'")
+            
             if "." not in  routeinfo.split(" ")[0] and "[" not in routeinfo.split(" ")[0]:
                 protocol = routeinfo.split(" ")[0]
                 destination = routeinfo.split(" ")[1]
@@ -860,8 +867,7 @@ def adduser(data):
 def deletevlaninterface(data):
     try:
         # Define the router details
-        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():
-            print(data)
+        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():            
             response = [{"message": f"Error: Not able to delete physical interface"}]
             return response        
         router_ip = data["tunnel_ip"].split("/")[0]
@@ -925,8 +931,7 @@ def deletevlaninterface(data):
                     vlanc = ""
                     for i in range(0,len(updated_vlan)):                          
                           if i != 0:
-                            vlanc += f"{updated_vlan[i]},"
-                    print("updatedvlan", updated_vlan)
+                            vlanc += f"{updated_vlan[i]},"                    
                     vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
                     vlanlinkinfo.append({"intfc": interface["interfacename"],
                                          "vlancommand": vlancommand})                           
@@ -1311,7 +1316,7 @@ def get_interface_cisco(data):
 
         # Send the command and get the output
         output = get_command_output(shell, 'sh run | section include int')
-        #print(output)
+        
         interfacedetails = output.split("\n")[2:]
         
         intfcname = "None"
@@ -1320,7 +1325,6 @@ def get_interface_cisco(data):
         vlan_link = "None"
         intfcdetails = []
         for intfc in interfacedetails:     
-            print("test3",intfc)       
             if "interface" in intfc:
                 if intfcname != "None":
                     if "ethernet" in intfcname.lower():
