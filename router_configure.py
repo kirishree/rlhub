@@ -1319,7 +1319,8 @@ def get_interface_cisco(data):
         netmask = "None"
         vlan_link = "None"
         intfcdetails = []
-        for intfc in interfacedetails:            
+        for intfc in interfacedetails:     
+            print("test3",intfc)       
             if "interface" in intfc:
                 if intfcname != "None":
                     if "ethernet" in intfcname.lower():
@@ -1386,7 +1387,7 @@ def get_interface_cisco(data):
                                  "vlan_link": vlan_link,
                                  "gateway": '-'                        
                                 })   
-        print("test1", intfcdetails)
+        
         # Disable paging
         get_command_output(shell, 'terminal length 0', wait_time=1)
         # Send the command and get the output
