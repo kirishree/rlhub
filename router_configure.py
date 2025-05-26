@@ -532,11 +532,12 @@ def createvlaninterface(data):
             
             if not vlanavailable:
                 vlancommand = f"switchport trunk allowed vlan 1,{data['vlan_id']},1002-1005"  
-            else:
-                firstid = vlan_link.split(",")[0]
-                if firstid == data['vlan_id']:
+            else:                
+                if vlan_link.split(",")[0] == data['vlan_id']: #checks at first
                     continue
-                elif f",{data['vlan_id']}" in vlan_link or f",{data['vlan_id']}," in vlan_link: #checks at last & middle
+                elif vlan_link.split(",")[-1] == data['vlan_id']: # checks at last 
+                    continue
+                elif f",{data['vlan_id']}," in vlan_link: #checks at middle
                     continue
                 else:
                     vlancommand = f"switchport trunk allowed vlan 1,{vlan_link},{data['vlan_id']},1002-1005"  
