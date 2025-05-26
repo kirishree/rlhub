@@ -1386,6 +1386,7 @@ def get_interface_cisco(data):
                                  "vlan_link": vlan_link,
                                  "gateway": '-'                        
                                 })   
+        print("test1", intfcdetails)
         # Disable paging
         get_command_output(shell, 'terminal length 0', wait_time=1)
         # Send the command and get the output
@@ -1404,7 +1405,7 @@ def get_interface_cisco(data):
                                  "protocol": intfcinfo.split(" ")[5],
                                  "method": intfcinfo.split(" ")[3]
                                 }) 
-        print("test",intfcdetailsnew)
+        
         interfaceinfo = []
         for info in intfcdetails:
             for infonew in intfcdetailsnew:
