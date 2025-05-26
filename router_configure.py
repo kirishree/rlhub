@@ -564,6 +564,7 @@ def createvlaninterface(data):
                         vlancommand = f"switchport trunk allowed vlan {vlan_link},{data['vlan_id']},1002-1005"
                         break
                 if vlanidexist:
+                    response = [{"message": f"Interface vlan{data['vlan_id']} already exist"}]  
                     continue
             send_command(shell, 'configure terminal')
             send_command(shell, f'interface {link_intfc}')
