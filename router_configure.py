@@ -528,7 +528,7 @@ def createvlaninterface(data):
                 if "vlan" in intfc and "add" not in intfc:    
                     vlanavailable = True                
                     if len(intfc.strip().split("vlan")) > 1:                        
-                            vlan_link = intfc.strip().split("vlan 1,")[1].split(",1002-1005")[0]
+                            vlan_link = intfc.strip().split("vlan ")[1].split(",1002-1005")[0]
                 if "allowed vlan add" in intfc:                    
                     if "1002-1005" not in intfc:
                         vlan_link += ","
@@ -547,7 +547,7 @@ def createvlaninterface(data):
                 elif f",{data['vlan_id']}," in vlan_link: #checks at middle
                     continue
                 else:
-                    vlancommand = f"switchport trunk allowed vlan 1,{vlan_link},{data['vlan_id']},1002-1005"  
+                    vlancommand = f"switchport trunk allowed vlan {vlan_link},{data['vlan_id']},1002-1005"  
             send_command(shell, 'configure terminal')
             send_command(shell, f'interface {link_intfc}')
             send_command(shell, f'{vlanmode}') 
@@ -916,7 +916,7 @@ def deletevlaninterface(data):
                     intfc_name = intfc.strip().split("interface")[1]  
                 if "vlan" in intfc and "add" not in intfc:                    
                     if len(intfc.strip().split("vlan")) > 1:                        
-                            vlan_link = intfc.strip().split("vlan 1,")[1].split(",1002-1005")[0]
+                            vlan_link = intfc.strip().split("vlan ")[1].split(",1002-1005")[0]
                 if "allowed vlan add" in intfc:                    
                     if "1002-1005" not in intfc:
                         vlan_link += ","
@@ -932,7 +932,7 @@ def deletevlaninterface(data):
                     for i in range(0,len(updated_vlan)):                          
                           if i != 0:
                             vlanc += f"{updated_vlan[i]},"                    
-                    vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
+                    vlancommand = f"switchport trunk allowed vlan {vlanc}1002-1005"
                     vlanlinkinfo.append({"intfc": interface["interfacename"],
                                          "vlancommand": vlancommand})                           
                 elif f",{vlanid}," in interface["vlan_id"]:
