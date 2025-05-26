@@ -1370,7 +1370,7 @@ def get_interface_cisco(data):
                         cidraddr.append({"IPv4address" :ipintf.with_prefixlen, "primary": primary})
                 if "vlan" in intfc and "add" not in intfc:                    
                     if len(intfc.strip().split("vlan")) > 1:                        
-                            vlan_link = intfc.strip().split("vlan 1,")[1].split(",1002-1005")[0]
+                            vlan_link = intfc.strip().split("vlan ")[1].split(",1002-1005")[0]
                 if "allowed vlan add" in intfc:                    
                     if "1002-1005" not in intfc:
                         vlan_link += ","
