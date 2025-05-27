@@ -1023,7 +1023,8 @@ def deletevlaninterface(data):
             vlanid = data["intfc_name"].lower().split("vlan")[1]                   
             output = get_command_output(shell, f'sh run | section include interface Fast')
             interfacedetails = output.split("\n")     
-            for intfc in interfacedetails:                 
+            for intfc in interfacedetails:      
+                print("intfc", intfc)           
                 if "interface" in intfc:                    
                     intfc_name = intfc.strip().split("interface")[1]  
                 if "vlan" in intfc and "add" not in intfc:                    
