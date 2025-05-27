@@ -1018,8 +1018,7 @@ def deletevlaninterface(data):
         vlanlinkinfo = []
         output = send_command_wo(shell, 'enable')
         if "Password" in output:  # Prompt for enable password
-            send_command_wo(shell, password)
-        vlanlinkinfo = []
+            send_command_wo(shell, password)        
         if "vlan" in data["intfc_name"].lower():
             vlanid = data["intfc_name"].lower().split("vlan")[1]                   
             output = get_command_output(shell, f'sh run | section include interface Fast')
@@ -1031,6 +1030,7 @@ def deletevlaninterface(data):
                     if vlanid == intfc.split("vlan ")[1]:
                         vlanlinkinfo.append({"intfc": intfc_name,
                                          "vlancommand": f'no switchport access vlan {vlanid}'})                                   
+        print(vlanlinkinfo)
         send_command(shell, 'configure terminal')
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
