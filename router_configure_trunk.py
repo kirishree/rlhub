@@ -449,7 +449,7 @@ def delstaticroute(data):
     ssh_client.close()
     return True
 
-def createvlaninterfacetrunk(data):
+def createvlaninterface(data):
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
@@ -594,108 +594,7 @@ def createvlaninterfacetrunk(data):
             )
     return response
 
-def createvlaninterface(data):
-    # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    for intfcname in data['link']:
-        if intfcname.lower() == "fastethernet4":
-            response = [{"message": "Pl remove  Layer 3 interface from Link interface"}]
-            logger.info(
-            f"{response}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "createvlan_interface",
-                "exception": ""
-            }
-            )
-            return response
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-    # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-    except Exception as e:
-        logger.error(
-            f"SSH Connection Error",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "createvlan_interface",
-                "exception": str(e)
-            }
-            )
-        return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
-
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
-
-    vlan_ip = data["addresses"][0].split("/")[0]
-    subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-    netmask = str(subnet.netmask)    
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'vlan {data["vlan_id"]}')
-    send_command(shell, f'end')
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'interface vlan {data["vlan_id"]}')
-    ipoutput = get_command_output(shell, f'ip address {vlan_ip} {netmask}')
-    if "overlaps" in ipoutput:
-        overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
-        overlapintfc = False                              
-        overlapintfc = overlap_intfc[0].split("\r")[0]
-        if overlapintfc:
-            response = [{"message": f"Error: while configuring vlan due to address conflict with {overlapintfc}"}]
-        else:
-            response = [{"message": f"Error: while configuring vlan due to address conflict"}]
-        send_command(shell, 'end')
-        send_command(shell, 'configure terminal')
-        send_command(shell, f'no interface vlan {data["vlan_id"]}')
-        send_command(shell, 'end')
-
-    else:
-        send_command(shell, 'no shutdown')
-        send_command(shell, 'end')
-        for link_intfc in data["link"]:            
-            output = get_command_output(shell, f'sh run | section include interface {link_intfc}')                   
-            vlanmode = f'switchport mode access'           
-            vlanaddcommand = f'switchport access vlan {data["vlan_id"]}'
-            send_command(shell, 'configure terminal')
-            send_command(shell, f'interface {link_intfc}')
-            send_command(shell, f'{vlanmode}') 
-            send_command(shell, f'no switchport access vlan') 
-            vlanmodeout2 = get_command_output(shell, f'{vlanaddcommand}')   
-            if "Vlan can not be added." in vlanmodeout2:                            
-                response = [{"message": f"Error: vlan{data['vlan_id']} not linked with {link_intfc} "}]   
-                send_command(shell, 'end')
-                break
-            else:
-                response = [{"message": f"Interface vlan{data['vlan_id']} created"}]      
-                send_command(shell, 'end')        
-        # Save the configuration
-    send_command(shell, 'write memory')     
-    # Close the SSH connection
-    ssh_client.close()
-    logger.info(
-            f"{response}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "createvlan_interface",
-                "exception": ""
-            }
-            )
-    return response
-
-def createvlaninterfaceaccess(data):
+def createvlaninterface1(data):
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
