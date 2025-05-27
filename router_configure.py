@@ -559,7 +559,7 @@ def createvlaninterface(data):
                     elif int(data['vlan_id']) == int(vlanid):
                             vlanidexist = True
                             break
-                    elif int(data['vlan_id']) < int(vlanid):
+                    elif int(data['vlan_id']) > int(vlanid):
                         vlanidexist = False
                         vlancommand = f"switchport trunk allowed vlan {vlan_link},{data['vlan_id']},1002-1005"
                         break
@@ -883,6 +883,144 @@ def adduser(data):
         return False
 
 def deletevlaninterface(data):
+    try:
+        # Define the router details
+        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():            
+            response = [{"message": f"Error: Not able to delete physical interface"}]
+            return response        
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        vlanlinkinfo = []
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        if "vlan" in data["intfc_name"].lower():
+            vlanid = data["intfc_name"].lower().split("vlan")[1]            
+            output = get_command_output(shell, f'sh run | section include interface Fast')
+            interfacedetails = output.split("\n")       
+            intfc_name = "None"
+            intinfo = []
+            vlan_link = "None"
+            for intfc in interfacedetails:                 
+                if "interface" in intfc:
+                    if intfc_name != "None" and vlan_link != "None":
+                        intinfo.append({"interfacename": intfc_name,
+                                        "vlan_id": vlan_link})
+                        vlan_link = "None"
+                    intfc_name = intfc.strip().split("interface")[1]  
+                if "vlan" in intfc and "add" not in intfc:                    
+                    if len(intfc.strip().split("vlan")) > 1:                        
+                            vlan_link = intfc.strip().split("vlan ")[1].split(",1002-1005")[0]
+                if "allowed vlan add" in intfc:                    
+                    if "1002-1005" not in intfc:
+                        vlan_link += ","
+                        vlan_link += intfc.strip().split("add ")[1]
+                    if ",1002-1005" in intfc:
+                        vlan_link += ","
+                        vlan_link += intfc.strip().split("add ")[1].split(",1002-1005")[0]
+            
+            for interface in intinfo:
+                vlanlist = interface["vlan_id"].split(",")
+                for vlan_id in vlanlist:
+                    if "-" in vlan_id:
+                        if int(vlanid) > int(vlan_id.split("-")[0]) and int(vlanid) < int(vlan_id.split("-")[1]):
+                            
+
+                if f"{vlanid}" == interface["vlan_id"].split(",")[0]:  
+                    updated_vlan = interface["vlan_id"].split(",")
+                    vlanc = ""
+                    for i in range(0,len(updated_vlan)):                          
+                          if i != 0:
+                            vlanc += f"{updated_vlan[i]},"                    
+                    vlancommand = f"switchport trunk allowed vlan {vlanc}1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})                           
+                elif f",{vlanid}," in interface["vlan_id"]:
+                    updated_vlan = interface["vlan_id"].split(f",{vlanid},")
+                    vlancommand = f"switchport trunk allowed vlan 1,{updated_vlan[0]},{updated_vlan[1]},1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand}) 
+                elif f"{vlanid}" == interface["vlan_id"].split(f",")[-1]:
+                    updated_vlan = interface["vlan_id"].split(",")
+                    vlanc = ""
+                    for i in range(0,len(updated_vlan)-1):                                                  
+                        vlanc += f"{updated_vlan[i]},"                                     
+                    vlancommand = f"switchport trunk allowed vlan 1,{vlanc}1002-1005"
+                    vlanlinkinfo.append({"intfc": interface["interfacename"],
+                                         "vlancommand": vlancommand})                   
+            logger.info(
+                    f"{vlanlinkinfo}",
+                    extra={
+                        "device_type": "Cisco",
+                        "device_ip": router_ip,
+                        "be_api_endpoint": "delete_interface",
+                        "exception": ""
+                    }
+                )                
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'no interface {data["intfc_name"]}')
+        deleteoutput = send_command_wo(shell, 'end')
+        if " not be deleted" in deleteoutput:
+            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
+        else:
+            for linkvlan in vlanlinkinfo:
+                send_command(shell, 'configure terminal')
+                send_command(shell, f'interface {linkvlan["intfc"]}')
+                send_command(shell, "no switchport trunk allowed vlan")
+                send_command(shell, f'{linkvlan["vlancommand"]}')
+                send_command_wo(shell, 'end')
+            response = [{"message": f"Interface {data['intfc_name']} deleted"}]   
+        #Save the configuration
+        send_command(shell, 'write memory')    
+        # Close the SSH connection
+        ssh_client.close()
+    except Exception as e:
+        logger.error(
+            f"Error while deleting Interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]      
+    logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": ""
+            }
+            )
+    return response
+
+def deletevlaninterfaceold(data):
     try:
         # Define the router details
         if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():            
