@@ -665,7 +665,7 @@ def createvlaninterface(data):
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
         for link_intfc in data["link"]:            
-            output = get_command_output(shell, f'sh run | section include interface {link_intfc}')                   
+            #output = get_command_output(shell, f'sh run | section include interface {link_intfc}')                   
             vlanmode = f'switchport mode access'           
             vlanaddcommand = f'switchport access vlan {data["vlan_id"]}'
             send_command(shell, 'configure terminal')
