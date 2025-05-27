@@ -944,10 +944,7 @@ def deletevlaninterface(data):
                         vlan_link += intfc.strip().split("add ")[1].split(",1002-1005")[0]
             
             for interface in intinfo:
-                vlanlist = interface["vlan_id"].split(",")
-                for vlan_id in vlanlist:
-                    if "-" in vlan_id:
-                        if int(vlanid) > int(vlan_id.split("-")[0]) and int(vlanid) < int(vlan_id.split("-")[1]):
+                
                             
 
                 if f"{vlanid}" == interface["vlan_id"].split(",")[0]:  
