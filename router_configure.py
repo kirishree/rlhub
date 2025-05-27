@@ -1028,8 +1028,7 @@ def deletevlaninterface(data):
                 if "interface" in intfc:                    
                     intfc_name = intfc.strip().split("interface")[1]  
                 if "vlan" in intfc and "add" not in intfc:   
-                    print(intfc.split("vlan "))  
-                    print("vlanid", vlanid)            
+                    intfc = intfc.split("\r")[0]                             
                     if vlanid == intfc.split("vlan ")[1]:
                         print(intfc.split("vlan ")[1])  
                         vlanlinkinfo.append({"intfc": intfc_name,
