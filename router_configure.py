@@ -1027,7 +1027,8 @@ def deletevlaninterface(data):
                 print("intfc", intfc)           
                 if "interface" in intfc:                    
                     intfc_name = intfc.strip().split("interface")[1]  
-                if "vlan" in intfc and "add" not in intfc:                    
+                if "vlan" in intfc and "add" not in intfc:   
+                    print(intfc.split("vlan ")[1])              
                     if vlanid == intfc.split("vlan ")[1]:
                         vlanlinkinfo.append({"intfc": intfc_name,
                                          "vlancommand": f'no switchport access vlan {vlanid}'})                                   
