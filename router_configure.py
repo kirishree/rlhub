@@ -944,9 +944,15 @@ def deletevlaninterface(data):
                         vlan_link += intfc.strip().split("add ")[1].split(",1002-1005")[0]
             
             for interface in intinfo:
-                
-                            
-
+                vlanlist = interface["vlan_id"].split(",")
+                vlans = "switchport trunk allowed vlan "
+                for vlan_id in vlanlist:
+                    if "-" in vlan_id: #1-10
+                        for i in range(int(vlan_id.split("-")[0]), int(vlan_id.split("-")[1])+1):
+                            vlans += f"{str(i),}"
+                    else:
+                        vlans += f"{vlan_id},"
+                interface["vlan_id"] = vlans                     
                 if f"{vlanid}" == interface["vlan_id"].split(",")[0]:  
                     updated_vlan = interface["vlan_id"].split(",")
                     vlanc = ""
@@ -958,7 +964,11 @@ def deletevlaninterface(data):
                                          "vlancommand": vlancommand})                           
                 elif f",{vlanid}," in interface["vlan_id"]:
                     updated_vlan = interface["vlan_id"].split(f",{vlanid},")
-                    vlancommand = f"switchport trunk allowed vlan 1,{updated_vlan[0]},{updated_vlan[1]},1002-1005"
+                    if len(updated_vlan) > 1: 
+                        vlancommand = f"switchport trunk allowed vlan {updated_vlan[0]},{updated_vlan[1]},1002-1005"
+                    else:
+                        vlancommand = f"switchport trunk allowed vlan {updated_vlan[0]},1002-1005"
+
                     vlanlinkinfo.append({"intfc": interface["interfacename"],
                                          "vlancommand": vlancommand}) 
                 elif f"{vlanid}" == interface["vlan_id"].split(f",")[-1]:
