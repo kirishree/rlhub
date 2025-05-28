@@ -661,7 +661,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     mini_table.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"), 
                          ('FONTSIZE', (0, 0), (-1, -1), 8)])  # Adjust font size for better fit   
     #datainfo.append(["Uptime stats:", f"UP:{uptime_percentage}%", uptime_bar, f"[{uptime_str}]  Down: {avg_downtime}%"]) 
-    datainfo.append(["Uptime stats:", mini_table])
+    datainfo.append(["Uptime Status:", mini_table])
 
     reqtime_bar = UptimeBar(good_stats, width=8, height=15) 
     failtime_bar = DowntimeBar(failed_stats, width=8, height=15) 
@@ -669,7 +669,7 @@ def save_to_pdf(intfcname, branch_location, fromdate, todate, graphname, itemidr
     mini_table1 = Table([[f"Good: {good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]", failtime_bar ]], colWidths=[70,10,90,70,10])
     mini_table1.setStyle([("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
                           ('FONTSIZE', (0, 0), (-1, -1), 8)]) # Adjust font size for better fit
-    datainfo.append(["Request Stats:", mini_table1])
+    datainfo.append(["Request Status:", mini_table1])
 
     #datainfo.append(["Request Stats:", f"Good:{good_stats}%", reqtime_bar, f"[{success_polls}]", f"Failed:{failed_stats}% [{total_ping_loss}]"])
     datainfo.append(["Average(Traffic Total):", f"{str(avg_speed)} Mbit/s"])
