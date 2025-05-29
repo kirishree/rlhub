@@ -562,6 +562,7 @@ def addstaticroute_ubuntu(data):
                                        "exception": str(e)
                                        }
                                        )
+                return response
             for currentroute in current_routes:
                 if currentroute["destination"] == route["destination"]:
                     if currentroute["gateway"] == route["gateway"]:
