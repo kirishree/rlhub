@@ -571,7 +571,7 @@ def addstaticroute_ubuntu(data):
                     #subnet_ip = route["destination"].split("/")[0]
                     corrected_dst = str(ipaddress.ip_network(route["destination"], strict=False))  
                     subnet_ip = corrected_dst.split("/")[0]
-                    netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
+                    netmask = str(ipaddress.IPv4Network(corrected_dst).netmask)
                     tunnelinfo = tunnelinfo.strip()
                     spokename = tunnelinfo.split(",")[0]
                     if os.path.exists(f"/etc/openvpn/server/ccd/{spokename}"):
