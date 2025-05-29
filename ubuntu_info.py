@@ -557,7 +557,7 @@ def addstaticroute_ubuntu(data):
                 route["destination"] = str(ipaddress.ip_network(route["destination"], strict=False))
             except Exception as e:
                 response = [{"message": f"Error: {str(e)}"}]
-                logger.error(f"{Error in adding route}",
+                logger.error(f"Error in adding route",
                               extra = {"be_api_endpoint": "ReachLink Server",
                                        "exception": str(e)
                                        }
