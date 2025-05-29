@@ -568,7 +568,9 @@ def addstaticroute_ubuntu(data):
                 continue            
             for tunnelinfo in tunnelip_info:
                 if route["gateway"] in  tunnelinfo:
-                    subnet_ip = route["destination"].split("/")[0]
+                    #subnet_ip = route["destination"].split("/")[0]
+                    corrected_dst = str(ipaddress.ip_network(route["destination"], strict=False))  
+                    subnet_ip = corrected_dst.split("/")[0]
                     netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
                     tunnelinfo = tunnelinfo.strip()
                     spokename = tunnelinfo.split(",")[0]
