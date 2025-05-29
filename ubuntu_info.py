@@ -553,7 +553,15 @@ def addstaticroute_ubuntu(data):
         current_routes = get_routing_table_ubuntu()  
         available_routes = [] 
         for route in routes:
-            route["destination"] = str(ipaddress.ip_network(route["destination"], strict=False))
+            try:
+                route["destination"] = str(ipaddress.ip_network(route["destination"], strict=False))
+            except Exception as e:
+                response = [{"message": f"Error: {str(e)}"}]
+                logger.error(f"{Error in adding route}",
+                              extra = {"be_api_endpoint": "ReachLink Server",
+                                       "exception": str(e)
+                                       }
+                                       )
             for currentroute in current_routes:
                 if currentroute["destination"] == route["destination"]:
                     if currentroute["gateway"] == route["gateway"]:

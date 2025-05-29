@@ -9,7 +9,8 @@ addr = "192.168.23.149/30"
 corrected_subnet = ipaddress.ip_network(addr, strict=False)
 #print(corrected_subnet)
 #print(round(3600/60))
-
+ss = ipaddress.ip_network("192.168.7.23/24", strict=False)
+print(ss)
 def get_organization_id(data):
     try:
         if "access_token" not in data:
