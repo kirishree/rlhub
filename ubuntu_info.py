@@ -553,6 +553,7 @@ def addstaticroute_ubuntu(data):
         current_routes = get_routing_table_ubuntu()  
         available_routes = [] 
         for route in routes:
+            route["destination"] = str(ipaddress.ip_network(route["destination"], strict=False))
             for currentroute in current_routes:
                 if currentroute["destination"] == route["destination"]:
                     if currentroute["gateway"] == route["gateway"]:
@@ -568,10 +569,10 @@ def addstaticroute_ubuntu(data):
                 continue            
             for tunnelinfo in tunnelip_info:
                 if route["gateway"] in  tunnelinfo:
-                    #subnet_ip = route["destination"].split("/")[0]
-                    corrected_dst = str(ipaddress.ip_network(route["destination"], strict=False))  
-                    subnet_ip = corrected_dst.split("/")[0]
-                    netmask = str(ipaddress.IPv4Network(corrected_dst).netmask)
+                    subnet_ip = route["destination"].split("/")[0]
+                    #corrected_dst = str(ipaddress.ip_network(route["destination"], strict=False))  
+                    #subnet_ip = corrected_dst.split("/")[0]
+                    netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
                     tunnelinfo = tunnelinfo.strip()
                     spokename = tunnelinfo.split(",")[0]
                     if os.path.exists(f"/etc/openvpn/server/ccd/{spokename}"):
