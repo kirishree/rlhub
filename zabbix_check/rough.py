@@ -11,6 +11,28 @@ corrected_subnet = ipaddress.ip_network(addr, strict=False)
 #print(round(3600/60))
 ss = ipaddress.ip_network("192.168.7.23/24", strict=False)
 print(ss)
+headers = {"Content-Type": "application/json"}
+authinfo = json.dumps({"username": "user@example.com","password": "aaa"})
+if (True):
+        authresponse = requests.post(urllogin, data= authinfo, headers= headers)
+        authresponse.raise_for_status()
+        if authresponse.status_code == 200:           
+            json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
+            json_authresponse = json.loads(json_authresponse)
+            if "access" not in json_authresponse:
+                if not (json_authresponse["message"]):                
+                    print(json_authresponse["msg_status"])
+                print("Enter a key to exit...")
+                input()
+                return
+            else:
+                print("Login Successfull. Getting configuration...")   
+                access_token = json_authresponse["access"]
+        else:
+            print("Error while authenticating data")
+            print("Enter a key to exit...")
+            input()
+            return
 def get_organization_id(data):
     try:
         if "access_token" not in data:

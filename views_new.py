@@ -210,6 +210,11 @@ def login_or_register(request):
     if username ==  super_user_name:
         # Authenticate existing user
         user = authenticate(username=username, password=password)
+        if not user:
+            return Response({            
+            "message": False,
+            "msg_status": "Invalid Password"
+            })
         # Generate JWT tokens for new user
         refresh = RefreshToken.for_user(user)
         refresh['role'] = "admin"  # Assuming 'role' is a field on your user model
@@ -357,13 +362,7 @@ def login(request: HttpRequest):
                     )
     global newuser
     try:
-        response, newuser = onboarding.check_user(data, newuser)        
-        if newuser:
-            userStatus = onboarding.authenticate_user(data)            
-            if userStatus:
-                response, newuser = onboarding.check_user(data, newuser)
-            else:
-                response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
+        response, newuser = onboarding.check_user(data, newuser)         
         if "spokedevice_name" in response[0]:
             client_name = response[0]["spokedevice_name"]
             output_file = os.path.expanduser(f"~/{client_name}.ovpn")

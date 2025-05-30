@@ -482,7 +482,11 @@ def check_user(data, newuser):
                                 new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name,
-                                                      "gretunnel_ip":gretunnel_ip, 
+                                                      "hub_ip": hub_ip,
+                                                      "gretunnel_ip": gretunnel_ip,
+                                                      "tunnel_ip": "None",
+                                                      "public_ip": "None"
+                                                       
                                                       }
                                 devinfo["ubuntu_spokes_info"].append(new_spoke_info)    
                                 coll_tunnel_ip.insert_one(new_spoke_info)                 
