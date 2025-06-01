@@ -42,7 +42,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [   
-    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
+    path('beapi/accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('beapi/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('beapi/homepage_info', homepage_info, name='homepage_info'),
     path('beapi/adminhomepage_info', adminhomepage_info, name='adminhomepage_info'),
