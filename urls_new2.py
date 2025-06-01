@@ -11,6 +11,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.urls import path
 from django.urls import path, re_path
@@ -41,6 +42,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [   
+    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('beapi/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('beapi/homepage_info', homepage_info, name='homepage_info'),
     path('beapi/adminhomepage_info', adminhomepage_info, name='adminhomepage_info'),
