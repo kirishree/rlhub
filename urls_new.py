@@ -13,6 +13,10 @@ Including another URLconf
 from django.contrib import admin
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.urls import path
+from django.urls import path, re_path
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 from reach.views import login, onboard_block, onboard_unblock, ping_spoke, autofix
 from reach.views import branch_info, get_routing_table, addsubnet, diagnostics
 from reach.views import activate, deactivate, delsubnet, onboard_delete
@@ -23,6 +27,19 @@ from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
+schema_view = get_schema_view(
+   openapi.Info(
+      title="ReachLink",
+      default_version='v1',
+      description="API documentation for ReachLink project",
+      terms_of_service="https://www.yourcompany.com/terms/",
+      contact=openapi.Contact(email="bavya@cloudetel.com"),
+      license=openapi.License(name="BSD License"),
+   ),
+    public=True,
+   permission_classes=(permissions.AllowAny,),
+)
+
 urlpatterns = [   
     path('beapi/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('beapi/homepage_info', homepage_info, name='homepage_info'),
@@ -80,4 +97,10 @@ urlpatterns = [
     path('beapi/traffic_report',traffic_report, name='traffic_report'),
     path('beapi/get_robustelspoke_config', get_robustelspoke_config, name='get_robustelspoke_config'),
     path('beapi/logfile_content', logfile_content, name='logfile_content'),
+
+    # Swagger & Redoc URLs
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('beapi/swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('beapi/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+]
 ]

@@ -4,6 +4,7 @@ from pymongo.server_api import ServerApi
 import json
 os.system("cp robustel_configure.py /root/reachlink/")
 os.system("cp router_configure.py /root/reachlink/")
+
 os.system("cp onboarding.py /root/reachlink/")
 os.system("cp microtek_configure.py /root/reachlink/")
 os.system("cp ubuntu_info.py /root/reachlink/")
@@ -17,7 +18,8 @@ os.system("cp conf/dist/reachlink_hub_config.exe /root/reachlink/")
 #os.system("cp reachlinkst.py /root/reachlink/")
 #os.system("systemctl restart reachlink_test")
 #os.system("cp conf/dist/reachlink_cisco_config.exe /root/reachlink/")
-os.system("cp zabbix_gen_report.py /root/reachlink/")
+os.system("cp zabbix_gen_report.py /root/reachl" \
+"ink/")
 os.system("cp zabbix_ping_report.py /root/reachlink/")
 os.system("cp conf/dist/* /root/reachlink/")
 os.system("cp tasks.py /root/reachlink/reach/")
