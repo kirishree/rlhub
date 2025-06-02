@@ -12,6 +12,8 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 from django.http import HttpRequest, HttpResponse,  JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django_ratelimit.decorators import ratelimit
@@ -1125,6 +1127,19 @@ def adminbranch_info():
                     )
     return adminbranch_info
 
+@swagger_auto_schema(
+    method='get',
+    manual_parameters=[
+        openapi.Parameter(
+            'organization_id',
+            openapi.IN_QUERY,
+            description="ID of the organization. Use 'admin' to get admin data.",
+            type=openapi.TYPE_STRING,
+            required=True
+        )
+    ],
+    responses={200: "Branch info JSON"}
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
