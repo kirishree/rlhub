@@ -839,6 +839,7 @@ def check_login_onboarding_new(username, password):
                         update_data = {"$set": {"regusers": registered_users}
                                        }
                         coll_registered_organization.update_many(query, update_data)
+                    org_name = details["organization_name"]
                     return 'True', user_role, org_id, user_id, first_name, last_name, org_name, str(details["subscription_to"])        
             else:
                 get_organization_name = requests.get(url+"org/", headers=headers)
