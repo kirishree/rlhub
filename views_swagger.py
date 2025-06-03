@@ -1384,6 +1384,16 @@ def deactivate(request: HttpRequest):
         response = ubuntu_info.deactivate(data)  
     return JsonResponse(response, safe=False)
 
+class deviceinfoSerializer(serializers.Serializer):
+    tunnel_ip = serializers.CharField()
+    uuid = serializers.CharField()    
+
+@swagger_auto_schema(
+    method='post',
+    request_body=deviceinfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
+
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_interface_details_spoke(request):
@@ -1837,6 +1847,11 @@ def vlan_interface_delete_spoke(request):
         response = [{"message": f"Error: "}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    request_body=deviceinfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_routing_table_spoke(request):
@@ -2027,6 +2042,11 @@ def del_staticroute_spoke(request):
         response = [{"message": f"Error: while deleting route"}]
     return JsonResponse(response, safe=False)        
 
+@swagger_auto_schema(
+    method='post',
+    request_body=deviceinfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_pbr_info_spoke(request):
