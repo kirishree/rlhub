@@ -1332,6 +1332,19 @@ def hub_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 ###########SPOKE####################
+class activateinfoSerializer(serializers.Serializer):
+    tunnel_ip = serializers.CharField()
+    uuid = serializers.CharField()
+    hub_ip = serializers.CharField()
+
+class MessageSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
+@swagger_auto_schema(
+    method='post',
+    request_body=activateinfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def deactivate(request: HttpRequest):
@@ -2279,6 +2292,11 @@ def traceroute_hub(request):
     return JsonResponse(response,safe=False)
 
 ##############Inactive branch##############
+@swagger_auto_schema(
+    method='post',
+    request_body=activateinfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def activate(request: HttpRequest):
