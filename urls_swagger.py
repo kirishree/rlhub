@@ -19,7 +19,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from reach.views import login, onboard_block, onboard_unblock, ping_spoke
-from reach.views import branch_info, get_routing_table, addsubnet, diagnostics
+from reach.views import branch_info, get_routing_table, diagnostics
 from reach.views import activate, deactivate, onboard_delete
 from reach.views import add_cisco_device
 from reach.views import traceroute_hub, traceroute_spoke, get_routing_table_spoke, get_interface_details_spoke, create_vlan_interface_spoke, interface_config_spoke
