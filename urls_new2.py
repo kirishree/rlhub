@@ -28,17 +28,19 @@ from reach.views import get_configured_hub, hub_info, get_ciscospoke_config, get
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
+from django.conf import settings
+from django.conf.urls.static import static
+
 schema_view = get_schema_view(
    openapi.Info(
       title="ReachLink",
       default_version='v1',
-      description="API documentation for ReachLink project",
-      terms_of_service="https://www.yourcompany.com/terms/",
-      contact=openapi.Contact(email="bavya@cloudetel.com"),
-      license=openapi.License(name="BSD License"),
+      description="API documentation for ReachLink project",      
    ),
     public=True,
-   permission_classes=(permissions.AllowAny,),
+    permission_classes=(permissions.AllowAny,),
+    authentication_classes=[],
+
 )
 
 urlpatterns = [   
@@ -102,6 +104,7 @@ urlpatterns = [
 
     # Swagger & Redoc URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    path('beapi/swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('beapi/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

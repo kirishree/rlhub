@@ -23,6 +23,7 @@ os.system("cp zabbix_gen_report.py /root/reachl" \
 os.system("cp zabbix_ping_report.py /root/reachlink/")
 os.system("cp conf/dist/* /root/reachlink/")
 os.system("cp tasks.py /root/reachlink/reach/")
-os.system("cp views_new.py /root/reachlink/reach/views.py")
+#os.system("cp views_new.py /root/reachlink/reach/views.py")
+os.system("cp views_swagger.py /root/reachlink/reach/views.py")
 os.system("systemctl restart reachlink_be")
 os.system("systemctl restart celery")
