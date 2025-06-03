@@ -10,6 +10,7 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 """
 
 from django.http import HttpRequest, HttpResponse,  JsonResponse
+from rest_framework import serializers
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from drf_yasg.utils import swagger_auto_schema
@@ -203,6 +204,21 @@ def validate_ip(ip_address):
             return True    
     return False
 
+class authloginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+class AuthLoginResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    message = serializers.CharField()
+    msg_status = serializers.CharField()
+       
+@swagger_auto_schema(
+    method='post',
+    request_body=authloginSerializer,
+    responses={200: AuthLoginResponseSerializer}
+)
 @api_view(['POST'])
 def login_or_register(request):
     username = request.data.get("username")
