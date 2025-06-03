@@ -1003,7 +1003,22 @@ def add_cisco_hub(request: HttpRequest):
 @permission_classes([IsAuthenticated])
 def homepage_info(request: HttpRequest):
     try:  
-        organization_id = str(request.GET.get('organization_id'))         
+        #organization_id = str(request.GET.get('organization_id')) 
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+        token = auth_header.split(' ')[1]
+        try:
+            # Verify and decode the token
+            decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+        except jwt.InvalidTokenError:
+            return JsonResponse({'message': 'Invalid token'}, safe=False)        
+        organization_id = decodedtoken.get("onboarding_org_id", "admin")        
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {organization_id}",
                     extra={ "be_api_endpoint": "homepage_info" }
@@ -1145,7 +1160,22 @@ def adminbranch_info():
 def branch_info(request: HttpRequest):
     try:       
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
-        organization_id = str(request.GET.get('organization_id'))
+        #organization_id = str(request.GET.get('organization_id'))
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+        token = auth_header.split(' ')[1]
+        try:
+            # Verify and decode the token
+            decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+        except jwt.InvalidTokenError:
+            return JsonResponse({'message': 'Invalid token'}, safe=False)        
+        organization_id = decodedtoken.get("onboarding_org_id", "admin")
         if organization_id == "admin":
             try:
                 adminbranchinfo = []
@@ -1222,7 +1252,22 @@ def adminhub_info():
 def hub_info(request: HttpRequest):
     try:        
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
-        organization_id = str(request.GET.get('organization_id'))
+        #organization_id = str(request.GET.get('organization_id'))
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+        token = auth_header.split(' ')[1]
+        try:
+            # Verify and decode the token
+            decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+        except jwt.InvalidTokenError:
+            return JsonResponse({'message': 'Invalid token'}, safe=False)        
+        organization_id = decodedtoken.get("onboarding_org_id", "admin")
         if organization_id == "admin":
             try:
                 adminhubinfo = []
