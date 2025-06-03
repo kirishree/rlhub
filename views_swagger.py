@@ -11,6 +11,8 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 
 from django.http import HttpRequest, HttpResponse,  JsonResponse
 from rest_framework import serializers
+from .serializers import authloginSerializer, AuthLoginResponseSerializer, activateinfoSerializer, MessageSerializer
+from .serializers import hubinfoSerializer, deviceinfoSerializer, RouteEntrySerializer, InterfaceEntrySerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from drf_yasg.utils import swagger_auto_schema
@@ -203,19 +205,10 @@ def validate_ip(ip_address):
         if 23< int(prefix_len) < 33:
             return True    
     return False
-
-class authloginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
-
-class AuthLoginResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
-    message = serializers.CharField()
-    msg_status = serializers.CharField()
-       
+      
 @swagger_auto_schema(
     method='post',
+    tags=['Authentication'],
     request_body=authloginSerializer,
     responses={200: AuthLoginResponseSerializer}
 )
@@ -1017,6 +1010,7 @@ def add_cisco_hub(request: HttpRequest):
 
 @swagger_auto_schema(
     method='get',    
+    tags=['Home'],
     responses={200: "Home page info JSON"}
 )
 @api_view(['GET'])
@@ -1163,7 +1157,8 @@ def adminbranch_info():
     return adminbranch_info
 
 @swagger_auto_schema(
-    method='get',    
+    method='get', 
+    tags=['Branch Info'],
     responses={200: "Branch info JSON"}
 )
 @api_view(['GET'])
@@ -1259,7 +1254,8 @@ def adminhub_info():
     return response
 
 @swagger_auto_schema(
-    method='get',    
+    method='get',   
+    tags=['Hub Info'],
     responses={200: "HUB info JSON"}
 )
 @api_view(['GET'])
@@ -1332,16 +1328,9 @@ def hub_info(request: HttpRequest):
                     }
     return JsonResponse(response, safe=False)
 ###########SPOKE####################
-class activateinfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
-    uuid = serializers.CharField()
-    hub_ip = serializers.CharField()
-
-class MessageSerializer(serializers.Serializer):
-    message = serializers.CharField()
-
 @swagger_auto_schema(
     method='post',
+    tags=['Branch Info'],
     request_body=activateinfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
@@ -1384,16 +1373,12 @@ def deactivate(request: HttpRequest):
         response = ubuntu_info.deactivate(data)  
     return JsonResponse(response, safe=False)
 
-class deviceinfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
-    uuid = serializers.CharField()    
-
 @swagger_auto_schema(
     method='post',
+    tags=['Branch Info'],
     request_body=deviceinfoSerializer,
-    responses={200: MessageSerializer(many=True)}
+    responses={200: InterfaceEntrySerializer(many=True)}
 )
-
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_interface_details_spoke(request):
@@ -1849,8 +1834,9 @@ def vlan_interface_delete_spoke(request):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Branch Info'],
     request_body=deviceinfoSerializer,
-    responses={200: MessageSerializer(many=True)}
+    responses={200: RouteEntrySerializer(many=True)}
 )
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
@@ -2044,6 +2030,7 @@ def del_staticroute_spoke(request):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Branch Info'],
     request_body=deviceinfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
@@ -2314,6 +2301,7 @@ def traceroute_hub(request):
 ##############Inactive branch##############
 @swagger_auto_schema(
     method='post',
+    tags=['Branch Info'],
     request_body=activateinfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
@@ -2357,6 +2345,12 @@ def activate(request: HttpRequest):
     return JsonResponse(response, safe=False)
 
 ###############HUB info page##############################
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info'],
+    request_body=hubinfoSerializer,
+    responses={200: RouteEntrySerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_routing_table(request):
@@ -2484,6 +2478,12 @@ def delstaticroute_hub(request: HttpRequest):
         response = [{"message":f"Error while deleting route"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info'],
+    request_body=hubinfoSerializer,
+    responses={200: InterfaceEntrySerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 #@ratelimit(key='ip', rate='5/m', method='POST', block=True)
