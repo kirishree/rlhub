@@ -10,11 +10,8 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 """
 
 from django.http import HttpRequest, HttpResponse,  JsonResponse
-from rest_framework import serializers
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django_ratelimit.decorators import ratelimit
@@ -204,21 +201,6 @@ def validate_ip(ip_address):
             return True    
     return False
 
-class authloginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
-
-class AuthLoginResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
-    message = serializers.CharField()
-    msg_status = serializers.CharField()
-       
-@swagger_auto_schema(
-    method='post',
-    request_body=authloginSerializer,
-    responses={200: AuthLoginResponseSerializer}
-)
 @api_view(['POST'])
 def login_or_register(request):
     username = request.data.get("username")
@@ -1015,10 +997,6 @@ def add_cisco_hub(request: HttpRequest):
     response["Access-Control-Expose-Headers"] = "X-Message"
     return response
 
-@swagger_auto_schema(
-    method='get',    
-    responses={200: "Home page info JSON"}
-)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def homepage_info(request: HttpRequest):
@@ -1162,10 +1140,6 @@ def adminbranch_info():
                     )
     return adminbranch_info
 
-@swagger_auto_schema(
-    method='get',    
-    responses={200: "Branch info JSON"}
-)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def branch_info(request: HttpRequest):
@@ -1258,10 +1232,6 @@ def adminhub_info():
                     )
     return response
 
-@swagger_auto_schema(
-    method='get',    
-    responses={200: "HUB info JSON"}
-)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def hub_info(request: HttpRequest):
