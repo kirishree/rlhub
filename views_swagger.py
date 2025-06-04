@@ -1380,7 +1380,7 @@ def deactivate(request: HttpRequest):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=DeviceInfoSerializer,
     responses={200: InterfaceEntrySerializer(many=True)}
 )
@@ -1458,7 +1458,7 @@ def get_interface_details_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=VlanAddSpokeSerializer,
     responses={200: MessageSerializer}
 )
@@ -1528,7 +1528,7 @@ def create_vlan_interface_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=VlanAddSpokeSerializer,
     responses={200: MessageSerializer}
 )
@@ -1592,7 +1592,7 @@ def create_sub_interface_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=LoopbackAddSpokeSerializer,
     responses={200: MessageSerializer}
 )
@@ -1654,7 +1654,7 @@ def create_loopback_interface_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=TunnelAddSpokeSerializer,
     responses={200: MessageSerializer}
 )
@@ -1723,7 +1723,7 @@ def create_tunnel_interface_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=ConfigInterfaceSpokeSerializer,
     responses={200: MessageSerializer}
 )
@@ -1790,7 +1790,7 @@ def interface_config_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Interfaces'],
     request_body=DeleteInterfaceSpokeSerializer,
     responses={200: MessageSerializer}
 )
@@ -1875,7 +1875,7 @@ def vlan_interface_delete_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Routes'],
     request_body=DeviceInfoSerializer,
     responses={200: RouteEntrySerializer(many=True)}
 )
@@ -1938,7 +1938,7 @@ def get_routing_table_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Routes'],
     request_body=AddRouteInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
@@ -2006,7 +2006,7 @@ def add_route_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - Routes'],
     request_body=DelRouteInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
@@ -2083,7 +2083,7 @@ def del_staticroute_spoke(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
+    tags=['Branch Info - PBR'],
     request_body=DeviceInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
@@ -2378,7 +2378,7 @@ def traceroute_hub(request):
 ##############Inactive branch##############
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info - Active/Deactive'],
+    tags=['Branch Info - Activate/Deactivate'],
     request_body=ActivateInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
