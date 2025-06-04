@@ -2524,7 +2524,7 @@ def addstaticroute_hub(request: HttpRequest):
 @swagger_auto_schema(
     method='post',
     tags=['Hub Info - Routes'],
-    request_body=RouteHubSerializer,
+    request_body=AddRouteHubSerializer,
     responses={200: MessageSerializer}
 )
 @api_view(['POST'])  
