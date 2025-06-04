@@ -2570,7 +2570,7 @@ def delstaticroute_hub(request: HttpRequest):
 @swagger_auto_schema(
     method='post',
     tags=['Hub Info - Interface'],
-    request_body=hubinfoSerializer,
+    request_body=HubInfoSerializer,
     responses={200: InterfaceEntrySerializer(many=True)}
 )
 @api_view(['POST'])  
