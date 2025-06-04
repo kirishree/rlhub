@@ -11,8 +11,13 @@ Also it adds the route to reach the REAL subnet behind the spoke.
 
 from django.http import HttpRequest, HttpResponse,  JsonResponse
 from rest_framework import serializers
-from .serializers import authloginSerializer, AuthLoginResponseSerializer, activateinfoSerializer, MessageSerializer
-from .serializers import hubinfoSerializer, deviceinfoSerializer, RouteEntrySerializer, InterfaceEntrySerializer
+from .serializers import AuthLoginSerializer, AuthLoginResponseSerializer, ActivateInfoSerializer, MessageSerializer
+from .serializers import HubInfoSerializer, DeviceInfoSerializer, RouteEntrySerializer, InterfaceEntrySerializer
+from .serializers import AddRouteInfoSerializer, DelRouteInfoSerializer, PingHubInfoSerializer, PingSpokeInfoSerializer
+from .serializers import TraceSpokeInfoSerializer, TraceHubInfoSerializer, VlanAddHubSerializer
+from .serializers import LoopbackAddHubSerializer, TunnelAddHubSerializer, DeleteInterfaceHubSerializer
+from .serializers import ConfigInterfaceHubSerializer, VlanAddSpokeSerializer, LoopbackAddSpokeSerializer
+from .serializers import TunnelAddSpokeSerializer, ConfigInterfaceSpokeSerializer, DeleteInterfaceSpokeSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from drf_yasg.utils import swagger_auto_schema
@@ -209,7 +214,7 @@ def validate_ip(ip_address):
 @swagger_auto_schema(
     method='post',
     tags=['Authentication'],
-    request_body=authloginSerializer,
+    request_body=AuthLoginSerializer,
     responses={200: AuthLoginResponseSerializer}
 )
 @api_view(['POST'])
@@ -1330,8 +1335,8 @@ def hub_info(request: HttpRequest):
 ###########SPOKE####################
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
-    request_body=activateinfoSerializer,
+    tags=['Branch Info - Activate/Deactivate'],
+    request_body=ActivateInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
 @api_view(['POST'])
@@ -1376,7 +1381,7 @@ def deactivate(request: HttpRequest):
 @swagger_auto_schema(
     method='post',
     tags=['Branch Info'],
-    request_body=deviceinfoSerializer,
+    request_body=DeviceInfoSerializer,
     responses={200: InterfaceEntrySerializer(many=True)}
 )
 @api_view(['POST'])  
@@ -1451,6 +1456,12 @@ def get_interface_details_spoke(request):
                     )        
     return JsonResponse(interface_details, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=VlanAddSpokeSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_vlan_interface_spoke(request):
@@ -1515,6 +1526,12 @@ def create_vlan_interface_spoke(request):
         response = [{"message": f"Error: While creating VLAN interface"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=VlanAddSpokeSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_sub_interface_spoke(request):
@@ -1573,6 +1590,12 @@ def create_sub_interface_spoke(request):
         logger.error(f"Error: Create Sub Interface spoke:{e}")
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=LoopbackAddSpokeSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_loopback_interface_spoke(request):
@@ -1629,6 +1652,12 @@ def create_loopback_interface_spoke(request):
         response = [{"message": f"Error: while creating Loopback Interface"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=TunnelAddSpokeSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_tunnel_interface_spoke(request):
@@ -1692,6 +1721,12 @@ def create_tunnel_interface_spoke(request):
         response = [{"message": f"Error: While craeting Tunnel interface"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=ConfigInterfaceSpokeSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def interface_config_spoke(request):
@@ -1753,6 +1788,12 @@ def interface_config_spoke(request):
         response = [{"message": f"Error: while configuring interface"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=DeleteInterfaceSpokeSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def vlan_interface_delete_spoke(request):
@@ -1835,7 +1876,7 @@ def vlan_interface_delete_spoke(request):
 @swagger_auto_schema(
     method='post',
     tags=['Branch Info'],
-    request_body=deviceinfoSerializer,
+    request_body=DeviceInfoSerializer,
     responses={200: RouteEntrySerializer(many=True)}
 )
 @api_view(['POST'])  
@@ -1895,6 +1936,12 @@ def get_routing_table_spoke(request):
         routing_table = []
     return JsonResponse(routing_table, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=AddRouteInfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def add_route_spoke(request):
@@ -1957,6 +2004,12 @@ def add_route_spoke(request):
         response = [{"message": f"Error: while adding route. Pl try again!"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info'],
+    request_body=DelRouteInfoSerializer,
+    responses={200: MessageSerializer(many=True)}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def del_staticroute_spoke(request):
@@ -2031,7 +2084,7 @@ def del_staticroute_spoke(request):
 @swagger_auto_schema(
     method='post',
     tags=['Branch Info'],
-    request_body=deviceinfoSerializer,
+    request_body=DeviceInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
 @api_view(['POST'])  
@@ -2083,6 +2136,12 @@ def get_pbr_info_spoke(request):
     return JsonResponse(response, safe=False)
 
 #Ping_hub end point
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info - Diagnostics'],
+    request_body=PingHubInfoSerializer,
+    responses={200: "Message with RTT(Round Trip Time)"}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated]) 
 def diagnostics(request: HttpRequest):
@@ -2124,6 +2183,12 @@ def diagnostics(request: HttpRequest):
         logger.error(f"Error: Ping from HUB:{e}")
     return JsonResponse(response, safe=False)  
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info - Diagnostics'],
+    request_body=PingSpokeInfoSerializer,
+    responses={200: "Message with RTT(Round Trip Time)"}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def ping_spoke(request: HttpRequest):  
@@ -2196,6 +2261,12 @@ def ping_spoke(request: HttpRequest):
         response = [{"message": f"Error: Subnet {data['subnet']} Not Reachable" }]   
     return JsonResponse(response, safe=False)    
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info - Diagnostics'],
+    request_body=TraceSpokeInfoSerializer,
+    responses={200: "Trace route output"}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def traceroute_spoke(request):
@@ -2266,6 +2337,12 @@ def traceroute_spoke(request):
         response = [{"message":"Error:Trace ip is invalid"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Branch Info - Diagnostics'],
+    request_body=TraceHubInfoSerializer,
+    responses={200: "Trace route output"}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def traceroute_hub(request):
@@ -2301,8 +2378,8 @@ def traceroute_hub(request):
 ##############Inactive branch##############
 @swagger_auto_schema(
     method='post',
-    tags=['Branch Info'],
-    request_body=activateinfoSerializer,
+    tags=['Branch Info - Active/Deactive'],
+    request_body=ActivateInfoSerializer,
     responses={200: MessageSerializer(many=True)}
 )
 @api_view(['POST'])  
@@ -2347,8 +2424,8 @@ def activate(request: HttpRequest):
 ###############HUB info page##############################
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info'],
-    request_body=hubinfoSerializer,
+    tags=['Hub Info - Routes'],
+    request_body=HubInfoSerializer,
     responses={200: RouteEntrySerializer(many=True)}
 )
 @api_view(['POST'])  
@@ -2389,6 +2466,12 @@ def get_routing_table(request):
         routing_table = []
     return JsonResponse(routing_table, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Routes'],
+    request_body=AddRouteHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def addstaticroute_hub(request: HttpRequest):
@@ -2438,6 +2521,12 @@ def addstaticroute_hub(request: HttpRequest):
         response =[{"message": f"Error in adding route, pl try again." }]
     return JsonResponse(response, safe=False) 
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Routes'],
+    request_body=RouteHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def delstaticroute_hub(request: HttpRequest):
@@ -2480,7 +2569,7 @@ def delstaticroute_hub(request: HttpRequest):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info'],
+    tags=['Hub Info - Interface'],
     request_body=hubinfoSerializer,
     responses={200: InterfaceEntrySerializer(many=True)}
 )
@@ -2525,6 +2614,12 @@ def get_interface_details_hub(request):
         interface_details = []    
     return JsonResponse(interface_details, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Interface'],
+    request_body=VlanAddHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_vlan_interface_hub(request):
@@ -2557,6 +2652,12 @@ def create_vlan_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Interface'],
+    request_body=VlanAddHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_sub_interface_hub(request):
@@ -2589,6 +2690,12 @@ def create_sub_interface_hub(request):
         response = [{"message": f"Error: {e}"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Interface'],
+    request_body=LoopbackAddHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_loopback_interface_hub(request):
@@ -2621,6 +2728,12 @@ def create_loopback_interface_hub(request):
         response = [{"message": f"Error: Some issue. Pl try again later."}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Interface'],
+    request_body=TunnelAddHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def create_tunnel_interface_hub(request):
@@ -2653,6 +2766,12 @@ def create_tunnel_interface_hub(request):
         response = [{"message": f"Error: while Creating Tunnel Interface"}]
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Interface'],
+    request_body=DeleteInterfaceHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def vlan_interface_delete_hub(request):
@@ -2741,6 +2860,12 @@ def vlan_interface_delete_hub(request):
         response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Hub Info - Interface'],
+    request_body=ConfigInterfaceHubSerializer,
+    responses={200: MessageSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def interface_config_hub(request):
@@ -2755,12 +2880,7 @@ def interface_config_hub(request):
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.interface_config(data)                
-        elif "microtekhub" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            response = microtek_configure.interfaceconfig(data)      
+            response = ubuntu_info.interface_config(data)       
         elif "ciscohub" in data["uuid"]:
             if data["intfc_name"].lower() == "loopback1":
                 response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
