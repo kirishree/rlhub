@@ -88,7 +88,7 @@ class DestinationInfoSerializer(serializers.Serializer):
     destination = serializers.CharField()
     gateway = serializers.CharField()
 
-class RouteHubSerializer(serializers.Serializer):
+class AddRouteHubSerializer(serializers.Serializer):
     hub_wan_ip = serializers.CharField()
     uuid = serializers.CharField() 
     routes_info = serializers.ListField(

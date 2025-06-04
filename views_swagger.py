@@ -14,7 +14,7 @@ from rest_framework import serializers
 from .serializers import AuthLoginSerializer, AuthLoginResponseSerializer, ActivateInfoSerializer, MessageSerializer
 from .serializers import HubInfoSerializer, DeviceInfoSerializer, RouteEntrySerializer, InterfaceEntrySerializer
 from .serializers import AddRouteInfoSerializer, DelRouteInfoSerializer, PingHubInfoSerializer, PingSpokeInfoSerializer
-from .serializers import TraceSpokeInfoSerializer, TraceHubInfoSerializer, VlanAddHubSerializer
+from .serializers import TraceSpokeInfoSerializer, TraceHubInfoSerializer, VlanAddHubSerializer, AddRouteHubSerializer
 from .serializers import LoopbackAddHubSerializer, TunnelAddHubSerializer, DeleteInterfaceHubSerializer
 from .serializers import ConfigInterfaceHubSerializer, VlanAddSpokeSerializer, LoopbackAddSpokeSerializer
 from .serializers import TunnelAddSpokeSerializer, ConfigInterfaceSpokeSerializer, DeleteInterfaceSpokeSerializer
