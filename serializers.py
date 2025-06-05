@@ -157,4 +157,79 @@ class ConfigInterfaceSpokeSerializer(serializers.Serializer):
 class DeleteInterfaceSpokeSerializer(serializers.Serializer):
     tunnel_ip = serializers.CharField()
     uuid = serializers.CharField() 
-    intfc_name = serializers.CharField()     
+    intfc_name = serializers.CharField()   
+
+class AddReachLinkDeviceSerializer(serializers.Serializer):
+    branch_location = serializers.CharField()
+    uuid = serializers.CharField() 
+
+class AddDeviceSerializer(serializers.Serializer):
+    branch_location = serializers.CharField()
+    organization_id = serializers.CharField() 
+    device = serializers.CharField()
+    router_wan_ip = serializers.CharField()
+    router_wan_gateway = serializers.CharField()
+    dialer_ip = serializers.CharField()
+
+class AddHubDeviceSerializer(serializers.Serializer):
+    branch_location = serializers.CharField()
+    organization_id = serializers.CharField() 
+    hub_ip = serializers.CharField()
+    hub_wan_ip_gateway = serializers.CharField()
+    hub_dialer_ip = serializers.CharField()
+
+class ConfigCiscoHubSerializer(serializers.Serializer):
+    branch_loc = serializers.CharField()
+
+class ConfigCiscoHubResponseSerializer(serializers.Serializer):    
+    message =  serializers.CharField()
+    interface_wan_ip =  serializers.CharField()
+    interface_wan_netmask =  serializers.CharField()
+    interface_wan_gateway =  serializers.CharField()
+    dialernetwork =  serializers.CharField()
+    dialernetmask =  serializers.CharField()
+    dialerhubip =  serializers.CharField()
+    ubuntuhubip =  serializers.CharField()
+    router_username =  serializers.CharField()
+    router_password =  serializers.CharField()
+    snmpcommunitystring =  serializers.CharField()   
+
+class ConfigCiscoSpokeSerializer(serializers.Serializer):
+    branch_loc = serializers.CharField()
+
+class ConfigCiscoSpokeResponseSerializer(serializers.Serializer):    
+    message =  serializers.CharField()
+    interface_wan_ip =  serializers.CharField()
+    interface_wan_netmask =  serializers.CharField()
+    interface_wan_gateway =  serializers.CharField()
+    dialerserverip =  serializers.CharField()
+    dialer_client_ip =  serializers.CharField()
+    dialer_netmask =  serializers.CharField()
+    dialer_username =  serializers.CharField()
+    dialer_password =  serializers.CharField()    
+    router_username =  serializers.CharField()
+    router_password =  serializers.CharField()
+    hub_dialer_network = serializers.CharField()
+    hub_dialer_wildcardmask = serializers.CharField()
+    ubuntu_dialerclient_ip = serializers.CharField()
+    spokedevice_name = serializers.CharField()
+    uuid = serializers.CharField()
+    snmpcommunitystring =  serializers.CharField()                                            
+   
+class ConfigMicrotikSpokeSerializer(serializers.Serializer):
+    branch_loc = serializers.CharField()
+
+class ConfigMicrotikSpokeResponseSerializer(serializers.Serializer):    
+    message =  serializers.CharField()       
+    router_username =  serializers.CharField()
+    router_password =  serializers.CharField()    
+    spokedevice_name = serializers.CharField()
+    snmpcommunitystring =  serializers.CharField()      
+
+class ConfigRobustelSpokeSerializer(serializers.Serializer):
+    branch_loc = serializers.CharField()
+
+class ConfigRobustelSpokeResponseSerializer(serializers.Serializer):    
+    message =  serializers.CharField()     
+    spokedevice_name = serializers.CharField()
+    snmpcommunitystring =  serializers.CharField()      

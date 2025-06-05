@@ -367,7 +367,13 @@ def login_or_register(request):
             "message": False,
             "msg_status": onboard_status
         })
-          
+
+@swagger_auto_schema(
+    method='post',
+    tags=['Add Device'],
+    request_body=AddReachLinkDeviceSerializer,
+    responses={200: MessageSerializer}
+)        
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def login(request: HttpRequest):
@@ -376,6 +382,27 @@ def login(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "reachlink_spoke_login" }
                     )
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)
+    orgname = decodedtoken.get("onboarding_org_name", False)
+    data["organization_id"] = decodedtoken.get("onboarding_org_id", False)
+    if not orgname or not data["organization_id"]:
+        logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name or id"}
+        return JsonResponse(json_response, safe=False)     
+    
     global newuser
     try:
         response, newuser = onboarding.check_user(data, newuser)         
@@ -401,7 +428,12 @@ def login(request: HttpRequest):
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(response)
     return response1
-
+@swagger_auto_schema(
+    method='post',
+    tags=['Add Device'],
+    request_body=AddDeviceSerializer,
+    responses={200: MessageSerializer}
+) 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_cisco_device(request: HttpRequest):
@@ -810,7 +842,12 @@ def add_cisco_device(request: HttpRequest):
         response["Access-Control-Expose-Headers"] = "X-Message"
         return response
 
-
+@swagger_auto_schema(
+    method='post',
+    tags=['Add Device'],
+    request_body=AddHubDeviceSerializer,
+    responses={200: MessageSerializer}
+) 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_cisco_hub(request: HttpRequest):
@@ -2569,7 +2606,7 @@ def delstaticroute_hub(request: HttpRequest):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=HubInfoSerializer,
     responses={200: InterfaceEntrySerializer(many=True)}
 )
@@ -2616,7 +2653,7 @@ def get_interface_details_hub(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=VlanAddHubSerializer,
     responses={200: MessageSerializer}
 )
@@ -2654,7 +2691,7 @@ def create_vlan_interface_hub(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=VlanAddHubSerializer,
     responses={200: MessageSerializer}
 )
@@ -2692,7 +2729,7 @@ def create_sub_interface_hub(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=LoopbackAddHubSerializer,
     responses={200: MessageSerializer}
 )
@@ -2730,7 +2767,7 @@ def create_loopback_interface_hub(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=TunnelAddHubSerializer,
     responses={200: MessageSerializer}
 )
@@ -2768,7 +2805,7 @@ def create_tunnel_interface_hub(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=DeleteInterfaceHubSerializer,
     responses={200: MessageSerializer}
 )
@@ -2862,7 +2899,7 @@ def vlan_interface_delete_hub(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=['Hub Info - Interface'],
+    tags=['Hub Info - Interfaces'],
     request_body=ConfigInterfaceHubSerializer,
     responses={200: MessageSerializer}
 )
@@ -2906,6 +2943,12 @@ def interface_config_hub(request):
 
 
 ####################HUB & Spoke setup end point###############
+@swagger_auto_schema(
+    method='post',
+    tags=['Configure Device'],
+    request_body=ConfigCiscoHubSerializer,
+    responses={200: ConfigCiscoHubResponseSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_ciscohub_config(request: HttpRequest):
@@ -2940,6 +2983,12 @@ def get_ciscohub_config(request: HttpRequest):
     response = hub_config.get_ciscohub_config(data)
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Configure Device'],
+    request_body=ConfigCiscoSpokeSerializer,
+    responses={200: ConfigCiscoSpokeResponseSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_ciscospoke_config(request: HttpRequest):
@@ -2974,6 +3023,12 @@ def get_ciscospoke_config(request: HttpRequest):
     response = hub_config.get_ciscospoke_config(data)
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Configure Device'],
+    request_body=ConfigMicrotikSpokeSerializer,
+    responses={200: ConfigMicrotikSpokeResponseSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_microtekspoke_config(request: HttpRequest):    
@@ -3019,6 +3074,12 @@ def get_microtekspoke_config(request: HttpRequest):
         spokedetails= {"message": response[0]["message"]}    
     return JsonResponse(spokedetails, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Configure Device'],
+    request_body=ConfigRobustelSpokeSerializer,
+    responses={200: ConfigRobustelSpokeResponseSerializer}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def get_robustelspoke_config(request: HttpRequest):
@@ -3100,6 +3161,10 @@ def onboard_delete(request: HttpRequest):
     onboardblock.onboard_delete(data)
     return HttpResponse
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Authentication']    
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def change_password(request):
@@ -3248,6 +3313,7 @@ def adminhomepage_info(request: HttpRequest):
     # Store in cache for 60 seconds
     cache.set(cache_key, response, timeout=60)
     return JsonResponse(response, safe=False)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def logfile_content(request):
