@@ -232,4 +232,12 @@ class ConfigRobustelSpokeSerializer(serializers.Serializer):
 class ConfigRobustelSpokeResponseSerializer(serializers.Serializer):    
     message =  serializers.CharField()     
     spokedevice_name = serializers.CharField()
-    snmpcommunitystring =  serializers.CharField()      
+    snmpcommunitystring =  serializers.CharField()   
+
+class TrafficReportInfoSerializer(serializers.Serializer):
+    intfcname = serializers.CharField()   
+    hostid = serializers.CharField()   
+    fromdate = serializers.CharField()   
+    todate = serializers.CharField()   
+    interval = serializers.CharField() 
+    ishub = serializers.CharField() 

@@ -18,6 +18,8 @@ from .serializers import TraceSpokeInfoSerializer, TraceHubInfoSerializer, VlanA
 from .serializers import LoopbackAddHubSerializer, TunnelAddHubSerializer, DeleteInterfaceHubSerializer
 from .serializers import ConfigInterfaceHubSerializer, VlanAddSpokeSerializer, LoopbackAddSpokeSerializer
 from .serializers import TunnelAddSpokeSerializer, ConfigInterfaceSpokeSerializer, DeleteInterfaceSpokeSerializer
+from .serializers import AddReachLinkDeviceSerializer, AddDeviceSerializer, AddHubDeviceSerializer
+from .serializers import ConfigCiscoHubSerializer, ConfigCiscoHubResponseSerializer, ConfigCiscoSpokeSerializer, ConfigCiscoSpokeResponseSerializer, ConfigMicrotikSpokeSerializer, ConfigMicrotikSpokeResponseSerializer, ConfigRobustelSpokeSerializer, ConfigRobustelSpokeResponseSerializer, TrafficReportInfoSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from drf_yasg.utils import swagger_auto_schema
@@ -3125,6 +3127,10 @@ def get_robustelspoke_config(request: HttpRequest):
     
     return JsonResponse(spokedetails, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Onboarding Action']    
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def onboard_block(request: HttpRequest):
@@ -3137,6 +3143,10 @@ def onboard_block(request: HttpRequest):
     response = onboardblock.onboard_block(data)    
     return HttpResponse(response)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Onboarding Action']    
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def onboard_unblock(request: HttpRequest):
@@ -3147,8 +3157,12 @@ def onboard_unblock(request: HttpRequest):
                     extra={ "be_api_endpoint": "onboard_unblock" }
                     )
     response = onboardblock.onboard_unblock(data)
-    return HttpResponse(response)      
-
+    return HttpResponse(response)
+      
+@swagger_auto_schema(
+    method='post',
+    tags=['Onboarding Action']    
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def onboard_delete(request: HttpRequest):
@@ -3188,6 +3202,12 @@ def change_password(request):
         response = {"message": "Error while changing password"}
     return JsonResponse(response, safe=False)
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Traffic Report Generate'],
+    request_body=TrafficReportInfoSerializer,
+    responses={200: "Report in PDF"}
+)
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 def traffic_report(request):
@@ -3248,6 +3268,11 @@ def traffic_report(request):
     return response1
 
 #Admin Dashboard
+@swagger_auto_schema(
+    method='post',
+    tags=['Home'],
+    responses={200: "Home page info JSON"}
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def adminhomepage_info(request: HttpRequest):
