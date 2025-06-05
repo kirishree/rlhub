@@ -196,6 +196,7 @@ class ConfigCiscoHubResponseSerializer(serializers.Serializer):
 
 class ConfigCiscoSpokeSerializer(serializers.Serializer):
     branch_loc = serializers.CharField()
+    ciscohub = serializers.CharField()
 
 class ConfigCiscoSpokeResponseSerializer(serializers.Serializer):    
     message =  serializers.CharField()
