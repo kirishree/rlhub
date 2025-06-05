@@ -30,3 +30,18 @@ def test_branch_info_view_with_token(client):
     # Optional: Assert fields in response
     assert "total_branches" in json_data
     assert "organization_id" in json_data
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.parametrize("payload,expected", [
+    ({
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }, 200),
+    ({"username": "admin"}, 400),
+    ({}, 400),
+])
+@pytest.mark.django_db
+def test_login(client, payload, expected):
+    login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
+    login_response = client.post(login_url, payload, content_type="application/json")    
+    assert login_response.status_code == expected
