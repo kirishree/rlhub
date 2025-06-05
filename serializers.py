@@ -196,7 +196,7 @@ class ConfigCiscoHubResponseSerializer(serializers.Serializer):
 
 class ConfigCiscoSpokeSerializer(serializers.Serializer):
     branch_loc = serializers.CharField()
-    ciscohub = serializers.CharField()
+    ciscohub = serializers.CharField(help_text="Enter 'ciscodevice' if hub is Cisco, or 'cisco_ubuntu' if hub is Ubuntu.")
 
 class ConfigCiscoSpokeResponseSerializer(serializers.Serializer):    
     message =  serializers.CharField()
