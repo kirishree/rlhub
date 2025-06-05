@@ -3269,7 +3269,7 @@ def traffic_report(request):
 
 #Admin Dashboard
 @swagger_auto_schema(
-    method='post',
+    method='get',
     tags=['Home'],
     responses={200: "Home page info JSON"}
 )
