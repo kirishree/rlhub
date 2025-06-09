@@ -11,7 +11,7 @@ class AuthLoginResponseSerializer(serializers.Serializer):
     msg_status = serializers.CharField()
 
 class ActivateInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField()
     uuid = serializers.CharField()
     hub_ip = serializers.CharField()
 
@@ -19,11 +19,11 @@ class MessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 class HubInfoSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField()    
 
 class DeviceInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField()    
 
 class RouteEntrySerializer(serializers.Serializer):
@@ -39,7 +39,7 @@ class SubnetInfoSerializer(serializers.Serializer):
     gateway = serializers.CharField()
 
 class AddRouteInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     subnet_info = serializers.ListField(
         child=SubnetInfoSerializer()
@@ -50,7 +50,7 @@ class RoutesInfoSerializer(serializers.Serializer):
     gateway = serializers.CharField()
 
 class DelRouteInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     routes_info = serializers.ListField(
         child=RoutesInfoSerializer()
@@ -65,51 +65,51 @@ class InterfaceEntrySerializer(serializers.Serializer):
     status = serializers.CharField()
 
 class PingHubInfoSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     subnet = serializers.CharField() 
 
 class PingSpokeInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
-    subnet = serializers.CharField() 
+    subnet = serializers.IPAddressField(protocol='IPv4')
     
 class TraceSpokeInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
-    trace_ip = serializers.CharField() 
-    
+    trace_ip = serializers.IPAddressField(protocol='IPv4')
+
 class TraceHubInfoSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
-    trace_ip = serializers.CharField()
+    trace_ip = serializers.IPAddressField(protocol='IPv4')
 
 class DestinationInfoSerializer(serializers.Serializer):
     destination = serializers.CharField()
     gateway = serializers.CharField()
 
 class AddRouteHubSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     routes_info = serializers.ListField(
         child=DestinationInfoSerializer()
     )
 
 class VlanAddHubSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     vlan_id = serializers.CharField() 
     link = serializers.ListField()
     addresses = serializers.ListField()
 
 class LoopbackAddHubSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     loopback_intfc_name = serializers.CharField()     
     addresses = serializers.ListField()
 
 class TunnelAddHubSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     tunnel_intfc_name = serializers.CharField()    
     link = serializers.ListField() 
@@ -117,31 +117,31 @@ class TunnelAddHubSerializer(serializers.Serializer):
     addresses = serializers.ListField()
 
 class DeleteInterfaceHubSerializer(serializers.Serializer):
-    hub_ip = serializers.CharField()
+    hub_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     intfc_name = serializers.CharField()     
 
 class ConfigInterfaceHubSerializer(serializers.Serializer):
-    hub_wan_ip = serializers.CharField()
+    hub_wan_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     intfc_name = serializers.CharField()     
     addresses = serializers.ListField()
     
 class VlanAddSpokeSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     vlan_id = serializers.CharField() 
     link = serializers.ListField()
     addresses = serializers.ListField()
 
 class LoopbackAddSpokeSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     loopback_intfc_name = serializers.CharField()     
     addresses = serializers.ListField()
 
 class TunnelAddSpokeSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     tunnel_intfc_name = serializers.CharField()    
     link = serializers.ListField() 
@@ -149,13 +149,13 @@ class TunnelAddSpokeSerializer(serializers.Serializer):
     addresses = serializers.ListField()
 
 class ConfigInterfaceSpokeSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     intfc_name = serializers.CharField()     
     addresses = serializers.ListField()
 
 class DeleteInterfaceSpokeSerializer(serializers.Serializer):
-    tunnel_ip = serializers.CharField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField() 
     intfc_name = serializers.CharField()   
 
