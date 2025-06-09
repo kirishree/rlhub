@@ -7,32 +7,34 @@ from dateutil.relativedelta import relativedelta
 url = "https://dev-api.cloudetel.com/api/v1/"
 addr = "192.168.23.149/30"
 corrected_subnet = ipaddress.ip_network(addr, strict=False)
+import random
+
+
+
+private_ranges = [
+        (ipaddress.IPv4Network("10.0.0.0/8"), random.randint(8,32)),
+        (ipaddress.IPv4Network("172.16.0.0/12"), random.randint(16,32)),
+        (ipaddress.IPv4Network("192.168.0.0/16"), random.randint(24,32)),
+    ]
+addroute = []
+for i in range(0,20):
+        network_base, base_prefix = random.choice(private_ranges)
+        #prefix = random.randint(0,32)
+        # Calculate how many networks of desired prefix fit in this base range
+        #max_subnets = 2 ** (prefix - base_prefix)
+        #subnet_index = random.randint(0, max_subnets - 1)        
+        # Get the nth subnet of the desired prefix
+        subnets = list(network_base.subnets(new_prefix=base_prefix))
+        subnet_index = random.randint(0, len(subnets)-1)
+        addroute.append({"destination": str(subnets[subnet_index]),
+                         "gateway": "10.8.0.19"})
+print("addrouet.................",addroute)
 #print(corrected_subnet)
 #print(round(3600/60))
 ss = ipaddress.ip_network("192.168.7.23/24", strict=False)
 print(ss)
 headers = {"Content-Type": "application/json"}
-authinfo = json.dumps({"username": "user@example.com","password": "aaa"})
-if (True):
-        authresponse = requests.post(urllogin, data= authinfo, headers= headers)
-        authresponse.raise_for_status()
-        if authresponse.status_code == 200:           
-            json_authresponse = authresponse.text.replace("'", "\"")  # Replace single quotes with double quotes
-            json_authresponse = json.loads(json_authresponse)
-            if "access" not in json_authresponse:
-                if not (json_authresponse["message"]):                
-                    print(json_authresponse["msg_status"])
-                print("Enter a key to exit...")
-                input()
-                return
-            else:
-                print("Login Successfull. Getting configuration...")   
-                access_token = json_authresponse["access"]
-        else:
-            print("Error while authenticating data")
-            print("Enter a key to exit...")
-            input()
-            return
+
 def get_organization_id(data):
     try:
         if "access_token" not in data:

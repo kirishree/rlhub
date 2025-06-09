@@ -150,19 +150,15 @@ def test_addstaticroute_hub(client, capfd):
         "HTTP_AUTHORIZATION": f"Bearer {token}"
     }
     private_ranges = [
-        (ipaddress.IPv4Network("10.0.0.0/8"), 8),
-        (ipaddress.IPv4Network("172.16.0.0/12"), 12),
-        (ipaddress.IPv4Network("192.168.0.0/16"), 16),
+        (ipaddress.IPv4Network("10.0.0.0/8"), random.randint(8,32)),
+        (ipaddress.IPv4Network("172.16.0.0/12"), random.randint(16,32)),
+        (ipaddress.IPv4Network("192.168.0.0/16"), random.randint(24,32)),
     ]
     addroute = []
     for i in range(0,20):
         network_base, base_prefix = random.choice(private_ranges)
-        prefix = random.randint(0,32)
-        # Calculate how many networks of desired prefix fit in this base range
-        max_subnets = 2 ** (prefix - base_prefix)
-        subnet_index = random.randint(0, max_subnets - 1)        
-        # Get the nth subnet of the desired prefix
-        subnets = list(network_base.subnets(new_prefix=prefix))
+        subnets = list(network_base.subnets(new_prefix=base_prefix))
+        subnet_index = random.randint(0, len(subnets)-1)
         addroute.append({"destination": str(subnets[subnet_index]),
                          "gateway": "10.8.0.19"})
     addroute_data = {"hub_wan_ip": "185.69.209.251",
