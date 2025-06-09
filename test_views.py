@@ -129,6 +129,15 @@ def test_homepage_info_view_with_token(client, capfd):
     assert "branch_summary" in json_data
 
 
+def is_excluded(network):
+    return (
+        network.is_loopback or
+        network.is_link_local or
+        network.is_multicast or
+        network.network_address.is_reserved or
+        network.network_address.is_unspecified
+    )
+
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 def test_addstaticroute_hub_allip(client, capfd):
@@ -157,22 +166,18 @@ def test_addstaticroute_hub_allip(client, capfd):
     ]
     addroute = []
     for _ in range(20):
-        # Generate a random prefix length (between 8 and 30 to avoid too large or too small subnets)
-        prefix_len = random.randint(8, 30)
+        while True:
+            prefix_len = random.randint(8, 30)
+            host_bits = 32 - prefix_len
+            network_int = random.randint(0, (2**(32 - host_bits)) - 1) << host_bits
+            network = ipaddress.IPv4Network((network_int, prefix_len))
 
-        # Calculate the number of host bits
-        host_bits = 32 - prefix_len
-
-        # Generate a random integer for the network base, aligned to the subnet mask
-        network_int = random.randint(0, (2**(32 - host_bits)) - 1) << host_bits
-
-        # Create network from the integer and prefix
-        network = ipaddress.IPv4Network((network_int, prefix_len))
-
-        addroute.append({
-        "destination": str(network),
-        "gateway": "10.8.0.19"
-        })
+            if not is_excluded(network):
+                addroute.append({
+                    "destination": str(network),
+                    "gateway": "10.8.0.19"
+                })
+                break  # exit loop after valid network found
     addroute_data = {"hub_wan_ip": "185.69.209.251",
                      "uuid": "reachlinkserver.net",
                      "routes_info": addroute}
