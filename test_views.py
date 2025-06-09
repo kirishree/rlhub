@@ -128,9 +128,10 @@ def test_homepage_info_view_with_token(client, capfd):
     assert "hub_summary" in json_data
     assert "branch_summary" in json_data
 
+
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_addstaticroute_hub(client, capfd):
+def test_addstaticroute_hub_allip(client, capfd):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
     login_data = {
@@ -155,12 +156,23 @@ def test_addstaticroute_hub(client, capfd):
         (ipaddress.IPv4Network("192.168.0.0/16"), random.randint(24,32)),
     ]
     addroute = []
-    for i in range(0,20):
-        network_base, base_prefix = random.choice(private_ranges)
-        subnets = list(network_base.subnets(new_prefix=base_prefix))
-        subnet_index = random.randint(0, len(subnets)-1)
-        addroute.append({"destination": str(subnets[subnet_index]),
-                         "gateway": "10.8.0.19"})
+    for _ in range(20):
+        # Generate a random prefix length (between 8 and 30 to avoid too large or too small subnets)
+        prefix_len = random.randint(8, 30)
+
+        # Calculate the number of host bits
+        host_bits = 32 - prefix_len
+
+        # Generate a random integer for the network base, aligned to the subnet mask
+        network_int = random.randint(0, (2**(32 - host_bits)) - 1) << host_bits
+
+        # Create network from the integer and prefix
+        network = ipaddress.IPv4Network((network_int, prefix_len))
+
+        addroute.append({
+        "destination": str(network),
+        "gateway": "10.8.0.19"
+        })
     addroute_data = {"hub_wan_ip": "185.69.209.251",
                      "uuid": "reachlinkserver.net",
                      "routes_info": addroute}

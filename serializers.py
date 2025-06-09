@@ -11,7 +11,7 @@ class AuthLoginResponseSerializer(serializers.Serializer):
     msg_status = serializers.CharField()
 
 class ActivateInfoSerializer(serializers.Serializer):
-    tunnel_ip = serializers.IPAddressField()
+    tunnel_ip = serializers.IPAddressField(protocol='IPv4')
     uuid = serializers.CharField()
     hub_ip = serializers.CharField()
 
