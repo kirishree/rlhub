@@ -1059,7 +1059,8 @@ def delstaticroute_ubuntu(data):
                     with open(f"/etc/openvpn/server/ccd/{clientname}", "r") as f:
                         clientfile = f.read()
                         f.close()   
-                    clientfile = clientfile.replace(f"iroute {subnet_ip} {netmask}", f"#iroute {subnet_ip} {netmask}")
+                    #clientfile = clientfile.replace(f"iroute {subnet_ip} {netmask}", f"#iroute {subnet_ip} {netmask}")
+                    clientfile = clientfile.replace(f"iroute {subnet_ip} {netmask}", f"")
                     with open(f"/etc/openvpn/server/ccd/{clientname}", "w") as f:
                         f.write(clientfile)
                         f.close()  
