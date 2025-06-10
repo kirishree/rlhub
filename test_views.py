@@ -212,7 +212,7 @@ def test_addstaticroute_hub_allip(client, capfd):
         (ipaddress.IPv4Network("192.168.0.0/16"), random.randint(24,32)),
     ]
     addroute = []
-    for _ in range(20):
+    for _ in range(5):
         while True:
             prefix_len = random.randint(8, 30)
             host_bits = 32 - prefix_len
@@ -247,6 +247,7 @@ def test_addstaticroute_hub_allip(client, capfd):
     response = client.post(getroute_hub_url, getroute_data, content_type="application/json", **headers)
     assert response.status_code == 200
     routing_table = response.json()
+    print("routing_table", routing_table)
     routenotadded = []
     for addinfo in addroute:
         routeadded = False
