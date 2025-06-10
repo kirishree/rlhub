@@ -213,7 +213,7 @@ def test_addstaticroute_hub_allip(client, capfd):
         (ipaddress.IPv4Network("192.168.0.0/16"), random.randint(24,32)),
     ]
     addroute = []
-    for _ in range(5):
+    for _ in range(20):
         while True:
             prefix_len = random.randint(8, 30)
             host_bits = 32 - prefix_len
