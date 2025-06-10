@@ -1046,7 +1046,8 @@ def delstaticroute_ubuntu(data):
             if "10.8." in route['gateway']:
                 subnet_ip = route["destination"].split("/")[0]
                 netmask = str(ipaddress.IPv4Network(route["destination"]).netmask)
-                serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+                #serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"#route {subnet_ip} {netmask}")
+                serverfile = serverfile.replace(f"route {subnet_ip} {netmask}", f"")
                 clientname = "dummy"
                 for routesovpn in openvpnstatus.split("\n"):
                     if "ROUTING_TABLE," in routesovpn:
