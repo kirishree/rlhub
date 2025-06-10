@@ -293,7 +293,8 @@ def test_delstaticroute_hub(client, capfd):
     deleteroute = []
     for routeinfo in routing_table:
         if routeinfo["protocol"] == "static":
-            deleteroute.append({"destination": routeinfo["destination"],
+            if "0.0.0.0" not in routeinfo["destination"]:
+                deleteroute.append({"destination": routeinfo["destination"],
                                "gateway": routeinfo["gateway"]})    
     delroute_data = {"hub_wan_ip": "185.69.209.251",
                      "uuid": "reachlinkserver.net",
