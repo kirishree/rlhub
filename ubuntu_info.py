@@ -615,13 +615,13 @@ def addstaticroute_ubuntu(data):
             if not private_ip:
                 if "microtek" in spokename:
                     real_routes.append(route) 
+        os.system("systemctl restart openvpn-server@server")  
         if len(real_routes) > 0:
             print("real routes", real_routes)
             pbr_spoke_data = { "realip_subnet": real_routes
                               }
             background_thread = threading.Thread(target=configurepbr_spoke_new, args=(pbr_spoke_data,))
-            background_thread.start()            
-        os.system("systemctl restart openvpn-server@server")  
+            background_thread.start()
         response = [{"message":f"Successfully added {len(data['routes_info'])} subnet(s)."}]
         if len(available_routes) > 0:
             response = [{"message":f"Error: {available_routes} is not added due to route conflict."}]
