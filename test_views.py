@@ -264,7 +264,7 @@ def test_addstaticroute_hub_allip(client, capfd):
     
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def delstaticroute_hub(client, capfd):
+def test_delstaticroute_hub(client, capfd):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
     login_data = {
