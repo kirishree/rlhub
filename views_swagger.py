@@ -2505,6 +2505,15 @@ def get_routing_table(request):
         routing_table = []
     return JsonResponse(routing_table, safe=False)
 
+def is_excluded(network):
+    return (
+        network.is_loopback or
+        network.is_link_local or
+        network.is_multicast or
+        network.network_address.is_reserved or
+        network.network_address.is_unspecified
+    )
+
 @swagger_auto_schema(
     method='post',
     tags=['Hub Info - Routes'],
@@ -2526,11 +2535,22 @@ def addstaticroute_hub(request: HttpRequest):
         cache_key = f"routing_hub_{branch_id}"
         cache.delete(cache_key)
         for route in routes:
-            if route["destination"].split(".")[0] == "127" or route["destination"].split(".")[0] == "169" or int(route["destination"].split(".")[0]) > 223:
-                response = [{"message":"Error Invalid destination"}]
+            network = ipaddress.ip_network(route["destination"], strict=False)
+            if is_excluded(network):
+                response = [{"message":f"Error Invalid destination {route['destination']}"}]
+                logger.error(f"Error Invalid destination {route['destination']}",
+                              extra = {"be_api_endpoint": "add_static_route_hub",
+                                       "exception": ""
+                                       }
+                                       )
                 return JsonResponse(response, safe=False) 
             if dialernetworkip in route["destination"]:
-                response = [{"message":"Error Invalid destination"}]
+                response = [{"message":f"Error Route conflict {route['destination']}"}]
+                logger.error(f"Error Route conflict {route['destination']}",
+                              extra = {"be_api_endpoint": "add_static_route_hub",
+                                       "exception": ""
+                                       }
+                                       )
                 return JsonResponse(response, safe=False) 
         if "ciscohub" in data["uuid"]:
             print("hiciscohub")
