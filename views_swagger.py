@@ -2580,8 +2580,7 @@ def delstaticroute_hub(request: HttpRequest):
     cache_key = f"routing_hub_{branch_id}"
     cache.delete(cache_key)
     try:         
-        data = json.loads(request.body)      
-        print("delstatichub",data)
+        data = json.loads(request.body)     
         if "ciscohub" in data["uuid"]:
             cache1_key = f"HUB_details_{data['uuid']}"
             hub_info = cache.get_or_set(
