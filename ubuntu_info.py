@@ -1086,7 +1086,7 @@ def delstaticroute_ubuntu(data):
                         f.write(clientfile)
                         f.close()   
             else:
-                staticroutefile.replace(f'ip route add {route["destination"]} via {route["gateway"]}', f'#ip route add {route["destination"]} via {route["gateway"]}')                
+                staticroutefile.replace(f'ip route add {route["destination"]} via {route["gateway"]}', f'')                
                 os.system(f'ip route del {route["destination"]} via {route["gateway"]}')        
         with open("/etc/openvpn/server/server.conf", "w") as f:
             f.write(serverfile)

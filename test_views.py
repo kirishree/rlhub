@@ -3,6 +3,7 @@ import random
 import ipaddress
 from django.urls import reverse
 from django.test import override_settings
+import time
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
@@ -239,9 +240,10 @@ def test_addstaticroute_hub_allip(client, capfd):
     out, err = capfd.readouterr() 
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
+    time.sleep(10)
     getroute_data = {"hub_wan_ip": "185.69.209.251",
-                     "uuid": "reachlinkserver.net",
-                     "routes_info": addroute}
+                     "uuid": "reachlinkserver.net"
+                     }
     #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
     getroute_hub_url = reverse("get_routing_table")
     response = client.post(getroute_hub_url, getroute_data, content_type="application/json", **headers)
@@ -260,4 +262,68 @@ def test_addstaticroute_hub_allip(client, capfd):
     print("Not added route", routenotadded)
     assert len(routenotadded) == 0
     
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+def delstaticroute_hub(client, capfd):
+    # Step 1: Login to get access token
+    login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
+    login_data = {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }
+    login_response = client.post(login_url, login_data, content_type="application/json")
+    assert login_response.status_code == 200
+    print("Login response JSON:", login_response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    token = login_response.json().get("access")  # Adjust this if your token key is different
+    assert token is not None
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {token}"
+    }
+    getroute_data = {"hub_wan_ip": "185.69.209.251",
+                     "uuid": "reachlinkserver.net"
+                     }
+    getroute_hub_url = reverse("get_routing_table")
+    response = client.post(getroute_hub_url, getroute_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    routing_table = response.json()
+    deleteroute = []
+    for routeinfo in routing_table:
+        if routeinfo["protocol"] == "static":
+            deleteroute.append({"destination": routeinfo["destination"],
+                               "gateway": routeinfo["gateway"]})    
+    delroute_data = {"hub_wan_ip": "185.69.209.251",
+                     "uuid": "reachlinkserver.net",
+                     "routes_info": deleteroute
+                     }
+    delroute_hub_url = reverse("delstaticroute_hub")
+    response = client.post(delroute_hub_url, delroute_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    json_data = response.json()
+    print("Delete Route Info response JSON:", response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    # Optional: Assert fields in response
+    assert "Error" not in json_data[0]["message"]
+    time.sleep(10)
+    getroute_data = {"hub_wan_ip": "185.69.209.251",
+                     "uuid": "reachlinkserver.net"
+                     }
+    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    getroute_hub_url = reverse("get_routing_table")
+    response = client.post(getroute_hub_url, getroute_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    routing_table = response.json()
+    print("routing_table", routing_table)
+    routenotdeleted = []
+    for delinfo in deleteroute:        
+        for routeinfo in  routing_table:
+            if delinfo["destination"] == routeinfo["destination"]:                
+                routenotdeleted.append(delinfo)
+                break               
+    print("Not deleted route", routenotdeleted)
+    assert len(routenotdeleted) == 0
 

@@ -2576,6 +2576,11 @@ def delstaticroute_hub(request: HttpRequest):
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "delete_static_route_hub" }
                     )
+    for delroute in data["routes_info"]:
+        if "0.0.0.0" in delroute["destination"]:
+            logger.info(f"Error: Default route deletion is prohibited.")
+            response = [{"message":f"Error: Default route deletion is prohibited."}]
+            return JsonResponse(response, safe=False)
     branch_id = data["hub_wan_ip"]
     cache_key = f"routing_hub_{branch_id}"
     cache.delete(cache_key)
