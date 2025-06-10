@@ -390,7 +390,7 @@ def test_add_route_spoke(client, capfd):
     for addinfo in addroute:
         routeadded = False
         for routeinfo in  routing_table:
-            if addinfo["destination"] == routeinfo["destination"]:
+            if addinfo["subnet"] == routeinfo["destination"]:
                 routeadded = True
                 break
         if not routeadded:
