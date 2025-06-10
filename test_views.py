@@ -328,3 +328,73 @@ def test_delstaticroute_hub(client, capfd):
     print("Not deleted route", routenotdeleted)
     assert len(routenotdeleted) == 0
 
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+def test_add_route_spoke(client, capfd):
+    # Step 1: Login to get access token
+    login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
+    login_data = {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }
+    login_response = client.post(login_url, login_data, content_type="application/json")
+    assert login_response.status_code == 200
+    print("Login response JSON:", login_response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    token = login_response.json().get("access")  # Adjust this if your token key is different
+    assert token is not None
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {token}"
+    }    
+    addroute = []
+    for _ in range(20):
+        while True:
+            prefix_len = random.randint(8, 30)
+            host_bits = 32 - prefix_len
+            network_int = random.randint(0, (2**(32 - host_bits)) - 1) << host_bits
+            network = ipaddress.IPv4Network((network_int, prefix_len))
+            if not is_excluded(network):
+                addroute.append({
+                    "subnet": str(network),
+                    "gateway": "192.168.88.2"
+                })
+                break  # exit loop after valid network found
+    addroute_data = {"tunnel_ip": "10.8.0.19",
+                     "uuid": "microtek21_microtek.net",
+                     "subnet_info": addroute}
+    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    addstaticroute_hub_url = reverse("add_route_spoke")
+    response = client.post(addstaticroute_hub_url, addroute_data, content_type="application/json", **headers)
+
+    assert response.status_code == 200
+    json_data = response.json()
+    print("Homepage Info response JSON:", response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    # Optional: Assert fields in response
+    assert "Error" not in json_data[0]["message"]
+    time.sleep(10)
+    getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
+                     "uuid": "microtek21_microtek.net"
+                     }
+    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    getroute_spoke_url = reverse("get_routing_table_spoke")
+    response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    routing_table = response.json()
+    print("routing_table", routing_table)
+    routenotadded = []
+    for addinfo in addroute:
+        routeadded = False
+        for routeinfo in  routing_table:
+            if addinfo["destination"] == routeinfo["destination"]:
+                routeadded = True
+                break
+        if not routeadded:
+            routenotadded.append(addinfo)
+    print("Not added route", routenotadded)
+    assert len(routenotadded) == 0
+    
