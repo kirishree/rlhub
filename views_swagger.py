@@ -2597,7 +2597,7 @@ def delstaticroute_hub(request: HttpRequest):
                     extra={ "be_api_endpoint": "delete_static_route_hub" }
                     )
     for delroute in data["routes_info"]:
-        if "0.0.0.0" in delroute["destination"]:
+        if "0.0.0.0/0" in delroute["destination"]:
             logger.info(f"Error: Default route deletion is prohibited.")
             response = [{"message":f"Error: Default route deletion is prohibited."}]
             return JsonResponse(response, safe=False)
