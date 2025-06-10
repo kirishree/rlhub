@@ -230,3 +230,48 @@ def check_onboarding(username, password):
     except:
         return 'Internal Server Error', False
 #check_onboarding("cejavak731@wermink.com", "cejavak731@wermink.com")
+def test_addstaticroute_hub(client, capfd):
+    # Step 1: Login to get access token
+    #login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
+    login_data = {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }
+    login_response = client.post("login_or_register", login_data, content_type="application/json")
+    assert login_response.status_code == 200
+    print("Login response JSON:", login_response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    token = login_response.json().get("access")  # Adjust this if your token key is different
+    assert token is not None
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {token}"
+    }
+    private_ranges = [
+        (ipaddress.IPv4Network("10.0.0.0/8"), random.randint(8,32)),
+        (ipaddress.IPv4Network("172.16.0.0/12"), random.randint(16,32)),
+        (ipaddress.IPv4Network("192.168.0.0/16"), random.randint(24,32)),
+    ]
+    addroute = []
+    for i in range(0,20):
+        network_base, base_prefix = random.choice(private_ranges)
+        subnets = list(network_base.subnets(new_prefix=base_prefix))
+        subnet_index = random.randint(0, len(subnets)-1)
+        addroute.append({"destination": str(subnets[subnet_index]),
+                         "gateway": "10.8.0.19"})
+    addroute_data = {"hub_wan_ip": "185.69.209.251",
+                     "uuid": "reachlinkserver.net",
+                     "routes_info": addroute}
+    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    addstaticroute_hub_url = "addstaticroute_hub"
+    response = client.post(addstaticroute_hub_url, addroute_data, content_type="application/json", **headers)
+
+    assert response.status_code == 200
+    json_data = response.json()
+    print("Homepage Info response JSON:", response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    # Optional: Assert fields in response
+    assert "Error" not in json_data[0]["message"]
