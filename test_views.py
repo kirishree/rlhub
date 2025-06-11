@@ -81,7 +81,11 @@ def test_login_response(client, capfd, extra):
     out, err = capfd.readouterr()
 
     # Add clean formatted text to HTML report
-    extra.append(extras.text(json_str, name="Login response JSON"))
+    extra.append(extras.text(json_str, name="Login response JSON", mime_type='text/plain'))
+    # Add clean formatted text to HTML report
+    extra.append(extras.text(out, name="out", mime_type='text/plain'))
+    extra.append(extras.text("hiii", name="hi", mime_type='text/plain'))
+
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
