@@ -370,7 +370,7 @@ def test_add_route_spoke(client, capfd, extra):
                      "subnet_info": addroute}
     #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
     #extra.append(extras.text(json.dumps(addroute.json(), indent=2), name="Randomly Generated routes"))
-    extra.append(extras.json(addroute.json(), name="Randomly Generated routes"))
+    extra.append(extras.json(addroute, name="Randomly Generated routes"))
     addstaticroute_hub_url = reverse("add_route_spoke")
     response = client.post(addstaticroute_hub_url, addroute_data, content_type="application/json", **headers)
 
