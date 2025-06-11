@@ -60,7 +60,8 @@ def test_login(client, capfd, payload, expected):
     # Capture output after print
     out, err = capfd.readouterr() 
     assert login_response.status_code == expected
-
+    
+@override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 def test_login_response(client, capfd, extra):
     login_url = reverse("login_or_register")
