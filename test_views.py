@@ -4,6 +4,7 @@ import ipaddress
 from django.urls import reverse
 from django.test import override_settings
 import time
+import json
 from pytest_html import extras
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
@@ -342,7 +343,7 @@ def test_add_route_spoke(client, capfd, extra):
     print("Login response JSON:", login_response.json())
     # Capture output after print
     out, err = capfd.readouterr() 
-    extra.append(extras.text(login_response.json(), name="Login response JSON:"))
+    extra.append(extras.text(json.dumps(login_response.json(), indent=2), name="Login response JSON:"))
     token = login_response.json().get("access")  # Adjust this if your token key is different
     assert token is not None
 
@@ -367,7 +368,7 @@ def test_add_route_spoke(client, capfd, extra):
                      "uuid": "microtek21_microtek.net",
                      "subnet_info": addroute}
     #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
-    extra.append(extras.text(addroute, name="Randomly Generated routes"))
+    extra.append(extras.text(json.dumps(addroute.json(), indent=2), name="Randomly Generated routes"))
     addstaticroute_hub_url = reverse("add_route_spoke")
     response = client.post(addstaticroute_hub_url, addroute_data, content_type="application/json", **headers)
 
@@ -375,8 +376,8 @@ def test_add_route_spoke(client, capfd, extra):
     json_data = response.json()
     print("Add Route Spoke response JSON:", response.json())
     # Capture output after print
-    out, err = capfd.readouterr() 
-    extra.append(extras.text(json_data, name="Add Route Spoke response JSON:"))
+    out2, err = capfd.readouterr() 
+    extra.append(extras.text(out2, name="Add Route Spoke response JSON:"))
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
@@ -388,8 +389,10 @@ def test_add_route_spoke(client, capfd, extra):
     response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
     assert response.status_code == 200
     routing_table = response.json()
-    print("routing_table", routing_table)
-    extra.append(extras.text(routing_table, name="Routing Table after added routes"))
+    print("Routing Table after added routes", routing_table)
+    # Capture output after print
+    out2, err = capfd.readouterr() 
+    extra.append(extras.text(json.dumps(response.json(), indent=2), name="Routing Table after added routes"))
     routenotadded = []
     for addinfo in addroute:
         routeadded = False
@@ -401,12 +404,12 @@ def test_add_route_spoke(client, capfd, extra):
             routenotadded.append(addinfo)
     print("Not added route", routenotadded)
     if len(routenotadded) > 0:
-        extra.append(extras.text(routenotadded, name="Not Added Route checked by validation"))
+        extra.append(extras.text(json.dumps(routenotadded.json(), indent=2), name="Not Added Route checked by validation"))
     assert len(routenotadded) == 0
     
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_del_staticroute_spoke(client, capfd):
+def test_del_staticroute_spoke(client, capfd, extra):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
     login_data = {
@@ -418,6 +421,7 @@ def test_del_staticroute_spoke(client, capfd):
     print("Login response JSON:", login_response.json())
     # Capture output after print
     out, err = capfd.readouterr() 
+    extra.append(extras.text(json.dumps(login_response.json(), indent=2), name="Login response JSON:"))
     token = login_response.json().get("access")  # Adjust this if your token key is different
     assert token is not None
 
@@ -433,9 +437,10 @@ def test_del_staticroute_spoke(client, capfd):
     response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
     assert response.status_code == 200
     routing_table = response.json()
-    print("routing table of Spoke", routing_table)
+    print("Routing table of Spoke", routing_table)
     # Capture again
     out2, err2 = capfd.readouterr()
+    extra.append(extras.text(json.dumps(response.json(), indent=2), name="Routing table of Spoke before delete"))
     deleteroute = []
     for routeinfo in routing_table:
         if routeinfo["protocol"] == "static":
@@ -450,9 +455,10 @@ def test_del_staticroute_spoke(client, capfd):
     response = client.post(delroute_spoke_url, delroute_spoke_data, content_type="application/json", **headers)
     assert response.status_code == 200
     json_data = response.json()
-    print("Delete Route Info response JSON:", response.json())
+    print("Delete Route response", response.json())
     # Capture output after print
     out3, err3 = capfd.readouterr() 
+    extra.append(extras.text(json.dumps(response.json(), indent=2), name="Delete Route response"))
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
@@ -467,19 +473,21 @@ def test_del_staticroute_spoke(client, capfd):
     print("Routing Table of spoke after deletion", routing_table)
      # Capture output after print
     out4, err4 = capfd.readouterr() 
+    extra.append(extras.text(out4, name="Routing Table of spoke after deletion"))
     routenotdeleted = []
     for delinfo in deleteroute:        
         for routeinfo in  routing_table:
             if delinfo["destination"] == routeinfo["destination"]:                
                 routenotdeleted.append(delinfo)
                 break               
-    print("Not deleted route", routenotdeleted)
+    print("Not deleted routes", routenotdeleted)
      # Capture output after print
     out5, err5 = capfd.readouterr() 
+    extra.append(extras.text(out5, name="Not deleted routes"))
     assert len(routenotdeleted) == 0
     # Optionally assert that captured output has expected text (optional)
     assert "Login response JSON:" in out
-    assert "routing table of Spoke" in out2
-    assert "Delete Route Info response JSON:" in out3
+    assert "Routing table of Spoke" in out2
+    assert "Delete Route response" in out3
     assert "Routing Table of spoke after deletion" in out4
-    assert "Not deleted route" in out5
+    assert "Not deleted routes" in out5
