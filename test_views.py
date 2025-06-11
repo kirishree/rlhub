@@ -414,7 +414,7 @@ def test_add_route_spoke(client, capfd, extras):
     
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_del_staticroute_spoke(client, capfd, extras):
+def test_del_staticroute_spoke(client, capfd, extra):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
     login_data = {
@@ -428,7 +428,7 @@ def test_del_staticroute_spoke(client, capfd, extras):
     # Capture output after print
     out, err = capfd.readouterr() 
     #extras.append(extras.text(json.dumps(login_response.json(), indent=2), name="Login response JSON:"))
-    extras.append(extras.text(out, name="Login response"))
+    extra.append(extras.text(out, name="Login response"))
     token = login_response.json().get("access")  # Adjust this if your token key is different
     assert token is not None
 
@@ -448,7 +448,7 @@ def test_del_staticroute_spoke(client, capfd, extras):
     # Capture again
     out2, err2 = capfd.readouterr()
     #extras.append(extras.text(json.dumps(response.json(), indent=2), name="Routing table of Spoke before delete"))
-    extras.append(extras.text(out2, name="Routing table of Spoke before delete"))
+    extra.append(extras.text(out2, name="Routing table of Spoke before delete"))
     deleteroute = []
     for routeinfo in routing_table:
         if routeinfo["protocol"] == "static":
@@ -467,7 +467,7 @@ def test_del_staticroute_spoke(client, capfd, extras):
     # Capture output after print
     out3, err3 = capfd.readouterr() 
     #extras.append(extras.text(json.dumps(response.json(), indent=2), name="Delete Route response"))
-    extras.append(extras.text(out3, name="Delete Route response"))
+    extra.append(extras.text(out3, name="Delete Route response"))
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
@@ -483,7 +483,7 @@ def test_del_staticroute_spoke(client, capfd, extras):
      # Capture output after print
     out4, err4 = capfd.readouterr() 
     #extras.append(extras.text(out4, name="Routing Table of spoke after deletion"))
-    extras.append(extras.text(out4, name="Routing Table of spoke after deletion"))
+    extra.append(extras.text(out4, name="Routing Table of spoke after deletion"))
     routenotdeleted = []
     for delinfo in deleteroute:        
         for routeinfo in  routing_table:
@@ -493,7 +493,7 @@ def test_del_staticroute_spoke(client, capfd, extras):
     print("Not deleted routes", routenotdeleted)
      # Capture output after print
     out5, err5 = capfd.readouterr() 
-    extras.append(extras.text(out5, name="Not deleted routes"))
+    extra.append(extras.text(out5, name="Not deleted routes"))
     #extras.append(extras.text(out5, name="Not deleted routes"))
     assert len(routenotdeleted) == 0
     # Optionally assert that captured output has expected text (optional)
