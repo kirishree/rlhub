@@ -398,3 +398,70 @@ def test_add_route_spoke(client, capfd):
     print("Not added route", routenotadded)
     assert len(routenotadded) == 0
     
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+def test_del_staticroute_spoke(client, capfd):
+    # Step 1: Login to get access token
+    login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
+    login_data = {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }
+    login_response = client.post(login_url, login_data, content_type="application/json")
+    assert login_response.status_code == 200
+    print("Login response JSON:", login_response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    token = login_response.json().get("access")  # Adjust this if your token key is different
+    assert token is not None
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {token}"
+    }
+    getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
+                     "uuid": "microtek21_microtek.net"
+                     }
+    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    getroute_spoke_url = reverse("get_routing_table_spoke")
+    response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    routing_table = response.json()
+    print("routing_table", routing_table)
+    deleteroute = []
+    for routeinfo in routing_table:
+        if routeinfo["protocol"] == "static":
+            if "0.0.0.0" not in routeinfo["destination"]:
+                deleteroute.append({"destination": routeinfo["destination"],
+                               "gateway": routeinfo["gateway"]})    
+    delroute_spoke_data = {"tunnel_ip": "10.8.0.19",
+                     "uuid": "microtek21_microtek.net",
+                     "routes_info": deleteroute
+                     }
+    delroute_spoke_url = reverse("del_staticroute_spoke")
+    response = client.post(delroute_spoke_url, delroute_spoke_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    json_data = response.json()
+    print("Delete Route Info response JSON:", response.json())
+    # Capture output after print
+    out, err = capfd.readouterr() 
+    # Optional: Assert fields in response
+    assert "Error" not in json_data[0]["message"]
+    time.sleep(10)
+    getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
+                     "uuid": "microtek21_microtek.net"
+                     }
+    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    getroute_spoke_url = reverse("get_routing_table_spoke")
+    response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
+    assert response.status_code == 200
+    routing_table = response.json()
+    print("routing_table", routing_table)
+    routenotdeleted = []
+    for delinfo in deleteroute:        
+        for routeinfo in  routing_table:
+            if delinfo["destination"] == routeinfo["destination"]:                
+                routenotdeleted.append(delinfo)
+                break               
+    print("Not deleted route", routenotdeleted)
+    assert len(routenotdeleted) == 0
