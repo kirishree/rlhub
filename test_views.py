@@ -427,7 +427,9 @@ def test_del_staticroute_spoke(client, capfd):
     response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
     assert response.status_code == 200
     routing_table = response.json()
-    print("routing_table", routing_table)
+    print("routing table of Spoke", routing_table)
+    # Capture again
+    out2, err2 = capfd.readouterr()
     deleteroute = []
     for routeinfo in routing_table:
         if routeinfo["protocol"] == "static":
@@ -444,7 +446,7 @@ def test_del_staticroute_spoke(client, capfd):
     json_data = response.json()
     print("Delete Route Info response JSON:", response.json())
     # Capture output after print
-    out, err = capfd.readouterr() 
+    out3, err3 = capfd.readouterr() 
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
@@ -456,7 +458,9 @@ def test_del_staticroute_spoke(client, capfd):
     response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
     assert response.status_code == 200
     routing_table = response.json()
-    print("routing_table", routing_table)
+    print("Routing Table of spoke after deletion", routing_table)
+     # Capture output after print
+    out4, err4 = capfd.readouterr() 
     routenotdeleted = []
     for delinfo in deleteroute:        
         for routeinfo in  routing_table:
@@ -464,4 +468,12 @@ def test_del_staticroute_spoke(client, capfd):
                 routenotdeleted.append(delinfo)
                 break               
     print("Not deleted route", routenotdeleted)
+     # Capture output after print
+    out5, err5 = capfd.readouterr() 
     assert len(routenotdeleted) == 0
+    # Optionally assert that captured output has expected text (optional)
+    assert "Login response JSON:" in out
+    assert "routing table of Spoke" in out2
+    assert "Delete Route Info response JSON:" in out3
+    assert "Routing Table of spoke after deletion" in out4
+    assert "Not deleted route" in out5
