@@ -1,5 +1,10 @@
 # conftest.py
-import pytest
+import base64  
+import os  
+import pytest  
+import pytest_html  
+from pytest_metadata.plugin import metadata_key  
+  
 
 # Required for pytest-html to inject extra content into reports
 @pytest.hookimpl(hookwrapper=True)
@@ -11,7 +16,7 @@ def pytest_runtest_makereport(item, call):
     # Only add extra info on the actual test call (not setup/teardown)
     if rep.when == "call":
         # Get the extra list from the test context (if present)
-        extra = getattr(item, 'extra', [])
+        extra = getattr(rep, 'extra', [])
 
         # Attach to report
         rep.extra = extra

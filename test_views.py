@@ -6,6 +6,32 @@ from django.test import override_settings
 import time
 import json
 from pytest_html import extras
+
+from PIL import Image, ImageDraw, ImageFont
+import tempfile
+import os
+
+def text_to_image(text, font_size=14):
+    # Set up font and image dimensions
+    font = ImageFont.load_default()
+    lines = text.split('\n')
+    width = max(font.getsize(line)[0] for line in lines) + 20
+    height = font.getsize(text)[1] * len(lines) + 20
+
+    image = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(image)
+
+    # Draw each line of text
+    y = 10
+    for line in lines:
+        draw.text((10, y), line, fill="black", font=font)
+        y += font.getsize(line)[1]
+
+    # Save to a temp file
+    temp_path = os.path.join(tempfile.gettempdir(), "output_image.png")
+    image.save(temp_path)
+    return temp_path
+
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 def test_branch_info_view_with_token(client, capfd):
@@ -73,16 +99,32 @@ def test_login_response(client, capfd, extra):
 
     assert response.status_code == 200
 
+    output = response.json()  # list or dict
+    pretty_text = json.dumps(output, indent=2)
+
+    # Print to console (optional)
+    print("Formatted Output:\n", pretty_text)
+
+    # Convert to image
+    img_path = text_to_image(pretty_text)
+
+    # Attach image to pytest-html report
+    with open(img_path, "rb") as img_file:
+        extra.append(extras.image(img_file.read(), name="Output Screenshot"))
+
+    # Cleanup if needed
+    os.remove(img_path)
+
     # JSON string for readability
-    response_data = response.json()
-    json_str = json.dumps(response_data, indent=2)
+    #response_data = response.json()
+    #json_str = json.dumps(response_data, indent=2)
 
     # Print and capture
-    print("Login Response JSON:", json_str)
-    out, err = capfd.readouterr()
+    #print("Login Response JSON:", json_str)
+    #out, err = capfd.readouterr()
 
     # Attach readable text to report
-    extra.append(extras.text(json_str, name="Login response JSON"))
+    #extra.append(extras.text(json_str, name="Login response JSON"))
 
 
 @override_settings(SECURE_SSL_REDIRECT=False)
