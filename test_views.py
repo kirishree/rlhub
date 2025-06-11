@@ -60,29 +60,28 @@ def test_login(client, capfd, payload, expected):
     # Capture output after print
     out, err = capfd.readouterr() 
     assert login_response.status_code == expected
-    
+
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_login_response(client, capfd, extra):
+def test_login(client, capfd, extra):
     login_url = reverse("login_or_register")
     login_data = {
         "username": "xogaw4457@edectus.com",
         "password": "xogaw4457@edectus.com"
     }
 
-    login_response = client.post(login_url, login_data, content_type="application/json")
-    assert login_response.status_code == 200
+    response = client.post(login_url, login_data, content_type="application/json")
+    assert response.status_code == 200
 
-    # Capture JSON response
-    login_response_data = login_response.json()
-    json_pretty = json.dumps(login_response_data, indent=2)
+    response_data = response.json()
+    json_str = json.dumps(response_data, indent=2)
 
-    # Print and capture output
-    print("Login response JSON:", json_pretty)
+    # Print for CLI output
+    print("Login Response JSON:", json_str)
     out, err = capfd.readouterr()
 
-    # Append to report
-    extra.append(extras.text(json_pretty, name="Login response JSON"))
+    # Add clean formatted text to HTML report
+    extra.append(extras.text(json_str, name="Login response JSON"))
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
