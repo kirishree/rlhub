@@ -12,22 +12,31 @@ import tempfile
 import os
 
 def text_to_image(text, font_size=14):
-    # Set up font and image dimensions
-    font = ImageFont.load_default()
+    font = ImageFont.load_default()  # You can use truetype fonts too
     lines = text.split('\n')
-    width = max(font.getsize(line)[0] for line in lines) + 20
-    height = font.getsize(text)[1] * len(lines) + 20
+
+    # Calculate max width and total height
+    line_heights = []
+    line_widths = []
+
+    for line in lines:
+        bbox = font.getbbox(line)
+        line_width = bbox[2] - bbox[0]
+        line_height = bbox[3] - bbox[1]
+        line_widths.append(line_width)
+        line_heights.append(line_height)
+
+    width = max(line_widths) + 20
+    height = sum(line_heights) + 20
 
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image)
 
-    # Draw each line of text
     y = 10
-    for line in lines:
+    for i, line in enumerate(lines):
         draw.text((10, y), line, fill="black", font=font)
-        y += font.getsize(line)[1]
+        y += line_heights[i]
 
-    # Save to a temp file
     temp_path = os.path.join(tempfile.gettempdir(), "output_image.png")
     image.save(temp_path)
     return temp_path
