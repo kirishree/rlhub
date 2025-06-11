@@ -423,11 +423,12 @@ def test_del_staticroute_spoke(client, capfd, extras):
     }
     login_response = client.post(login_url, login_data, content_type="application/json")
     assert login_response.status_code == 200
+    login_response_data = login_response.json()  # This is now a list or dict
     print("Login response JSON:", login_response.json())
     # Capture output after print
     out, err = capfd.readouterr() 
     #extra.append(extras.text(json.dumps(login_response.json(), indent=2), name="Login response JSON:"))
-    extras.append(extras.json(login_response, name="Login response"))
+    extras.append(extras.json(login_response_data, name="Login response"))
     token = login_response.json().get("access")  # Adjust this if your token key is different
     assert token is not None
 
