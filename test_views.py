@@ -4,7 +4,7 @@ import ipaddress
 from django.urls import reverse
 from django.test import override_settings
 import time
-
+from pytest_html import extras
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 def test_branch_info_view_with_token(client, capfd):
@@ -330,7 +330,7 @@ def test_delstaticroute_hub(client, capfd):
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_add_route_spoke(client, capfd):
+def test_add_route_spoke(client, capfd, extra):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'
     login_data = {
@@ -342,6 +342,7 @@ def test_add_route_spoke(client, capfd):
     print("Login response JSON:", login_response.json())
     # Capture output after print
     out, err = capfd.readouterr() 
+    extra.append(extras.text(login_response.json(), name="Login response JSON:"))
     token = login_response.json().get("access")  # Adjust this if your token key is different
     assert token is not None
 
@@ -366,14 +367,16 @@ def test_add_route_spoke(client, capfd):
                      "uuid": "microtek21_microtek.net",
                      "subnet_info": addroute}
     #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+    extra.append(extras.text(addroute, name="Randomly Generated routes"))
     addstaticroute_hub_url = reverse("add_route_spoke")
     response = client.post(addstaticroute_hub_url, addroute_data, content_type="application/json", **headers)
 
     assert response.status_code == 200
     json_data = response.json()
-    print("Homepage Info response JSON:", response.json())
+    print("Add Route Spoke response JSON:", response.json())
     # Capture output after print
     out, err = capfd.readouterr() 
+    extra.append(extras.text(json_data, name="Add Route Spoke response JSON:"))
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
@@ -386,6 +389,7 @@ def test_add_route_spoke(client, capfd):
     assert response.status_code == 200
     routing_table = response.json()
     print("routing_table", routing_table)
+    extra.append(extras.text(routing_table, name="Routing Table after added routes"))
     routenotadded = []
     for addinfo in addroute:
         routeadded = False
@@ -396,6 +400,8 @@ def test_add_route_spoke(client, capfd):
         if not routeadded:
             routenotadded.append(addinfo)
     print("Not added route", routenotadded)
+    if len(routenotadded) > 0:
+        extra.append(extras.text(routenotadded, name="Not Added Route checked by validation"))
     assert len(routenotadded) == 0
     
 @override_settings(SECURE_SSL_REDIRECT=False)
@@ -433,7 +439,7 @@ def test_del_staticroute_spoke(client, capfd):
     deleteroute = []
     for routeinfo in routing_table:
         if routeinfo["protocol"] == "static":
-            if "0.0.0.0" not in routeinfo["destination"]:
+            if "0.0.0.0/0" not in routeinfo["destination"]:
                 deleteroute.append({"destination": routeinfo["destination"],
                                "gateway": routeinfo["gateway"]})    
     delroute_spoke_data = {"tunnel_ip": "10.8.0.19",
