@@ -1217,7 +1217,7 @@ def delstaticroute(data):
                 break  
         route_info = output.split("\n") 
         for routes in data["routes_info"]:  
-            if "0.0.0.0" in routes["destination"] or "10.8.0.0/24" in routes["destination"]:
+            if "0.0.0.0/0" in routes["destination"] or "10.8.0.0/24" in routes["destination"]:
                 response = [{"message": f"Error: Route {routes['destination']} deletion is prohibited "}]
                 break
             for addr in route_info:
