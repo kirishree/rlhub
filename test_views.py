@@ -65,9 +65,10 @@ def test_login(client, capfd, payload, expected):
 @pytest.mark.django_db
 @pytest.mark.django_db
 def test_login_response(client, capfd, extra):
-    response = client.post('/api/auth/', {
-        "username": "test@example.com",
-        "password": "test@example.com"
+    login_url = reverse("login_or_register") 
+    response = client.post(login_url, {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
     }, content_type="application/json")
 
     assert response.status_code == 200
