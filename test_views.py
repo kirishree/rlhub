@@ -98,7 +98,6 @@ def test_login(client, capfd, payload, expected):
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-@pytest.mark.django_db
 def test_login_response(client, capfd, extra):
     login_url = reverse("login_or_register") 
     response = client.post(login_url, {
@@ -134,6 +133,24 @@ def test_login_response(client, capfd, extra):
 
     # Attach readable text to report
     #extra.append(extras.text(json_str, name="Login response JSON"))
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+def test_login_re(client, capfd, extras):
+    login_url = reverse("login_or_register") 
+    response = client.post(login_url, {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }, content_type="application/json")
+
+    assert response.status_code == 200
+
+    output = response.json()  # list or dict
+    pretty_text = json.dumps(output, indent=2)
+
+    # Print to console (optional)
+    print("Formatted Output:\n", pretty_text)    
+    extras.append(extras.text("some string"))
 
 
 @override_settings(SECURE_SSL_REDIRECT=False)

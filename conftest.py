@@ -11,18 +11,11 @@ from pytest_metadata.plugin import metadata_key
 def pytest_runtest_makereport(item, call):
     # Execute all other hooks to obtain the report object
     outcome = yield
-    rep = outcome.get_result()
-
+    report = outcome.get_result()
+    extras = getattr(report, "extras", [])
     # Only add extra info on the actual test call (not setup/teardown)
-    if rep.when == "call":
-        # Get the extra list from the test context (if present)
-        extra = getattr(rep, 'extra', [])
-
+    #if rep.when == "call":
+    if report.when == "call":
+        extras.append(pytest_html.extras.text("some string", name="Different title"))        
         # Attach to report
-        rep.extra = extra
-
-# Fixture to collect 'extra' content
-@pytest.fixture
-def extra(request):
-    request.node.extra = []
-    return request.node.extra
+        report.extras = extras
