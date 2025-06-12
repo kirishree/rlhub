@@ -7,9 +7,25 @@ import time
 import json
 from pytest_html import extras
 
-from PIL import Image, ImageDraw, ImageFont
 import tempfile
 import os
+import base64
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
+
+def generate_image_with_text(text):
+    img = Image.new("RGB", (800, 200), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.load_default()
+    draw.text((10, 10), text, fill="black", font=font)
+
+    # Save to buffer
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    # Base64 encode the image data
+    encoded_image = base64.b64encode(buffer.read()).decode("utf-8")  # MUST decode to str!
+    return encoded_image
 
 def text_to_image(text, font_size=14):
     font = ImageFont.load_default()  # You can use truetype fonts too
@@ -114,25 +130,15 @@ def test_login_response(client, capfd, extra):
     print("Formatted Output:\n", pretty_text)
 
     # Convert to image
-    img_path = text_to_image(pretty_text)
+    #img_path = text_to_image(pretty_text)
 
     # Attach image to pytest-html report
-    with open(img_path, "rb") as img_file:
-        extra.append(extras.image(img_file.read(), name="Output Screenshot"))
-
+    #with open(img_path, "rb") as img_file:
+    #    extra.append(extras.image(img_file.read(), name="Output Screenshot"))
+    img_base64 = generate_image_with_text(pretty_text)
+    extra.append(extras.image(img_base64, mime_type="image/png", extension="png"))
     # Cleanup if needed
-    os.remove(img_path)
-
-    # JSON string for readability
-    #response_data = response.json()
-    #json_str = json.dumps(response_data, indent=2)
-
-    # Print and capture
-    #print("Login Response JSON:", json_str)
-    #out, err = capfd.readouterr()
-
-    # Attach readable text to report
-    #extra.append(extras.text(json_str, name="Login response JSON"))
+    #os.remove(img_path)
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
