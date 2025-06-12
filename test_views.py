@@ -150,13 +150,14 @@ def test_login_response(client, capfd, extra):
     print("Formatted Output:\n", pretty_text)
 
     # Convert to image
-    #img_path = text_to_image(pretty_text)
+    img_path = text_to_image(pretty_text)
 
     # Attach image to pytest-html report
-    #with open(img_path, "rb") as img_file:
-    #    extra.append(extras.image(img_file.read(), name="Output Screenshot"))
-    img_base64 = generate_image_with_text(pretty_text)
-    extra.append(extras.image(img_base64, mime_type="image/png", extension="png"))
+    with open(img_path, "rb") as img_file:
+        #extra.append(extras.image(img_file.read(), name="Output Screenshot"))
+        extra.append(extras.image(img_file.read(), mime_type="image/png", extension="png"))
+    #img_base64 = generate_image_with_text(pretty_text)
+    #extra.append(extras.image(img_base64, mime_type="image/png", extension="png"))
     # Cleanup if needed
     #os.remove(img_path)
 
