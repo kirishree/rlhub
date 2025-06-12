@@ -137,7 +137,7 @@ def test_login_response(client, capfd, extra):
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 def test_login_re(client, capfd, extra):
-    login_url = reverse("login_or_register") 
+    login_url = reverse("login_or_register")
     response = client.post(login_url, {
         "username": "xogaw4457@edectus.com",
         "password": "xogaw4457@edectus.com"
@@ -145,13 +145,11 @@ def test_login_re(client, capfd, extra):
 
     assert response.status_code == 200
 
-    output = response.json()  # list or dict
+    output = response.json()
     pretty_text = json.dumps(output, indent=2)
 
-    # Print to console (optional)
-    print("Formatted Output:\n", pretty_text)    
-    extra.append(extras.text("some string"))
-
+    # Attach pretty-printed response to report
+    extra.append(extras.text(pretty_text, name="Login API Response"))
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
