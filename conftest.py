@@ -19,3 +19,8 @@ def pytest_runtest_makereport(item, call):
         extras.append(pytest_html.extras.text("some string", name="Different title"))        
         # Attach to report
         report.extras = extras
+# Fixture to collect 'extra' content
+@pytest.fixture
+def extra(request):
+    request.node.extra = []
+    return request.node.extra

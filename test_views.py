@@ -136,7 +136,7 @@ def test_login_response(client, capfd, extra):
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_login_re(client, capfd, extras):
+def test_login_re(client, capfd, extra):
     login_url = reverse("login_or_register") 
     response = client.post(login_url, {
         "username": "xogaw4457@edectus.com",
@@ -150,7 +150,7 @@ def test_login_re(client, capfd, extras):
 
     # Print to console (optional)
     print("Formatted Output:\n", pretty_text)    
-    extras.append(extras.text("some string"))
+    extra.append(extras.text("some string"))
 
 
 @override_settings(SECURE_SSL_REDIRECT=False)
