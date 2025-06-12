@@ -6,15 +6,34 @@ from django.test import override_settings
 import time
 import json
 from pytest_html import extras
-import logging
+
 import tempfile
 import os
 import base64
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+
 def generate_image_with_text(text):
+    lines = text.splitlines()
+    font = ImageFont.load_default()
+    # Estimate image size
+    width = max(font.getbbox(line)[2] for line in lines) + 20
+    height = (font.getbbox("Test")[3] + 5) * len(lines) + 20
+
+    image = Image.new("RGB", (width, height), (255, 255, 255))
+    draw = ImageDraw.Draw(image)
+
+    y = 10
+    for line in lines:
+        draw.text((10, y), line, font=font, fill=(0, 0, 0))
+        y += font.getbbox(line)[3] + 5
+
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return base64_image
+
+def generate_image_with_text1(text):
     img = Image.new("RGB", (800, 200), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
     font = ImageFont.load_default()
@@ -28,26 +47,35 @@ def generate_image_with_text(text):
     encoded_image = base64.b64encode(buffer.read()).decode("utf-8")  # MUST decode to str!
     return encoded_image
 
-@override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.django_db
-def test_login_response(client, capfd, extra):
-    login_url = reverse("login_or_register") 
-    logger.info("Login Request started")
-    response = client.post(login_url, {
-        "username": "xogaw4457@edectus.com",
-        "password": "xogaw4457@edectus.com"
-    }, content_type="application/json")
+def text_to_image(text, font_size=14):
+    font = ImageFont.load_default()  # You can use truetype fonts too
+    lines = text.split('\n')
 
-    assert response.status_code == 200
-    output = response.json()  # list or dict
-    pretty_text = json.dumps(output, indent=2) 
-    print("Login Response", pretty_text)
-    out, err = capfd.readouterr()  
-    logger.info(f"Login Response: {pretty_text}") 
-    img_base64 = generate_image_with_text(pretty_text)
-    extra.append(extras.image(img_base64, mime_type="image/png", extension="png"))
+    # Calculate max width and total height
+    line_heights = []
+    line_widths = []
 
+    for line in lines:
+        bbox = font.getbbox(line)
+        line_width = bbox[2] - bbox[0]
+        line_height = bbox[3] - bbox[1]
+        line_widths.append(line_width)
+        line_heights.append(line_height)
 
+    width = max(line_widths) + 20
+    height = sum(line_heights) + 20
+
+    image = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(image)
+
+    y = 10
+    for i, line in enumerate(lines):
+        draw.text((10, y), line, fill="black", font=font)
+        y += line_heights[i]
+
+    temp_path = os.path.join(tempfile.gettempdir(), "output_image.png")
+    image.save(temp_path)
+    return temp_path
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
@@ -103,6 +131,35 @@ def test_login(client, capfd, payload, expected):
     # Capture output after print
     out, err = capfd.readouterr() 
     assert login_response.status_code == expected
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+def test_login_response(client, capfd, extra):
+    login_url = reverse("login_or_register") 
+    response = client.post(login_url, {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }, content_type="application/json")
+
+    assert response.status_code == 200
+
+    output = response.json()  # list or dict
+    pretty_text = json.dumps(output, indent=2)
+
+    # Print to console (optional)
+    print("Formatted Output:\n", pretty_text)
+
+    # Convert to image
+    img_path = text_to_image(pretty_text)
+
+    # Attach image to pytest-html report
+    with open(img_path, "rb") as img_file:
+        #extra.append(extras.image(img_file.read(), name="Output Screenshot"))
+        extra.append(extras.image(img_file.read(), mime_type="image/png", extension="png"))
+    #img_base64 = generate_image_with_text(pretty_text)
+    #extra.append(extras.image(img_base64, mime_type="image/png", extension="png"))
+    # Cleanup if needed
+    #os.remove(img_path)
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
