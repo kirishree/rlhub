@@ -155,7 +155,7 @@ def test_login_re(client, capfd, extra):
     pretty_text = json.dumps(output, indent=2)
 
     # Attach pretty-printed response to report
-    extra.append(extras.text(pretty_text, name="Login API Response"))
+    extra.append(extras.text("Hii"))
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
