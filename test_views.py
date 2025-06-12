@@ -14,19 +14,6 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-def generate_image_with_text(text):
-    img = Image.new("RGB", (800, 200), color=(255, 255, 255))
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.load_default()
-    draw.text((10, 10), text, fill="black", font=font)
-
-    # Save to buffer
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
-    # Base64 encode the image data
-    encoded_image = base64.b64encode(buffer.read()).decode("utf-8")  # MUST decode to str!
-    return encoded_image
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
@@ -43,9 +30,7 @@ def test_login_response(client, capfd, extra):
     pretty_text = json.dumps(output, indent=2) 
     print("Login Response", pretty_text)
     out, err = capfd.readouterr()  
-    logger.info(f"Login Response: {pretty_text}") 
-    img_base64 = generate_image_with_text(pretty_text)
-    extra.append(extras.image(img_base64, mime_type="image/png", extension="png"))
+    logger.info(f"Login Response: {pretty_text}")     
 
 
 
@@ -404,8 +389,7 @@ def test_add_route_spoke(client, capfd, extras):
     print("Login response", login_response.json())
     # Capture output after print
     out, err = capfd.readouterr() 
-    #extra.append(extras.text(json.dumps(login_response.json(), indent=2), name="Login response JSON:"))
-    extras.append(extras.json(login_response.json(), name="Login response"))
+    logger.info(f"Login response: {login_response.json()}")
     token = login_response.json().get("access")  # Adjust this if your token key is different
     assert token is not None
 
@@ -429,9 +413,8 @@ def test_add_route_spoke(client, capfd, extras):
     addroute_data = {"tunnel_ip": "10.8.0.19",
                      "uuid": "microtek21_microtek.net",
                      "subnet_info": addroute}
-    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
-    #extra.append(extras.text(json.dumps(addroute.json(), indent=2), name="Randomly Generated routes"))
-    extras.append(extras.json(addroute, name="Randomly Generated routes"))
+    logger.info("Testing Started to add Routes in Spoke")
+    logger.info(f"Randomly Generated routes: {addroute}")
     addstaticroute_hub_url = reverse("add_route_spoke")
     response = client.post(addstaticroute_hub_url, addroute_data, content_type="application/json", **headers)
 
@@ -440,15 +423,14 @@ def test_add_route_spoke(client, capfd, extras):
     print("Add Route Spoke response JSON:", response.json())
     # Capture output after print
     out2, err = capfd.readouterr() 
-    #extra.append(extras.text(out2, name="Add Route Spoke response JSON:"))
-    extras.append(extras.json(response.json(), name="Add Route Spoke response"))
+    logger.info(f"Add Route Spoke response: {response.json()}")
+    logger.info(f"Started to validate the added routes")
     # Optional: Assert fields in response
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
     getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
                      "uuid": "microtek21_microtek.net"
                      }
-    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
     getroute_spoke_url = reverse("get_routing_table_spoke")
     response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
     assert response.status_code == 200
@@ -456,8 +438,7 @@ def test_add_route_spoke(client, capfd, extras):
     print("Routing Table after added routes", routing_table)
     # Capture output after print
     out2, err = capfd.readouterr() 
-    #extra.append(extras.text(json.dumps(response.json(), indent=2), name="Routing Table after added routes"))
-    extras.append(extras.json(response.json(), name="Routing Table after added routes"))
+    logger.info(f"Routing Table after added routes: {response.json()}")
     routenotadded = []
     for addinfo in addroute:
         routeadded = False
@@ -469,8 +450,7 @@ def test_add_route_spoke(client, capfd, extras):
             routenotadded.append(addinfo)
     print("Not added route", routenotadded)
     if len(routenotadded) > 0:
-        #extra.append(extras.text(json.dumps(routenotadded.json(), indent=2), name="Not Added Route checked by validation"))
-        extras.append(extras.json(routenotadded.json(), name="Not Added Route checked by validation"))
+        logger.info(f"Not added Routes: {routenotadded}")
     assert len(routenotadded) == 0
     
 @override_settings(SECURE_SSL_REDIRECT=False)
