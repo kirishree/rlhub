@@ -14,6 +14,26 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
 def generate_image_with_text(text):
+    lines = text.splitlines()
+    font = ImageFont.load_default()
+    # Estimate image size
+    width = max(font.getbbox(line)[2] for line in lines) + 20
+    height = (font.getbbox("Test")[3] + 5) * len(lines) + 20
+
+    image = Image.new("RGB", (width, height), (255, 255, 255))
+    draw = ImageDraw.Draw(image)
+
+    y = 10
+    for line in lines:
+        draw.text((10, y), line, font=font, fill=(0, 0, 0))
+        y += font.getbbox(line)[3] + 5
+
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return base64_image
+
+def generate_image_with_text1(text):
     img = Image.new("RGB", (800, 200), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
     font = ImageFont.load_default()
@@ -142,7 +162,7 @@ def test_login_response(client, capfd, extra):
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_login_re(client, capfd, extra):
+def test_login_re1(client, capfd, extra):
     login_url = reverse("login_or_register")
     response = client.post(login_url, {
         "username": "xogaw4457@edectus.com",
