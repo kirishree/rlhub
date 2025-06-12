@@ -176,6 +176,7 @@ def test_login_re1(client, capfd, extra):
 
     # Attach pretty-printed response to report
     extra.append(extras.text("Hii"))
+    extra.append(extras.image(pretty_text, mime_type="image/png", extension="png"))
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
