@@ -927,7 +927,7 @@ def add_cisco_device(request: HttpRequest):
                                                 "uuid": data["uuid"],
                                                 "tunnel_ip": "None",
                                                 "public_ip": "None",
-                                                "branch_location": data["branch_location"].lower(),
+                                                "branch_location": data["branch_location"],
                                                 "subnet": [],
                                                 "vrf": "",
                                                 "hub_ip": data.get("dialer_ip", ""),
@@ -939,16 +939,16 @@ def add_cisco_device(request: HttpRequest):
                                 if hub["hub_ip"] == data.get("dialer_ip", ""):
                                     hub["no_inactive_spoke"] += 1
                                     hub["bandwidth_info"].append({
-                                                    "branch_location": data["branch_location"].lower(),
+                                                    "branch_location": data["branch_location"],
                                                     "bits_recieved": 0,
                                                     "bits_sent": 0
                                                     })
-                                    hub["inactive_spokes"].append(data["branch_location"].lower())
+                                    hub["inactive_spokes"].append(data["branch_location"])
                                     newbranchinfo = {
                                                 "uuid": data["uuid"],
                                                 "tunnel_ip": "None",
                                                 "public_ip": "None",
-                                                "branch_location": data["branch_location"].lower(),
+                                                "branch_location": data["branch_location"],
                                                 "subnet": [],
                                                 "vrf": "",
                                                 "hub_ip": data.get("dialer_ip", ""),
