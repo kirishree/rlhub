@@ -1,0 +1,2228 @@
+[
+    {
+        "organization_id": "ea318b0108d6495babfbd020ffc4e132",
+        "organization_name": "compedu",
+        "hub_info": [
+            {
+                "hub_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "hub_uuid": "reachlinkserver.net",
+                "hub_host_id": "10727",
+                "no_active_spoke": 1,
+                "no_inactive_spoke": 47,
+                "active_spokes": [
+                    "microtek21"
+                ],
+                "bandwidth_info": [
+                    {
+                        "branch_location": "microtek21",
+                        "bits_recieved": "1920",
+                        "bits_sent": "3160"
+                    },
+                    {
+                        "branch_location": "aprtm25",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "microtek21",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may22m",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may22m1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "tmicro22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "amaravathi",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "heritage",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "fm223",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "microa235",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "microa236",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "microu24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "pytest2",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "pytest7",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "citest1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "testd031",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "kadapa",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "hasina",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "jalina",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "fc22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "fc221",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "ciscoa24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "ciscou24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "pytest3",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "pytest8",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "robustel20",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "rapr24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "rapr25",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "testa25",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "mapr24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "robustel20",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "alinma_bank_4",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "testjed",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "testapr26",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "maaz_test",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "maaz_test2",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "testapr28",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may19",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "jeddah1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "andhra22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "andhram22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may22r1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "sangam",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "robustela24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "robustelu24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "pytest1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "pytest6",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "Reachlink_server",
+                        "bits_recieved": "110400",
+                        "bits_sent": "124808"
+                    }
+                ],
+                "inactive_spokes": [
+                    "aprtm25",
+                    "microtek21",
+                    "may22m",
+                    "may22m1",
+                    "tmicro22",
+                    "amaravathi",
+                    "heritage",
+                    "fm223",
+                    "microa235",
+                    "microa236",
+                    "microu24",
+                    "pytest2",
+                    "pytest7",
+                    "citest1",
+                    "testd031",
+                    "kadapa",
+                    "hasina",
+                    "jalina",
+                    "fc22",
+                    "fc221",
+                    "ciscoa24",
+                    "ciscou24",
+                    "pytest3",
+                    "pytest8",
+                    "robustel20",
+                    "rapr24",
+                    "rapr25",
+                    "testa25",
+                    "mapr24",
+                    "robustel20",
+                    "alinma_bank_4",
+                    "testjed",
+                    "testapr26",
+                    "maaz_test",
+                    "maaz_test2",
+                    "testapr28",
+                    "may19",
+                    "jeddah1",
+                    "may22",
+                    "andhra22",
+                    "andhram22",
+                    "may22r1",
+                    "sangam",
+                    "robustela24",
+                    "robustelu24",
+                    "pytest1",
+                    "pytest6"
+                ],
+                "spokes_info": {
+                    "microtek_spokes": {
+                        "spokes_info": [
+                            {
+                                "uuid": "microtek21_microtek.net",
+                                "tunnel_ip": "10.8.0.19",
+                                "public_ip": "2.48.210.161",
+                                "branch_location": "microtek21",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10721",
+                                "status": "active",
+                                "spokedevice_name": "microtekspoke11-compedu"
+                            },
+                            {
+                                "uuid": "aprtm25_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "aprtm25",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke2-compedu"
+                            },
+                            {
+                                "uuid": "microtek21_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "microtek21",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke3-compedu"
+                            },
+                            {
+                                "uuid": "may22m_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "may22m",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke4-compedu"
+                            },
+                            {
+                                "uuid": "may22m1_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "may22m1",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke5-compedu"
+                            },
+                            {
+                                "uuid": "tmicro22_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "tmicro22",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke6-compedu"
+                            },
+                            {
+                                "uuid": "amaravathi_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "amaravathi",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke7-compedu"
+                            },
+                            {
+                                "uuid": "heritage_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "heritage",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke8-compedu"
+                            },
+                            {
+                                "uuid": "fm223_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "fm223",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke9-compedu"
+                            },
+                            {
+                                "uuid": "microa235_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "microa235",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke10-compedu"
+                            },
+                            {
+                                "uuid": "microa236_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "microa236",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke11-compedu"
+                            },
+                            {
+                                "uuid": "microu24_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "microu24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke12-compedu"
+                            },
+                            {
+                                "uuid": "pytest2_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "pytest2",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke13-compedu"
+                            },
+                            {
+                                "uuid": "pytest7_compedu_microtek.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "pytest7",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "microtekspoke14-compedu"
+                            }
+                        ],
+                        "no_active_spokes": 1,
+                        "no_inactive_spokes": 13
+                    },
+                    "cisco_spokes": {
+                        "spokes_info": [
+                            {
+                                "uuid": "citest1_185.69.209.251_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.140",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "citest1",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10713",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke1-compedu"
+                            },
+                            {
+                                "uuid": "testd031_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.27",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "testd031",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": false,
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke2-compedu"
+                            },
+                            {
+                                "uuid": "kadapa_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.2",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "kadapa",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": false,
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke3-compedu"
+                            },
+                            {
+                                "uuid": "hasina_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.240",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "hasina",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10742",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke4-compedu"
+                            },
+                            {
+                                "uuid": "jalina_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.252",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "jalina",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10743",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke5-compedu"
+                            },
+                            {
+                                "uuid": "fc22_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.28",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "fc22",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10745",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke6-compedu"
+                            },
+                            {
+                                "uuid": "fc221_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.253",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "fc221",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10747",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke7-compedu"
+                            },
+                            {
+                                "uuid": "ciscoa24_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.123",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "ciscoa24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10749",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke8-compedu"
+                            },
+                            {
+                                "uuid": "ciscou24_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.131",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "ciscou24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10752",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke9-compedu"
+                            },
+                            {
+                                "uuid": "pytest3_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.222",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "pytest3",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10754",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke10-compedu"
+                            },
+                            {
+                                "uuid": "pytest8_compedu_cisco_ubuntu.net",
+                                "tunnel_ip": "10.17.17.157",
+                                "public_ip": "185.69.209.251",
+                                "branch_location": "pytest8",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10755",
+                                "status": "inactive",
+                                "spokedevice_name": "ciscoubuntuspoke11-compedu"
+                            }
+                        ],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 11
+                    },
+                    "robustel_spokes": {
+                        "spokes_info": [
+                            {
+                                "uuid": "robustel20_robustel.net",
+                                "tunnel_ip": "10.8.0.18",
+                                "public_ip": "78.95.108.146",
+                                "branch_location": "robustel20",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10720",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke3-compedu"
+                            },
+                            {
+                                "uuid": "rapr24_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "rapr24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke2-compedu"
+                            },
+                            {
+                                "uuid": "rapr25_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "78.95.108.146",
+                                "branch_location": "rapr25",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10735",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke0-compedu"
+                            },
+                            {
+                                "uuid": "testa25_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "testa25",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke4-compedu"
+                            },
+                            {
+                                "uuid": "mapr24_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "mapr24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke5-compedu"
+                            },
+                            {
+                                "uuid": "robustel20_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "robustel20",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke6-compedu"
+                            },
+                            {
+                                "uuid": "alinma_bank_4_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "alinma_bank_4",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke7-compedu"
+                            },
+                            {
+                                "uuid": "testjed_compedu_robustel.net",
+                                "tunnel_ip": "10.8.0.20",
+                                "public_ip": "None",
+                                "branch_location": "testjed",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10736",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke8-compedu"
+                            },
+                            {
+                                "uuid": "testapr26_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "testapr26",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke9-compedu"
+                            },
+                            {
+                                "uuid": "maaz_test_compedu_robustel.net",
+                                "tunnel_ip": "10.8.0.21",
+                                "public_ip": "95.186.0.200",
+                                "branch_location": "maaz_test",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10737",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke10-compedu"
+                            },
+                            {
+                                "uuid": "maaz_test2_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "maaz_test2",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke11-compedu"
+                            },
+                            {
+                                "uuid": "testapr28_compedu_robustel.net",
+                                "tunnel_ip": "10.8.0.22",
+                                "public_ip": "93.169.48.12",
+                                "branch_location": "testapr28",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "10738",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke12-compedu"
+                            },
+                            {
+                                "uuid": "may19_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "may19",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke13-compedu"
+                            },
+                            {
+                                "uuid": "jeddah1_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "jeddah1",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke14-compedu"
+                            },
+                            {
+                                "uuid": "may22_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "may22",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke15-compedu"
+                            },
+                            {
+                                "uuid": "andhra22_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "andhra22",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke16-compedu"
+                            },
+                            {
+                                "uuid": "andhram22_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "andhram22",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke17-compedu"
+                            },
+                            {
+                                "uuid": "may22r1_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "may22r1",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke18-compedu"
+                            },
+                            {
+                                "uuid": "sangam_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "sangam",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke19-compedu"
+                            },
+                            {
+                                "uuid": "robustela24_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "robustela24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke20-compedu"
+                            },
+                            {
+                                "uuid": "robustelu24_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "robustelu24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke21-compedu"
+                            },
+                            {
+                                "uuid": "pytest1_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "pytest1",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke22-compedu"
+                            },
+                            {
+                                "uuid": "pytest6_compedu_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "pytest6",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke23-compedu"
+                            }
+                        ],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 23
+                    },
+                    "ubuntu_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    }
+                }
+            },
+            {
+                "hub_ip": "78.110.5.90",
+                "hub_location": "jeddah",
+                "hub_status": "inactive",
+                "hub_uuid": "jeddah_ciscohub.net",
+                "hub_host_id": "10731",
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 11,
+                "bandwidth_info": [
+                    {
+                        "branch_location": "jeddah",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "testd031",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may22c",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "may22c1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "tsm22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "hudai",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "fc22",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "fc222",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "ciscoa241",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "ciscoa242",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    },
+                    {
+                        "branch_location": "ciscou241",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ],
+                "active_spokes": [],
+                "inactive_spokes": [
+                    "jeddah",
+                    "testd031",
+                    "may22c",
+                    "may22c1",
+                    "tsm22",
+                    "hudai",
+                    "fc22",
+                    "fc222",
+                    "ciscoa241",
+                    "ciscoa242",
+                    "ciscou241"
+                ],
+                "spokes_info": [
+                    {
+                        "uuid": "jeddah_78.110.5.90_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.92",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "jeddah",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10658",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke1-compedu"
+                    },
+                    {
+                        "uuid": "testd031_78.110.5.90_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.253",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "testd031",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10703",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke2-compedu"
+                    },
+                    {
+                        "uuid": "may22c_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.226",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "may22c",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": false,
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke3-compedu"
+                    },
+                    {
+                        "uuid": "may22c1_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.28",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "may22c1",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": false,
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke4-compedu"
+                    },
+                    {
+                        "uuid": "tsm22_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.59",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "tsm22",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": false,
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke5-compedu"
+                    },
+                    {
+                        "uuid": "hudai_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.77",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "hudai",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10744",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke6-compedu"
+                    },
+                    {
+                        "uuid": "fc22_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.142",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "fc22",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10746",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke7-compedu"
+                    },
+                    {
+                        "uuid": "fc222_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.166",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "fc222",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10748",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke8-compedu"
+                    },
+                    {
+                        "uuid": "ciscoa241_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.51",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "ciscoa241",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10750",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke9-compedu"
+                    },
+                    {
+                        "uuid": "ciscoa242_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.221",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "ciscoa242",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10751",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke10-compedu"
+                    },
+                    {
+                        "uuid": "ciscou241_compedu_ciscodevice.net",
+                        "tunnel_ip": "10.50.50.167",
+                        "public_ip": "78.110.5.90",
+                        "branch_location": "ciscou241",
+                        "subnet": [],
+                        "vrf": "",
+                        "hub_ip": "78.110.5.90",
+                        "host_id": "10753",
+                        "status": "inactive",
+                        "spokedevice_name": "ciscospoke11-compedu"
+                    }
+                ],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "jeddah",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ]
+            },
+            {
+                "hub_ip": "102.129.245.39",
+                "hub_location": "jeddah3",
+                "hub_status": "inactive",
+                "hub_uuid": "jeddah3_compedu_ciscohub.net",
+                "hub_host_id": "10740",
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 0,
+                "bandwidth_info": [],
+                "active_spokes": [],
+                "inactive_spokes": [],
+                "spokes_info": [],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "jeddah3",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ]
+            }
+        ],
+        "no_of_hubs": 3,
+        "no_active_hubs": 1,
+        "no_inactive_hubs": 2,
+        "active_hubs": [],
+        "inactive_hubs": [
+            "jeddah",
+            "jeddah3"
+        ],
+        "total_no_active_spokes": 1,
+        "total_no_inactive_spokes": 58,
+        "hub_info_only": [
+            {
+                "branch_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "uuid": "reachlinkserver.net",
+                "host_id": "10727",
+                "hub_dialer_ip_cidr": "10.8.0.1"
+            },
+            {
+                "branch_location": "jeddah",
+                "hub_ip": "78.110.5.90",
+                "hub_status": "inactive",
+                "uuid": "jeddah_ciscohub.net",
+                "host_id": "10731",
+                "hub_dialer_ip_cidr": "10.50.50.254/24"
+            },
+            {
+                "branch_location": "jeddah3",
+                "hub_ip": "102.129.245.39",
+                "hub_status": "inactive",
+                "uuid": "jeddah3_compedu_ciscohub.net",
+                "host_id": "10740",
+                "hub_dialer_ip_cidr": "10.0.0.1"
+            }
+        ],
+        "branch_info_only": [
+            {
+                "uuid": "microtek21_microtek.net",
+                "tunnel_ip": "10.8.0.19",
+                "public_ip": "2.48.210.161",
+                "branch_location": "microtek21",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10721",
+                "status": "active",
+                "spokedevice_name": "microtekspoke11-compedu"
+            },
+            {
+                "uuid": "aprtm25_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "aprtm25",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke2-compedu"
+            },
+            {
+                "uuid": "microtek21_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "microtek21",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke3-compedu"
+            },
+            {
+                "uuid": "may22m_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "may22m",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke4-compedu"
+            },
+            {
+                "uuid": "may22m1_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "may22m1",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke5-compedu"
+            },
+            {
+                "uuid": "tmicro22_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "tmicro22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke6-compedu"
+            },
+            {
+                "uuid": "amaravathi_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "amaravathi",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke7-compedu"
+            },
+            {
+                "uuid": "heritage_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "heritage",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke8-compedu"
+            },
+            {
+                "uuid": "fm223_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "fm223",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke9-compedu"
+            },
+            {
+                "uuid": "microa235_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "microa235",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke10-compedu"
+            },
+            {
+                "uuid": "microa236_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "microa236",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke11-compedu"
+            },
+            {
+                "uuid": "microu24_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "microu24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke12-compedu"
+            },
+            {
+                "uuid": "pytest2_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "pytest2",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke13-compedu"
+            },
+            {
+                "uuid": "pytest7_compedu_microtek.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "pytest7",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "microtekspoke14-compedu"
+            },
+            {
+                "uuid": "citest1_185.69.209.251_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.140",
+                "public_ip": "185.69.209.251",
+                "branch_location": "citest1",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10713",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke1-compedu"
+            },
+            {
+                "uuid": "testd031_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.27",
+                "public_ip": "185.69.209.251",
+                "branch_location": "testd031",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": false,
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke2-compedu"
+            },
+            {
+                "uuid": "kadapa_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.2",
+                "public_ip": "185.69.209.251",
+                "branch_location": "kadapa",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": false,
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke3-compedu"
+            },
+            {
+                "uuid": "hasina_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.240",
+                "public_ip": "185.69.209.251",
+                "branch_location": "hasina",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10742",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke4-compedu"
+            },
+            {
+                "uuid": "jalina_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.252",
+                "public_ip": "185.69.209.251",
+                "branch_location": "jalina",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10743",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke5-compedu"
+            },
+            {
+                "uuid": "fc22_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.28",
+                "public_ip": "185.69.209.251",
+                "branch_location": "fc22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10745",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke6-compedu"
+            },
+            {
+                "uuid": "fc221_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.253",
+                "public_ip": "185.69.209.251",
+                "branch_location": "fc221",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10747",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke7-compedu"
+            },
+            {
+                "uuid": "ciscoa24_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.123",
+                "public_ip": "185.69.209.251",
+                "branch_location": "ciscoa24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10749",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke8-compedu"
+            },
+            {
+                "uuid": "ciscou24_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.131",
+                "public_ip": "185.69.209.251",
+                "branch_location": "ciscou24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10752",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke9-compedu"
+            },
+            {
+                "uuid": "pytest3_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.222",
+                "public_ip": "185.69.209.251",
+                "branch_location": "pytest3",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10754",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke10-compedu"
+            },
+            {
+                "uuid": "pytest8_compedu_cisco_ubuntu.net",
+                "tunnel_ip": "10.17.17.157",
+                "public_ip": "185.69.209.251",
+                "branch_location": "pytest8",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10755",
+                "status": "inactive",
+                "spokedevice_name": "ciscoubuntuspoke11-compedu"
+            },
+            {
+                "uuid": "robustel20_robustel.net",
+                "tunnel_ip": "10.8.0.18",
+                "public_ip": "78.95.108.146",
+                "branch_location": "robustel20",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10720",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke3-compedu"
+            },
+            {
+                "uuid": "rapr24_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "rapr24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke2-compedu"
+            },
+            {
+                "uuid": "rapr25_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "78.95.108.146",
+                "branch_location": "rapr25",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10735",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke0-compedu"
+            },
+            {
+                "uuid": "testa25_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "testa25",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke4-compedu"
+            },
+            {
+                "uuid": "mapr24_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "mapr24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke5-compedu"
+            },
+            {
+                "uuid": "robustel20_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "robustel20",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke6-compedu"
+            },
+            {
+                "uuid": "alinma_bank_4_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "alinma_bank_4",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke7-compedu"
+            },
+            {
+                "uuid": "testjed_compedu_robustel.net",
+                "tunnel_ip": "10.8.0.20",
+                "public_ip": "None",
+                "branch_location": "testjed",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10736",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke8-compedu"
+            },
+            {
+                "uuid": "testapr26_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "testapr26",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke9-compedu"
+            },
+            {
+                "uuid": "maaz_test_compedu_robustel.net",
+                "tunnel_ip": "10.8.0.21",
+                "public_ip": "95.186.0.200",
+                "branch_location": "maaz_test",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10737",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke10-compedu"
+            },
+            {
+                "uuid": "maaz_test2_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "maaz_test2",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke11-compedu"
+            },
+            {
+                "uuid": "testapr28_compedu_robustel.net",
+                "tunnel_ip": "10.8.0.22",
+                "public_ip": "93.169.48.12",
+                "branch_location": "testapr28",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "10738",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke12-compedu"
+            },
+            {
+                "uuid": "may19_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "may19",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke13-compedu"
+            },
+            {
+                "uuid": "jeddah1_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "jeddah1",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke14-compedu"
+            },
+            {
+                "uuid": "may22_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "may22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke15-compedu"
+            },
+            {
+                "uuid": "andhra22_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "andhra22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke16-compedu"
+            },
+            {
+                "uuid": "andhram22_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "andhram22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke17-compedu"
+            },
+            {
+                "uuid": "may22r1_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "may22r1",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke18-compedu"
+            },
+            {
+                "uuid": "sangam_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "sangam",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke19-compedu"
+            },
+            {
+                "uuid": "robustela24_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "robustela24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke20-compedu"
+            },
+            {
+                "uuid": "robustelu24_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "robustelu24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke21-compedu"
+            },
+            {
+                "uuid": "pytest1_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "pytest1",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke22-compedu"
+            },
+            {
+                "uuid": "pytest6_compedu_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "pytest6",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke23-compedu"
+            },
+            {
+                "uuid": "jeddah_78.110.5.90_ciscodevice.net",
+                "tunnel_ip": "10.50.50.92",
+                "public_ip": "78.110.5.90",
+                "branch_location": "jeddah",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10658",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke1-compedu"
+            },
+            {
+                "uuid": "testd031_78.110.5.90_ciscodevice.net",
+                "tunnel_ip": "10.50.50.253",
+                "public_ip": "78.110.5.90",
+                "branch_location": "testd031",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10703",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke2-compedu"
+            },
+            {
+                "uuid": "may22c_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.226",
+                "public_ip": "78.110.5.90",
+                "branch_location": "may22c",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": false,
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke3-compedu"
+            },
+            {
+                "uuid": "may22c1_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.28",
+                "public_ip": "78.110.5.90",
+                "branch_location": "may22c1",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": false,
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke4-compedu"
+            },
+            {
+                "uuid": "tsm22_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.59",
+                "public_ip": "78.110.5.90",
+                "branch_location": "tsm22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": false,
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke5-compedu"
+            },
+            {
+                "uuid": "hudai_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.77",
+                "public_ip": "78.110.5.90",
+                "branch_location": "hudai",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10744",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke6-compedu"
+            },
+            {
+                "uuid": "fc22_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.142",
+                "public_ip": "78.110.5.90",
+                "branch_location": "fc22",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10746",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke7-compedu"
+            },
+            {
+                "uuid": "fc222_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.166",
+                "public_ip": "78.110.5.90",
+                "branch_location": "fc222",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10748",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke8-compedu"
+            },
+            {
+                "uuid": "ciscoa241_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.51",
+                "public_ip": "78.110.5.90",
+                "branch_location": "ciscoa241",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10750",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke9-compedu"
+            },
+            {
+                "uuid": "ciscoa242_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.221",
+                "public_ip": "78.110.5.90",
+                "branch_location": "ciscoa242",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10751",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke10-compedu"
+            },
+            {
+                "uuid": "ciscou241_compedu_ciscodevice.net",
+                "tunnel_ip": "10.50.50.167",
+                "public_ip": "78.110.5.90",
+                "branch_location": "ciscou241",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "78.110.5.90",
+                "host_id": "10753",
+                "status": "inactive",
+                "spokedevice_name": "ciscospoke11-compedu"
+            }
+        ]
+    },
+    {
+        "organization_id": "a18e1f662a75488388f7a6ac384284a4",
+        "organization_name": "wermink",
+        "hub_info": [
+            {
+                "hub_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "hub_uuid": "reachlinkserver.net",
+                "hub_host_id": "10084",
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 1,
+                "active_spokes": [],
+                "bandwidth_info": [
+                    {
+                        "branch_location": "rapr24",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "Reachlink_server",
+                        "bits_recieved": "88240",
+                        "bits_sent": "79696"
+                    }
+                ],
+                "inactive_spokes": [
+                    "rapr24"
+                ],
+                "spokes_info": {
+                    "microtek_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "cisco_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "robustel_spokes": {
+                        "spokes_info": [
+                            {
+                                "uuid": "rapr24_wermink_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "rapr24",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke1-wermink"
+                            }
+                        ],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 1
+                    },
+                    "ubuntu_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    }
+                }
+            },
+            {
+                "hub_ip": "132.13.15.16",
+                "hub_location": "testhub1",
+                "hub_status": "inactive",
+                "hub_uuid": "testhub1_wermink_ciscohub.net",
+                "hub_host_id": false,
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 0,
+                "bandwidth_info": [],
+                "active_spokes": [],
+                "inactive_spokes": [],
+                "spokes_info": [],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "testhub1",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ]
+            },
+            {
+                "hub_ip": "102.129.245.39",
+                "hub_location": "jeddah",
+                "hub_status": "inactive",
+                "hub_uuid": "jeddah_wermink_ciscohub.net",
+                "hub_host_id": "10741",
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 0,
+                "bandwidth_info": [],
+                "active_spokes": [],
+                "inactive_spokes": [],
+                "spokes_info": [],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "jeddah",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ]
+            }
+        ],
+        "no_of_hubs": 3,
+        "no_active_hubs": 1,
+        "no_inactive_hubs": 2,
+        "active_hubs": [],
+        "inactive_hubs": [
+            "testhub1",
+            "jeddah"
+        ],
+        "total_no_active_spokes": 0,
+        "total_no_inactive_spokes": 1,
+        "hub_info_only": [
+            {
+                "branch_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "uuid": "reachlinkserver.net",
+                "host_id": "10084",
+                "hub_dialer_ip_cidr": "10.8.0.1"
+            },
+            {
+                "branch_location": "testhub1",
+                "hub_ip": "132.13.15.16",
+                "hub_status": "inactive",
+                "uuid": "testhub1_wermink_ciscohub.net",
+                "host_id": false,
+                "hub_dialer_ip_cidr": "130.50.20.254/24"
+            },
+            {
+                "branch_location": "jeddah",
+                "hub_ip": "102.129.245.39",
+                "hub_status": "inactive",
+                "uuid": "jeddah_wermink_ciscohub.net",
+                "host_id": "10741",
+                "hub_dialer_ip_cidr": "10.0.0.1"
+            }
+        ],
+        "branch_info_only": [
+            {
+                "uuid": "rapr24_wermink_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "rapr24",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke1-wermink"
+            }
+        ]
+    },
+    {
+        "organization_id": "6f666c4838fc48108bed4caf2e4500f7",
+        "organization_name": "LastDimension",
+        "hub_info": [
+            {
+                "hub_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "hub_uuid": "reachlinkserver.net",
+                "hub_host_id": "10084",
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 1,
+                "active_spokes": [],
+                "bandwidth_info": [
+                    {
+                        "branch_location": "testapr29",
+                        "bits_recieved": 0,
+                        "bits_sent": 0
+                    }
+                ],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "Reachlink_server",
+                        "bits_recieved": "72296",
+                        "bits_sent": "63920"
+                    }
+                ],
+                "inactive_spokes": [
+                    "testapr29"
+                ],
+                "spokes_info": {
+                    "microtek_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "cisco_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "robustel_spokes": {
+                        "spokes_info": [
+                            {
+                                "uuid": "testapr29_LastDimension_robustel.net",
+                                "tunnel_ip": "None",
+                                "public_ip": "None",
+                                "branch_location": "testapr29",
+                                "subnet": [],
+                                "vrf": "",
+                                "hub_ip": "185.69.209.251",
+                                "host_id": "",
+                                "status": "inactive",
+                                "spokedevice_name": "robustelspoke1-LastDimension"
+                            }
+                        ],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 1
+                    },
+                    "ubuntu_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    }
+                }
+            }
+        ],
+        "no_of_hubs": 1,
+        "no_active_hubs": 1,
+        "no_inactive_hubs": 0,
+        "active_hubs": [],
+        "inactive_hubs": [],
+        "total_no_active_spokes": 0,
+        "total_no_inactive_spokes": 1,
+        "hub_info_only": [
+            {
+                "branch_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "uuid": "reachlinkserver.net",
+                "host_id": "10084",
+                "hub_dialer_ip_cidr": "10.8.0.1"
+            }
+        ],
+        "branch_info_only": [
+            {
+                "uuid": "testapr29_LastDimension_robustel.net",
+                "tunnel_ip": "None",
+                "public_ip": "None",
+                "branch_location": "testapr29",
+                "subnet": [],
+                "vrf": "",
+                "hub_ip": "185.69.209.251",
+                "host_id": "",
+                "status": "inactive",
+                "spokedevice_name": "robustelspoke1-LastDimension"
+            }
+        ]
+    },
+    {
+        "organization_id": "22b3dc9b09a9445a800418151145389b",
+        "organization_name": "cironex",
+        "hub_info": [
+            {
+                "hub_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "hub_uuid": "reachlinkserver.net",
+                "hub_host_id": "10084",
+                "no_active_spoke": 0,
+                "no_inactive_spoke": 0,
+                "active_spokes": [],
+                "bandwidth_info": [],
+                "bandwidth_info_hub": [
+                    {
+                        "branch_location": "Reachlink_server",
+                        "bits_recieved": "72296",
+                        "bits_sent": "63920"
+                    }
+                ],
+                "inactive_spokes": [],
+                "spokes_info": {
+                    "microtek_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "cisco_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "robustel_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    },
+                    "ubuntu_spokes": {
+                        "spokes_info": [],
+                        "no_active_spokes": 0,
+                        "no_inactive_spokes": 0
+                    }
+                }
+            }
+        ],
+        "no_of_hubs": 1,
+        "no_active_hubs": 1,
+        "no_inactive_hubs": 0,
+        "active_hubs": [],
+        "inactive_hubs": [],
+        "total_no_active_spokes": 0,
+        "total_no_inactive_spokes": 0,
+        "hub_info_only": [
+            {
+                "branch_location": "Reachlink_server",
+                "hub_ip": "185.69.209.251",
+                "hub_status": "active",
+                "uuid": "reachlinkserver.net",
+                "host_id": "10084",
+                "hub_dialer_ip_cidr": "10.8.0.1"
+            }
+        ],
+        "branch_info_only": []
+    }
+]

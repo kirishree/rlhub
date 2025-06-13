@@ -557,6 +557,49 @@ def add_cisco_device(request: HttpRequest):
                     response1['X-Message'] = json.dumps(json_response)
                     response1["Access-Control-Expose-Headers"] = "X-Message"
                     os.system("systemctl restart reachlink_test") 
+                    with open(device_info_path, "r") as f:
+                        registered_organization = json.load(f)
+                        f.close()
+                    for org in registered_organization:
+                        if org["organization_id"] == data["organization_id"]:
+                            org["total_no_inactive_spokes"] += 1
+                            org["branch_info_only"].append({
+                                                "uuid": data["uuid"],
+                                                "tunnel_ip": "None",
+                                                "public_ip": "None",
+                                                "branch_location": data["branch_location"].lower(),
+                                                "subnet": [],
+                                                "vrf": "",
+                                                "hub_ip": hub_ip,
+                                                "host_id": "",
+                                                "status": "inactive",
+                                                "spokedevice_name": response[0]["spokedevice_name"]
+                                            })
+                            for hub in org["hub_info"]:
+                                if hub["hub_ip"] == hub_ip:
+                                    hub["no_inactive_spoke"] += 1
+                                    hub["bandwidth_info"].append({
+                                                    "branch_location": data["branch_location"].lower(),
+                                                    "bits_recieved": 0,
+                                                    "bits_sent": 0
+                                                    })
+                                    hub["inactive_spokes"].append(data["branch_location"].lower())
+                                    hub["spokes_info"]["robustel_spokes"]["spokes_info"].append({
+                                                "uuid": data["uuid"],
+                                                "tunnel_ip": "None",
+                                                "public_ip": "None",
+                                                "branch_location": data["branch_location"].lower(),
+                                                "subnet": [],
+                                                "vrf": "",
+                                                "hub_ip": hub_ip,
+                                                "host_id": "",
+                                                "status": "inactive",
+                                                "spokedevice_name": response[0]["spokedevice_name"]
+                                            })
+                                    hub["spokes_info"]["robustel_spokes"]["no_inactive_spokes"] += 1
+                    with open(device_info_path, "w") as f:
+                        json.dump(registered_organization, f)
+                        f.close()                                   
                     return response1   
                 else:                
                     logger.error(
@@ -634,6 +677,49 @@ def add_cisco_device(request: HttpRequest):
                     response1["Access-Control-Expose-Headers"] = "X-Message"
                     os.system(f"python3 {reachlink_zabbix_path}")
                     os.system("systemctl restart reachlink_test")  
+                    with open(device_info_path, "r") as f:
+                        registered_organization = json.load(f)
+                        f.close()
+                    for org in registered_organization:
+                        if org["organization_id"] == data["organization_id"]:
+                            org["total_no_inactive_spokes"] += 1
+                            org["branch_info_only"].append({
+                                                "uuid": data["uuid"],
+                                                "tunnel_ip": "None",
+                                                "public_ip": "None",
+                                                "branch_location": data["branch_location"].lower(),
+                                                "subnet": [],
+                                                "vrf": "",
+                                                "hub_ip": hub_ip,
+                                                "host_id": "",
+                                                "status": "inactive",
+                                                "spokedevice_name": response[0]["spokedevice_name"]
+                                            })
+                            for hub in org["hub_info"]:
+                                if hub["hub_ip"] == hub_ip:
+                                    hub["no_inactive_spoke"] += 1
+                                    hub["bandwidth_info"].append({
+                                                    "branch_location": data["branch_location"].lower(),
+                                                    "bits_recieved": 0,
+                                                    "bits_sent": 0
+                                                    })
+                                    hub["inactive_spokes"].append(data["branch_location"].lower())
+                                    hub["spokes_info"]["microtek_spokes"]["spokes_info"].append({
+                                                "uuid": data["uuid"],
+                                                "tunnel_ip": "None",
+                                                "public_ip": "None",
+                                                "branch_location": data["branch_location"].lower(),
+                                                "subnet": [],
+                                                "vrf": "",
+                                                "hub_ip": hub_ip,
+                                                "host_id": "",
+                                                "status": "inactive",
+                                                "spokedevice_name": response[0]["spokedevice_name"]
+                                            })
+                                    hub["spokes_info"]["microtek_spokes"]["no_inactive_spokes"] += 1
+                    with open(device_info_path, "w") as f:
+                        json.dump(registered_organization, f)
+                        f.close()                    
                     return response1 
                 else:                
                     logger.error(
@@ -830,7 +916,51 @@ def add_cisco_device(request: HttpRequest):
                     response['X-Message'] = json.dumps(json_response)
                     response["Access-Control-Expose-Headers"] = "X-Message"                        
                     os.system(f"python3 {reachlink_zabbix_path}")
-                    os.system("systemctl restart reachlink_test")            
+                    os.system("systemctl restart reachlink_test") 
+                    for org in registered_organization:
+                        if org["organization_id"] == data["organization_id"]:
+                            org["total_no_inactive_spokes"] += 1
+                            org["branch_info_only"].append({
+                                                "uuid": data["uuid"],
+                                                "tunnel_ip": "None",
+                                                "public_ip": "None",
+                                                "branch_location": data["branch_location"].lower(),
+                                                "subnet": [],
+                                                "vrf": "",
+                                                "hub_ip": data.get("dialer_ip", ""),
+                                                "host_id": "",
+                                                "status": "inactive",
+                                                "spokedevice_name": response[0]["spokedevice_name"]
+                                            })
+                            for hub in org["hub_info"]:
+                                if hub["hub_ip"] == data.get("dialer_ip", ""):
+                                    hub["no_inactive_spoke"] += 1
+                                    hub["bandwidth_info"].append({
+                                                    "branch_location": data["branch_location"].lower(),
+                                                    "bits_recieved": 0,
+                                                    "bits_sent": 0
+                                                    })
+                                    hub["inactive_spokes"].append(data["branch_location"].lower())
+                                    newbranchinfo = {
+                                                "uuid": data["uuid"],
+                                                "tunnel_ip": "None",
+                                                "public_ip": "None",
+                                                "branch_location": data["branch_location"].lower(),
+                                                "subnet": [],
+                                                "vrf": "",
+                                                "hub_ip": data.get("dialer_ip", ""),
+                                                "host_id": "",
+                                                "status": "inactive",
+                                                "spokedevice_name": response[0]["spokedevice_name"]
+                                            }
+                                    if data.get("dialer_ip", "") == hub_ip:
+                                        hub["spokes_info"]["cisco_spokes"]["spokes_info"].append(newbranchinfo)
+                                        hub["spokes_info"]["cisco_spokes"]["no_inactive_spokes"] += 1
+                                    else:                                        
+                                        hub["spokes_info"].append(newbranchinfo)                                        
+                    with open(device_info_path, "w") as f:
+                        json.dump(registered_organization, f)
+                        f.close()                               
                     return response
                 else:
                     json_response = [{"message": f"Error:{response[0]['message']}"}]
