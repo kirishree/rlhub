@@ -532,7 +532,7 @@ def test_del_staticroute_spoke(client, capfd, extra):
             "router_wan_ip":"192.168.88.101/24",
             "router_wan_gateway":"192.168.88.1",
             "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytest"}, 400),
+    (   {   "branch_location":"pytestsss"}, 400),
     ({}, 400),
 ])
 def test_add_cisco_device_test(client, capfd, auth_token, payload, expected):   
@@ -586,25 +586,7 @@ def test_add_cisco_device_test(client, capfd, auth_token, payload, expected):
         logger.info(f"Add device response: {response.json()}")  
      
 
-@pytest.mark.parametrize("payload,expected", [
-    (   {   "branch_location":"pytestr",   
-            "device":"robustel",
-            "router_wan_ip":"192.168.88.101/24",
-            "router_wan_gateway":"192.168.88.1",
-            "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytestm",   
-            "device":"microtik",
-            "router_wan_ip":"192.168.88.101/24",
-            "router_wan_gateway":"192.168.88.1",
-            "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytestc",   
-            "device":"cisco",
-            "router_wan_ip":"192.168.88.101/24",
-            "router_wan_gateway":"192.168.88.1",
-            "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytest"}, 400),
-    ({}, 400),
-])
+
 def test_add_cisco_device_checkready():
     print("Waiting 5 minutes for devices to sync...")
     logger.info("Waiting 5 minutes for devices to sync...")
