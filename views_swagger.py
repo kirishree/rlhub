@@ -903,7 +903,7 @@ def add_cisco_device(request: HttpRequest):
                         buffer.seek(0)
                     json_response = [{"message": response[0]["message"]}]
                     logger.info(
-                            f"response[0]['message']",
+                            f"{response[0]['message']}",
                             extra={
                                 "device_type": "ReachlinkServer",
                                 "device_ip": hub_ip,
@@ -917,6 +917,9 @@ def add_cisco_device(request: HttpRequest):
                     response["Access-Control-Expose-Headers"] = "X-Message"                        
                     os.system(f"python3 {reachlink_zabbix_path}")
                     os.system("systemctl restart reachlink_test") 
+                    with open(device_info_path, "r") as f:
+                        registered_organization = json.load(f)
+                        f.close()
                     for org in registered_organization:
                         if org["organization_id"] == data["organization_id"]:
                             org["total_no_inactive_spokes"] += 1

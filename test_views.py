@@ -517,17 +517,17 @@ def test_del_staticroute_spoke(client, capfd, extra):
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload,expected", [
-    (   {   "branch_location":"pytest67",   
+    (   {   "branch_location":"pytest77",   
             "device":"robustel",
             "router_wan_ip":"192.168.88.101/24",
             "router_wan_gateway":"192.168.88.1",
             "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytest68",   
+    (   {   "branch_location":"pytest78",   
             "device":"microtik",
             "router_wan_ip":"192.168.88.101/24",
             "router_wan_gateway":"192.168.88.1",
             "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytest69",   
+    (   {   "branch_location":"pytest79",   
             "device":"cisco",
             "router_wan_ip":"192.168.88.101/24",
             "router_wan_gateway":"192.168.88.1",
