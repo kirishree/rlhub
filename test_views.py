@@ -522,7 +522,7 @@ def test_del_staticroute_spoke(client, capfd, extra):
             "router_wan_gateway":"192.168.88.1",
             "dialer_ip":"185.69.209.251"}, 200),
     (   {   "branch_location":"pytest2",   
-            "device":"microtek",
+            "device":"microtik",
             "router_wan_ip":"192.168.88.101/24",
             "router_wan_gateway":"192.168.88.1",
             "dialer_ip":"185.69.209.251"}, 200),
@@ -544,11 +544,25 @@ def test_add_cisco_device(client, capfd, auth_token, payload, expected):
     add_cisco_device_url = reverse("add_cisco_device")
     response = client.post(add_cisco_device_url, payload, content_type="application/json", **headers)
     assert response.status_code == expected
-    json_data = response.json()
-    print("Add device response JSON:", response.json())
-    # Capture output after print
-    out1, err = capfd.readouterr() 
-    logger.info(f"Add device response: {response.json()}")
+    if response.status_code == 200:
+        assert response['Content-Type'] == 'application/zip'
+        # Get the header value
+        x_message = response.get("X-Message")
+        assert x_message is not None
+
+        # Parse it from JSON string to Python object (e.g., list or dict)
+        parsed_message = json.loads(x_message)
+        logger.info(f"Add device response: {parsed_message}")
+
+    # Optionally check headers like `X-Message` or response.content if needed
+    else:
+        assert response['Content-Type'] == 'application/json'
+        json_data = response.json()
+        assert "message" in json_data    
+        print("Add device response JSON:", response.json())
+        # Capture output after print
+        out1, err = capfd.readouterr() 
+        logger.info(f"Add device response: {response.json()}")
     if response.status_code == 200:        
         logger.info(f"Started to validate the added device in branch info")
         branch_info_url = reverse("branch_info")

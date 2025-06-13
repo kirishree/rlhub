@@ -109,6 +109,8 @@ device_info_path = config('DEVICE_INFO_PATH')
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
 robustel_exe_path = config('ROBUSTEL_EXE_PATH')
 microtik_exe_path = config('MICROTIK_EXE_PATH')
+reachlink_cisco_exe_path = config('REACHLINK_CISCO_EXE_PATH')
+cisco_spoke_exe_path = config('CISCO_SPOKE_EXE_PATH')
 # Zabbix API URL
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 # Api key
@@ -801,7 +803,7 @@ def add_cisco_device(request: HttpRequest):
                         # Create a ZIP archive
                         with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                             # Read the EXE file and add it to the ZIP
-                            with open("reachlink_config.exe", "rb") as f:
+                            with open(cisco_spoke_exe_path, "rb") as f:
                                 zip_file.writestr("reachlink_config.exe", f.read())
                         # Prepare the response
                         buffer.seek(0)
@@ -809,7 +811,7 @@ def add_cisco_device(request: HttpRequest):
                         # Create a ZIP archive
                         with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                             # Read the EXE file and add it to the ZIP
-                            with open("reachlink_cisco_config.exe", "rb") as f:
+                            with open(reachlink_cisco_exe_path, "rb") as f:
                                 zip_file.writestr("reachlink_config.exe", f.read())
                         # Prepare the response
                         buffer.seek(0)
@@ -847,6 +849,11 @@ def add_cisco_device(request: HttpRequest):
             response['X-Message'] = json.dumps(json_response)
             response["Access-Control-Expose-Headers"] = "X-Message"
             return response
+        else:
+            return JsonResponse(
+                {"message": "client-side input error"},
+                status=400
+            )
     except Exception as e:
         logger.error(
                             "Error: Configure cisco spoke",
@@ -859,7 +866,7 @@ def add_cisco_device(request: HttpRequest):
                         ) 
         if isinstance(e, (KeyError, ValueError)):
             return JsonResponse(
-                {"message": "Missing required field: 'device'"},
+                {"message": "client-side input error"},
                 status=400
             )
         json_response = {
