@@ -562,24 +562,50 @@ def test_add_cisco_device(client, capfd, auth_token, payload, expected):
         print("Add device response JSON:", response.json())
         # Capture output after print
         out1, err = capfd.readouterr() 
-        logger.info(f"Add device response: {response.json()}")
-    if response.status_code == 200:        
-        logger.info(f"Started to validate the added device in branch info")
-        branch_info_url = reverse("branch_info")
-        response = client.get(branch_info_url, **headers)
+        logger.info(f"Add device response: {response.json()}")   
 
-        assert response.status_code == 200
-        json_data = response.json()
-        print("Branch info:", json_data)
-        # Capture again
-        out2, err2 = capfd.readouterr()
-        logger.info(f"Branch info after added the device {response.json()} added  ")
-        # Optional: Assert fields in response
-        assert "total_branches" in json_data
-        assert "active_branches" in json_data
-        branch_added = False
-        for branch in json_data["data"]:
-            if branch["branch_location"] == payload["branch_location"]:
-                branch_added = True
-                logger.info(f"New Branch {payload['branch_location']} added  ")
-        assert branch_added 
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload,expected", [
+    (   {   "branch_location":"pytest1",   
+            "device":"robustel",
+            "router_wan_ip":"192.168.88.101/24",
+            "router_wan_gateway":"192.168.88.1",
+            "dialer_ip":"185.69.209.251"}, 200),
+    (   {   "branch_location":"pytest2",   
+            "device":"microtik",
+            "router_wan_ip":"192.168.88.101/24",
+            "router_wan_gateway":"192.168.88.1",
+            "dialer_ip":"185.69.209.251"}, 200),
+    (   {   "branch_location":"pytest3",   
+            "device":"cisco",
+            "router_wan_ip":"192.168.88.101/24",
+            "router_wan_gateway":"192.168.88.1",
+            "dialer_ip":"185.69.209.251"}, 200)   
+])
+def test_add_cisco_device_validation(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    
+    logger.info(f"Started to validate the added device in branch info")
+    branch_info_url = reverse("branch_info")
+    response = client.get(branch_info_url, **headers)
+
+    assert response.status_code == 200
+    json_data = response.json()
+    print("Branch info:", json_data)
+    # Capture again
+    out2, err2 = capfd.readouterr()
+    logger.info(f"Branch info after added the device {response.json()}  ")
+    # Optional: Assert fields in response
+    assert "total_branches" in json_data
+    assert "active_branches" in json_data
+    branch_added = False
+    for branch in json_data["data"]:
+        if branch["branch_location"] == payload["branch_location"]:
+            branch_added = True
+            logger.info(f"New Branch {payload['branch_location']} added  ")
+    assert branch_added 
