@@ -1,3 +1,4 @@
+# pytest -vs -k test_addstaticroute_hub --capture=tee-sys --html=add_route_hub.html --self-contained-html
 import pytest
 import random
 import ipaddress
@@ -16,6 +17,8 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 @pytest.fixture
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
 def auth_token(client):
     login_url = reverse("login_or_register")  # or hardcode as '/api/auth/'
     login_data = {
