@@ -916,7 +916,16 @@ def add_cisco_device(request: HttpRequest):
                     response['X-Message'] = json.dumps(json_response)
                     response["Access-Control-Expose-Headers"] = "X-Message"                        
                     os.system(f"python3 {reachlink_zabbix_path}")
-                    os.system("systemctl restart reachlink_test") 
+                    os.system("systemctl restart reachlink_test")  
+                    logger.info(
+                            f"test log",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )               
                     with open(device_info_path, "r") as f:
                         registered_organization = json.load(f)
                         f.close()
