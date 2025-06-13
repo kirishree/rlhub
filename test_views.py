@@ -15,6 +15,17 @@ from PIL import Image, ImageDraw, ImageFont
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+@pytest.fixture
+def auth_token(client):
+    login_url = reverse("login_or_register")  # or hardcode as '/api/auth/'
+    login_data = {
+        "username": "xogaw4457@edectus.com",
+        "password": "xogaw4457@edectus.com"
+    }
+    response = client.post(login_url, login_data, content_type="application/json")
+    assert response.status_code == 200
+    return response.json().get("access")
+
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 def test_login_response(client, capfd, extra):
@@ -499,3 +510,59 @@ def test_del_staticroute_spoke(client, capfd, extra):
         logger.info(f"Routes not deleted: {routenotdeleted}") 
     assert len(routenotdeleted) == 0
    
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload,expected", [
+    (   {   "branch_location":"pytest1",   
+            "device":"robustel",
+            "router_wan_ip":"192.168.88.101/24",
+            "router_wan_gateway":"192.168.88.1",
+            "dialer_ip":"185.69.209.251"}, 200),
+    (   {   "branch_location":"pytest2",   
+            "device":"microtek",
+            "router_wan_ip":"192.168.88.101/24",
+            "router_wan_gateway":"192.168.88.1",
+            "dialer_ip":"185.69.209.251"}, 200),
+    (   {   "branch_location":"pytest3",   
+            "device":"cisco",
+            "router_wan_ip":"192.168.88.101/24",
+            "router_wan_gateway":"192.168.88.1",
+            "dialer_ip":"185.69.209.251"}, 200),
+    (   {   "branch_location":"pytest2"}, 400),
+    ({}, 400),
+])
+def test_add_cisco_device(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }    
+    logger.info(f"Testing add device info: {payload}")
+    add_cisco_device_url = reverse("add_cisco_device")
+    response = client.post(add_cisco_device_url, payload, content_type="application/json", **headers)
+    assert response.status_code == expected
+    json_data = response.json()
+    print("Add device response JSON:", response.json())
+    # Capture output after print
+    out1, err = capfd.readouterr() 
+    logger.info(f"Add device response: {response.json()}")
+    if response.status_code == 200:        
+        logger.info(f"Started to validate the added device in branch info")
+        branch_info_url = reverse("branch_info")
+        response = client.get(branch_info_url, **headers)
+
+        assert response.status_code == 200
+        json_data = response.json()
+        print("Branch info:", json_data)
+        # Capture again
+        out2, err2 = capfd.readouterr()
+        logger.info(f"Branch info after added the device {response.json()} added  ")
+        # Optional: Assert fields in response
+        assert "total_branches" in json_data
+        assert "active_branches" in json_data
+        branch_added = False
+        for branch in json_data["data"]:
+            if branch["branch_location"] == payload["branch_location"]:
+                branch_added = True
+                logger.info(f"New Branch {payload['branch_location']} added  ")
+        assert branch_added 

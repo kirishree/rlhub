@@ -446,8 +446,23 @@ def add_cisco_device(request: HttpRequest):
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "configure_spoke" }
-                    )    
-        if "organization_id" in data:
+                    ) 
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+        token = auth_header.split(' ')[1]
+        try:
+            # Verify and decode the token
+            decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+        except jwt.InvalidTokenError:
+            return JsonResponse({'message': 'Invalid token'}, safe=False)        
+        organization_id = decodedtoken.get("onboarding_org_id", "admin")                
+        if organization_id == "admin":
             org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
             if org_info:
                 orgname = org_info["organization_name"]
@@ -467,6 +482,10 @@ def add_cisco_device(request: HttpRequest):
                 response['X-Message'] = json.dumps(json_response)
                 response["Access-Control-Expose-Headers"] = "X-Message"
                 return response
+        else:
+            data["organization_id"] = organization_id
+            orgname = decodedtoken.get("onboarding_org_name", "NA")
+            data["username"] = decodedtoken.get("onboarding_first_name", "NA")
         if data["device"].lower() == "robustel":        
             data["uuid"] = data['branch_location'] + f"_{orgname}_robustel.net"      
             try:
@@ -838,11 +857,15 @@ def add_cisco_device(request: HttpRequest):
                                 "exception": str(e)
                             }
                         ) 
-        json_response = [{"message": f"Error while configuring spoke, pl try again!"}]
-        response = HttpResponse(content_type='application/zip')
-        response['X-Message'] = json.dumps(json_response)
-        response["Access-Control-Expose-Headers"] = "X-Message"
-        return response
+        if isinstance(e, (KeyError, ValueError)):
+            return JsonResponse(
+                {"message": "Missing required field: 'device'"},
+                status=400
+            )
+        json_response = {
+            "message": "Error while configuring spoke, please try again!"
+            }
+        return JsonResponse(json_response, status=500)  # Internal Server Error
 
 @swagger_auto_schema(
     method='post',
