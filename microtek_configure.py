@@ -518,7 +518,7 @@ def interfacedetails(data):
                 if " name=" in intinfostrip:
                     interfacename = intinfostrip.split(" name=")[1].split('"')[1] 
                     if "." in interfacename:
-                        vlanid = interface.split(".")[1]   
+                        vlanid = interfacename.split(".")[1]   
                     else:
                         vlanid = "NA"               
                     status_info = intinfostrip.split(" ")[1]
