@@ -1813,6 +1813,10 @@ def create_sub_interface_spoke(request):
             else:
                 response = [{"message": f"Error: {data['link']} doesn't support sub-interface"}]        
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         response = [{"message": f"Error: while creating Sub interface"}]
         logger.error(f"Error: Create Sub Interface spoke:{e}")
     return JsonResponse(response, safe=False)
@@ -1835,13 +1839,22 @@ def create_loopback_interface_spoke(request):
                     )
         if "robustel" in data["uuid"] or "microtek" in data["uuid"]:
             response = [{"message": "Error: This device doesn't support Loopback Interface"}]
-            return JsonResponse(response, safe=False)
+            return JsonResponse(response, safe=False, status=501)
         for int_addr in data["addresses"]:
-            if (validate_ip(int_addr)):
-                continue
-            else:
+            if int(int_addr.split("/")[1]) > 32:
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
-                return JsonResponse(response, safe=False)
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_loopback_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
+            
+            ip = ipaddress.IPv4Address(int_addr.split("/")[0])
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_loopback_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1875,9 +1888,13 @@ def create_loopback_interface_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = router_configure.createloopbackinterface(data)                       
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(f"Error: Create Loopback Interface Spoke:{e}")
         response = [{"message": f"Error: while creating Loopback Interface"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',

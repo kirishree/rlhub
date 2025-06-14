@@ -674,3 +674,37 @@ def test_create_vlan_interface_spoke(client, capfd, auth_token, payload, expecte
         assert new_intfc_added
     else:
         assert "Error" in json_data[0]["message"]
+
+def create_loopback_microtek_payload():
+    cases = []    
+    payload = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net"                    
+                    }
+    cases.append(pytest.param(payload, 501, id=f"Microtek_Valid_case"))
+    payload_ne = { "tunnel_ip": "10.8.0.19"}
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
+    payload_neg = {                
+                    }
+    cases.append(pytest.param(payload_neg, 400, id=f"Microtek_Invalid_case"))
+    return cases
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", create_loopback_microtek_payload())
+def test_create_loopback_interface_spoke_microtek(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    logger.info(f"Payload info: {payload}")
+    create_loopback_url = reverse("create_loopback_interface_spoke")
+    response = client.post(create_loopback_url,  payload, content_type="application/json", **headers)
+    json_data = response.json()
+    print("Create loopback response:", json_data)
+    # Capture again
+    out2, err2 = capfd.readouterr()
+    logger.info(f"Create Loopback response from Microtek: {json_data}")
+    assert response.status_code == expected
+    
+    
