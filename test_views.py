@@ -706,5 +706,130 @@ def test_create_loopback_interface_spoke_microtek(client, capfd, auth_token, pay
     out2, err2 = capfd.readouterr()
     logger.info(f"Create Loopback response from Microtek: {json_data}")
     assert response.status_code == expected
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", create_loopback_microtek_payload())
+def test_create_sub_interface_spoke_microtek(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    logger.info(f"Payload info: {payload}")
+    create_loopback_url = reverse("create_sub_interface_spoke")
+    response = client.post(create_loopback_url,  payload, content_type="application/json", **headers)
+    json_data = response.json()
+    print("Create sub-interface response:", json_data)
+    # Capture again
+    out2, err2 = capfd.readouterr()
+    logger.info(f"Create sub-interface response from Microtek: {json_data}")
+    assert response.status_code == expected
+
+def create_tunnel_microtek_payload(n=20):
+    cases = []
+    for i in range(n):
+        payload = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net",
+                    "links": ["ether1", "ether2", "ether3", "ether4", "ether5"] 
+                    }
+        cases.append(pytest.param(payload, 200, id=f"Microtek_valid_case_{i+1}"))
+    payload_ne = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net",
+                    "link":"ether1",
+                    "tunnel_intfc_name":"1234",
+                    "destination_ip":"192."                 
+                    }
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
+    payload_ne = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net"                    
+                    }
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
+    payload_neg = {                    
+                    }
+    cases.append(pytest.param(payload_neg, 400, id=f"Microtek_Invalid_case"))
+    return cases  
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", create_tunnel_microtek_payload(20))
+def test_create_tunnel_interface_spoke_microtek(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    if "links" in payload:
+        # Choose one of the private ranges
+        private_blocks = [
+            ("10.0.0.0", 8),
+            ("172.16.0.0", 12),
+            ("192.168.0.0", 16)
+        ]
     
+        base_ip_str, block_prefix = random.choice(private_blocks)
+        base_net = ipaddress.IPv4Network(f"{base_ip_str}/{block_prefix}")
+    
+        # Exclude subnet address and broadcast
+        valid_hosts = list(base_net.hosts())
+    
+        # Pick a random IP address within the block
+        ip = str(random.choice(valid_hosts))
+    
+        # Pick a prefix between block size and /32
+        prefix = random.randint(block_prefix + 1, 32)   
+    
+        payload["addresses"] = [f"{ip}/{prefix}"]
+        payload["link"] = random.choice(payload["links"]) 
+        payload["tunnel_intfc_name"] = str(random.randint(1, 1000))
+        
+    while "links" in payload:
+        # Random prefix length
+        prefix = random.randint(8, 30)
+        # Random IP address
+        ip_int = random.randint(1, 0xFFFFFFFF - 1)
+        ip = ipaddress.IPv4Address(ip_int)
+
+        # Exclude unwanted categories
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+            continue
+
+        # Get the network for the IP/prefix
+        try:
+            net = ipaddress.IPv4Network(f"{ip}/{prefix}", strict=False)
+        except ValueError:
+            continue
+
+        # Skip if IP is network address or broadcast
+        if ip == net.network_address or ip == net.broadcast_address:
+            continue
+        payload["destination_ip"] = f"{ip}"        
+        break  
+    logger.info(f"Randomly generated Tunnel Info: {payload}")
+    create_tunnel_url = reverse("create_tunnel_interface_spoke")
+    response = client.post(create_tunnel_url,  payload, content_type="application/json", **headers)
+    assert response.status_code == expected
+    json_data = response.json()
+    print("Create vlan response:", json_data)
+    # Capture again
+    out2, err2 = capfd.readouterr()
+    logger.info(f"Create tunnel interface response: {response.json()} ")
+    # Optional: Assert fields in response
+    if response.status_code == 200:        
+        assert "Error" not in json_data[0]["message"]
+        get_interface_url = reverse("get_interface_details_spoke")
+        response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
+        assert response.status_code == 200
+        new_added_intfcname = "gretunnel" + payload["tunnel_intfc_name"] 
+        json_data = response.json()  
+        new_intfc_added = False
+        for intfcinfo in json_data:
+            if intfcinfo["interface_name"] == new_added_intfcname:
+                new_intfc_added = True
+                logger.info(f"Validated Successfully: Interface {new_added_intfcname} added")
+        if not new_intfc_added:
+            logger.info(f"Validated Failed: Interface {new_added_intfcname} not added ")
+        assert new_intfc_added
+    else:
+        assert "Error" in json_data[0]["message"]
     

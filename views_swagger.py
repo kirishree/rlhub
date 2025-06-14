@@ -1771,13 +1771,22 @@ def create_sub_interface_spoke(request):
                     )
         if "robustel" in data["uuid"] or "microtek" in data["uuid"]:
             response = [{"message": f"Error: This device doesn't support Sub Interface"}]            
-            return JsonResponse(response, safe=False)
+            return JsonResponse(response, safe=False, status=501)
         for int_addr in data["addresses"]:
-            if (validate_ip(int_addr)):
-                continue
-            else:
+            if int(int_addr.split("/")[1]) > 32:
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
-                return JsonResponse(response, safe=False)
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_sub_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
+            
+            ip = ipaddress.IPv4Address(int_addr.split("/")[0])
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_sub_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1819,7 +1828,7 @@ def create_sub_interface_spoke(request):
             respstatus = 500    
         response = [{"message": f"Error: while creating Sub interface"}]
         logger.error(f"Error: Create Sub Interface spoke:{e}")
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -1914,13 +1923,37 @@ def create_tunnel_interface_spoke(request):
                     )
         if "robustel" in data["uuid"]:
             response = [{"message": "Error: This device doesn't support Tunnel Interface"}]
-            return JsonResponse(response, safe=False)
+            return JsonResponse(response, safe=False, status=501)
+        #validation for tunnel address
         for int_addr in data["addresses"]:
-            if (validate_ip(int_addr)):
-                continue
-            else:
+            if int(int_addr.split("/")[1]) > 32:
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
-                return JsonResponse(response, safe=False)
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_tunnel_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
+            
+            ip = ipaddress.IPv4Address(int_addr.split("/")[0])
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:     
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_tunnel_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
+            if not ip.is_private:
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                logger.error(f"Error: {int_addr} is not private IP",
+                    extra={ "be_api_endpoint": "create_tunnel_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
+        #validation for destination ip address:
+        ip = ipaddress.IPv4Address(data["destination_ip"].split("/")[0])
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:     
+            response = [{"message": f"Error: {data['destination_ip']} is invalid IP"}]
+            logger.error(f"Error: {data['destination_ip']} is invalid IP",
+                    extra={ "be_api_endpoint": "create_tunnel_interface_spoke" }
+                    )
+            return JsonResponse(response, safe=False, status=400)
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
@@ -1939,6 +1972,7 @@ def create_tunnel_interface_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "create_tunnel_interface", data=json_data, headers=headers)                                
+                respstatus = response.status_code
                 if response.status_code == 200:           
                     print(response.text)
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
@@ -1947,14 +1981,14 @@ def create_tunnel_interface_spoke(request):
                     response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.createtunnelinterface(data)   
-            #interface_details = [{"message":"Tunnel interface created successfully"}]              
-            return JsonResponse(interface_details,safe=False) 
+            interface_details,respstatus = microtek_configure.createtunnelinterface(data)       
+            return JsonResponse(interface_details,safe=False, status=respstatus) 
         elif "cisco" in data["uuid"]:            
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]

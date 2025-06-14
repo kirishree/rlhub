@@ -863,7 +863,7 @@ def createtunnelinterface(data):
                 "exception": str(e)
             }
             )
-            return [{"message": "Error: SSH connection timeout"}]
+            return [{"message": "Error: SSH connection timeout"}], 504
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -895,10 +895,11 @@ def createtunnelinterface(data):
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while creating Tunnel interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
-                    return response             
+                    return response, 422             
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
         response = [{"message": f"Tunnel interface {greintfcname} created "}]
+        respstatus = 200
         logger.info(
             f"{response}",
             extra={
@@ -908,8 +909,11 @@ def createtunnelinterface(data):
                 "exception": " "
             }
             )
-
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
             f"Error in tunnel interface create",
             extra={
@@ -923,7 +927,7 @@ def createtunnelinterface(data):
     finally:
         # Close the SSH connection
         ssh_client.close()       
-        return response
+        return response, respstatus
 
 def deletevlaninterface(data):   
    # Define the router details

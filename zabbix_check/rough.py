@@ -8,9 +8,15 @@ url = "https://dev-api.cloudetel.com/api/v1/"
 addr = "192.168.23.149/30"
 corrected_subnet = ipaddress.ip_network(addr, strict=False)
 import random
-ip = ipaddress.IPv4Address("192.168.23.4/33")
+ip = ipaddress.IPv4Address("192.168.23.4")
 if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
-                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+    response = [{"message": f"Error:  is invalid IP"}]
+else:
+    print("hiiiii") 
+if not ip.is_private:
+    print("not private") 
+else:
+    print("private")
 network = ipaddress.ip_network('169.38.172.64/26', strict=False)
 print("is local",network.is_link_local)
 links = ["ether2", "ether3", "ether4", "ether5"]
@@ -34,7 +40,7 @@ for i in range(0,20):
         subnet_index = random.randint(0, len(subnets)-1)
         addroute.append({"destination": str(subnets[subnet_index]),
                          "gateway": "10.8.0.19"})
-print("addrouet.................",addroute)
+#print("addrouet.................",addroute)
 #print(corrected_subnet)
 #print(round(3600/60))
 ss = ipaddress.ip_network("192.168.7.23/24", strict=False)
