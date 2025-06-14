@@ -593,25 +593,35 @@ def test_add_cisco_device_checkready():
     logger.info("✅ Devices assumed ready.")
     assert True  # Dummy assert to make the test pass
 
+def create_vlan_microtek_payload(n=20):
+    cases = []
+    for i in range(n):
+        payload = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net",
+                    "links": ["ether2", "ether3", "ether4", "ether5"] 
+                    }
+        cases.append(pytest.param(payload, 200, id=f"Microtek_valid_case_{i+1}"))
+    payload_ne = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net",
+                    "links": ["ether1"] 
+                    }
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
+    payload_neg = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net"                    
+                    }
+    cases.append(pytest.param(payload_neg, 400, id=f"Microtek_Invalid_case"))
+    return cases
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-@pytest.mark.parametrize("payload,expected", [
-    (  { "tunnel_ip": "10.8.0.19", 
-        "uuid": "microtek21_microtek.net",
-        "links": ["ether2", "ether3", "ether4", "ether5"] }, 200),
-    (  { "tunnel_ip": "10.8.0.19", 
-        "uuid": "microtek21_microtek.net",
-        "links": ["ether1"] }, 400)
-    
-])
+@pytest.mark.parametrize("payload, expected", create_vlan_microtek_payload(20))
 def test_create_vlan_interface_spoke(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
     headers = {
         "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
     }   
-    while True:
+    while "links" in payload:
         # Random prefix length
         prefix = random.randint(8, 30)
 
@@ -633,9 +643,10 @@ def test_create_vlan_interface_spoke(client, capfd, auth_token, payload, expecte
         if ip == net.network_address or ip == net.broadcast_address:
             continue
         payload["addresses"] = [f"{ip}/{prefix}"]
-        break    
-    payload["link"] = random.choice(payload["links"]) 
-    payload["vlan_id"] = str(random.randint(1, 1000))
+        payload["link"] = random.choice(payload["links"]) 
+        payload["vlan_id"] = str(random.randint(1, 1000))
+        break  
+    
     logger.info(f"Randomly generated VLAN Info: {payload}")
     create_vlan_url = reverse("create_vlan_interface_spoke")
     response = client.post(create_vlan_url,  payload, content_type="application/json", **headers)

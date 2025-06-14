@@ -1739,7 +1739,7 @@ def create_vlan_interface_spoke(request):
             respstatus=400
         else:
             respstatus = 500        
-        logger.error(f"Error: Create VLAN interface in HUB:{e}")
+        logger.error(f"Error: Create VLAN interface in Spoke:{e}")
         response = [{"message": f"Error: While creating VLAN interface"}]
     return JsonResponse(response, safe=False, status = respstatus)
 
