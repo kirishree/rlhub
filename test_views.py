@@ -513,7 +513,7 @@ def test_del_staticroute_spoke(client, capfd, extra):
         logger.info(f"Routes not deleted: {routenotdeleted}") 
     assert len(routenotdeleted) == 0
 
-@pytest.mark.order(1)
+#@pytest.mark.order(1)
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload,expected", [
@@ -585,8 +585,6 @@ def test_add_cisco_device_test(client, capfd, auth_token, payload, expected):
         out1, err = capfd.readouterr() 
         logger.info(f"Add device response: {response.json()}")  
      
-
-
 def test_add_cisco_device_checkready():
     print("Waiting 5 minutes for devices to sync...")
     logger.info("Waiting 5 minutes for devices to sync...")
@@ -599,45 +597,69 @@ def test_add_cisco_device_checkready():
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload,expected", [
-    (   {   "branch_location":"pytest6",   
-            "device":"robustel",
-            "router_wan_ip":"192.168.88.101/24",
-            "router_wan_gateway":"192.168.88.1",
-            "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytest7",   
-            "device":"microtik",
-            "router_wan_ip":"192.168.88.101/24",
-            "router_wan_gateway":"192.168.88.1",
-            "dialer_ip":"185.69.209.251"}, 200),
-    (   {   "branch_location":"pytest8",   
-            "device":"cisco",
-            "router_wan_ip":"192.168.88.101/24",
-            "router_wan_gateway":"192.168.88.1",
-            "dialer_ip":"185.69.209.251"}, 200)   
+    (  { "tunnel_ip": "10.8.0.19", 
+        "uuid": "microtek21_microtek.net",
+        "links": ["ether2", "ether3", "ether4", "ether5"] }, 200),
+    (  { "tunnel_ip": "10.8.0.19", 
+        "uuid": "microtek21_microtek.net",
+        "links": ["ether1"] }, 400)
+    
 ])
-def test_add_cisco_device_validation(client, capfd, auth_token, payload, expected):   
+def create_vlan_interface_spoke(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
     headers = {
         "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
     }   
-    
-    logger.info(f"Started to validate the added device in branch info")
-    branch_info_url = reverse("branch_info")
-    response = client.get(branch_info_url, **headers)
+    while True:
+        # Random prefix length
+        prefix = random.randint(8, 30)
 
-    assert response.status_code == 200
+        # Random IP address
+        ip_int = random.randint(1, 0xFFFFFFFF - 1)
+        ip = ipaddress.IPv4Address(ip_int)
+
+        # Exclude unwanted categories
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:
+            continue
+
+        # Get the network for the IP/prefix
+        try:
+            net = ipaddress.IPv4Network(f"{ip}/{prefix}", strict=False)
+        except ValueError:
+            continue
+
+        # Skip if IP is network address or broadcast
+        if ip == net.network_address or ip == net.broadcast_address:
+            continue
+        payload["addresses"] = [f"{ip}/{prefix}"]
+        break    
+    payload["link"] = random.choices(payload["links"]) 
+    payload["vlan_id"] = str(random.randint(1, 1000))
+    logger.info(f"Randomly generated VLAN Info: {payload}")
+    create_vlan_url = reverse("create_vlan_interface_spoke")
+    response = client.post(create_vlan_url,  payload, content_type="application/json", **headers)
+    assert response.status_code == expected
     json_data = response.json()
-    print("Branch info:", json_data)
+    print("Create vlan response:", json_data)
     # Capture again
     out2, err2 = capfd.readouterr()
-    logger.info(f"Branch info after added the device {response.json()}  ")
+    logger.info(f"Create Vlan interface response: {response.json()} ")
     # Optional: Assert fields in response
-    assert "total_branches" in json_data
-    assert "active_branches" in json_data
-    branch_added = False
-    for branch in json_data["data"]:
-        if branch["branch_location"] == payload["branch_location"]:
-            branch_added = True
-            logger.info(f"New Branch {payload['branch_location']} added  ")
-    assert branch_added 
+    if response.status_code == 200:        
+        assert "Error" not in json_data[0]["message"]
+        get_interface_url = reverse("get_interface_details_spoke")
+        response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
+        assert response.status_code == 200
+        new_added_intfcname = f"{payload['link']}.{payload['vlan_id']}"
+        json_data = response.json()  
+        new_intfc_added = False
+        for intfcinfo in json_data:
+            if intfcinfo["interface_name"] == new_added_intfcname:
+                new_intfc_added = True
+                logger.info(f"Validated Successfully: Interface {new_added_intfcname} added")
+        if not new_intfc_added:
+            logger.info(f"Validated Failed: Interface {new_added_intfcname} not added ")
+        assert new_intfc_added
+    else:
+        assert "Error" in json_data[0]["message"]

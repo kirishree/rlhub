@@ -516,7 +516,11 @@ def interfacedetails(data):
                 # Clean up extra spaces or non-visible characters using regex
                 intinfostrip = re.sub(r'\s+', ' ', intinfostrip)  # Replace multiple spaces with a single space
                 if " name=" in intinfostrip:
-                    interfacename = intinfostrip.split(" name=")[1].split('"')[1]                   
+                    interfacename = intinfostrip.split(" name=")[1].split('"')[1] 
+                    if "." in interfacename:
+                        vlanid = interface.split(".")[1]   
+                    else:
+                        vlanid = "NA"               
                     status_info = intinfostrip.split(" ")[1]
 #                    print("status_info", status_info)
                     if status_info == "R":
@@ -536,7 +540,7 @@ def interfacedetails(data):
                     if typeinfo == "bridge":
                        interfacename = "bridge"
                     if typeinfo == "vlan":
-                       typeinfo = "VLAN"
+                       typeinfo = "VLAN"                       
                 if "mac-address=" in intinfostrip:
                     macaddress = intinfostrip.split("mac-address=")[1].split(" ")[0]
                 if "actual-mtu=" in intinfostrip:
@@ -551,7 +555,8 @@ def interfacedetails(data):
                                 "type": typeinfo,
                                 "mtu": mtu,
                                 "addresses": [{"IPv4address":" "}],
-                                "status":intfc_status
+                                "status":intfc_status,
+                                "vlan_link": vlanid
                                 })        
         addresses_info = addressoutput.split("\n")[1:-1]
         addressinfo = []
@@ -749,7 +754,8 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
-        return response
+        status = 400
+        return response, status
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -767,7 +773,7 @@ def createvlaninterface(data):
                 "exception": str(e)
             }
             )
-            return [{"message":"Error: SSH connection timeout"}]
+            return [{"message":"Error: SSH connection timeout"}], 504
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -797,12 +803,13 @@ def createvlaninterface(data):
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
-                    return response
+                    return response, 422
         vlan_int_name = f"{data['link']}.{data['vlan_id']}"
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"]}')  
         for newaddr in data["addresses"]:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
         response = [{"message": f"Interface {vlan_int_name} created "}]
+        status = 200
         logger.info(
             f"{response}",
             extra={
@@ -813,6 +820,10 @@ def createvlaninterface(data):
             }
             )
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+                status=400
+        else:
+            status = 500
         logger.error(
             f"Error in interface create",
             extra={
@@ -822,11 +833,11 @@ def createvlaninterface(data):
                 "exception": str(e)
             }
             )
-        response = [{"message": f"Error while creating interface {data['link']}"}]          
+        response = [{"message": f"Error while creating interface {data['link']}"}]         
     finally:
         # Close the SSH connection
         ssh_client.close()       
-        return response
+        return response, status
 
 def createtunnelinterface(data):   
    # Define the router details

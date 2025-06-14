@@ -1691,7 +1691,7 @@ def create_vlan_interface_spoke(request):
                 continue
             else:
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
-                return JsonResponse(response, safe=False)
+                return JsonResponse(response, safe=False, status=400)
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -1707,35 +1707,41 @@ def create_vlan_interface_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "create_vlan_interface", data=json_data, headers=headers)                                 
+                respstatus = response.status_code
                 if response.status_code == 200:           
                     print(response.text)
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    response = json.loads(get_response)            
-                else:
+                    response = json.loads(get_response)   
+                else:                    
                     response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
                 print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.createvlaninterface(data)                 
-            return JsonResponse(interface_details,safe=False) 
+            interface_details, respstatus = microtek_configure.createvlaninterface(data)                 
+            return JsonResponse(interface_details,safe=False, status = respstatus) 
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createvlaninterface(data)   
+            response, respstatus = router_configure.createvlaninterface(data)   
         elif "robustel" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = robustel_configure.createvlaninterface(data) 
-    except Exception as e:          
+            response, respstatus = robustel_configure.createvlaninterface(data) 
+    except Exception as e:  
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500        
         logger.error(f"Error: Create VLAN interface in HUB:{e}")
         response = [{"message": f"Error: While creating VLAN interface"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status = respstatus)
 
 @swagger_auto_schema(
     method='post',
