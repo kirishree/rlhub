@@ -738,7 +738,8 @@ def create_tunnel_microtek_payload(n=20):
                     "uuid": "microtek21_microtek.net",
                     "link":"ether1",
                     "tunnel_intfc_name":"1234",
-                    "destination_ip":"192."                 
+                    "destination_ip":"192.168.255.255",
+                    "addresses": ["127.0.0.1/32"]            
                     }
     cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
     payload_ne = { "tunnel_ip": "10.8.0.19", 
