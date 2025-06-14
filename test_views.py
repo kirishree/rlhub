@@ -605,7 +605,7 @@ def test_add_cisco_device_checkready():
         "links": ["ether1"] }, 400)
     
 ])
-def create_vlan_interface_spoke(client, capfd, auth_token, payload, expected):   
+def test_create_vlan_interface_spoke(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
     headers = {
