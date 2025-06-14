@@ -8,7 +8,9 @@ url = "https://dev-api.cloudetel.com/api/v1/"
 addr = "192.168.23.149/30"
 corrected_subnet = ipaddress.ip_network(addr, strict=False)
 import random
-
+ip = ipaddress.IPv4Address("192.168.23.4/33")
+if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
 network = ipaddress.ip_network('169.38.172.64/26', strict=False)
 print("is local",network.is_link_local)
 links = ["ether2", "ether3", "ether4", "ether5"]

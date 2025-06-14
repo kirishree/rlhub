@@ -815,7 +815,7 @@ def createvlaninterface(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "be_api_endpoint": "create_interface",
+                "be_api_endpoint": "create_vlan_interface_spoke",
                 "exception": " "
             }
             )

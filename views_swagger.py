@@ -1687,10 +1687,20 @@ def create_vlan_interface_spoke(request):
         cache_key = f"interfaces_branch_{branch_id}"
         cache.delete(cache_key)
         for int_addr in data["addresses"]:
-            if (validate_ip(int_addr)):
-                continue
-            else:
+             # Exclude unwanted categories
+            if int(int_addr.split("/")[1]) > 32:
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_vlan_interface_spoke" }
+                    )
+                return JsonResponse(response, safe=False, status=400)
+            
+            ip = ipaddress.IPv4Address(int_addr.split("/")[0])
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+                response = [{"message": f"Error: {int_addr} is invalid IP"}]
+                logger.error(f"Error: {int_addr} is invalid IP",
+                    extra={ "be_api_endpoint": "create_vlan_interface_spoke" }
+                    )
                 return JsonResponse(response, safe=False, status=400)
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
