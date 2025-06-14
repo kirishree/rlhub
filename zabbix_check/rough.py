@@ -11,6 +11,9 @@ import random
 
 network = ipaddress.ip_network('169.38.172.64/26', strict=False)
 print("is local",network.is_link_local)
+links = ["ether2", "ether3", "ether4", "ether5"]
+link = random.choice(links) 
+print(link)
 
 private_ranges = [
         (ipaddress.IPv4Network("10.0.0.0/8"), random.randint(8,32)),

@@ -634,7 +634,7 @@ def test_create_vlan_interface_spoke(client, capfd, auth_token, payload, expecte
             continue
         payload["addresses"] = [f"{ip}/{prefix}"]
         break    
-    payload["link"] = random.choices(payload["links"]) 
+    payload["link"] = random.choice(payload["links"]) 
     payload["vlan_id"] = str(random.randint(1, 1000))
     logger.info(f"Randomly generated VLAN Info: {payload}")
     create_vlan_url = reverse("create_vlan_interface_spoke")
