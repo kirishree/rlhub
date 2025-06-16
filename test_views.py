@@ -842,8 +842,9 @@ def test_create_tunnel_interface_spoke_microtek(client, capfd, auth_token, paylo
     else:
         assert "Error" in json_data[0]["message"]
 
+delete_payloads = []
 
-def get_tunnel_interface_microtek(client, auth_token):   
+def test_vlan_interface_delete_spoke_microtek(client, auth_token):   
 
     # Step 2: Call branch_info with Authorization header
     headers = {
@@ -854,20 +855,21 @@ def get_tunnel_interface_microtek(client, auth_token):
     get_interface_url = reverse("get_interface_details_spoke")
     response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
     
-    json_data = response.json()  
-    delete_paylod = []
+    json_data = response.json()
+    global delete_payloads
+    delete_payloads = [] 
     for intfcinfo in json_data:
         if "gre" in intfcinfo["interface_name"]:
-            delete_paylod.append({ "tunnel_ip": "10.8.0.19", 
+            delete_payloads.append({ "tunnel_ip": "10.8.0.19", 
                                     "uuid": "microtek21_microtek.net",
                                     "intfc_name":intfcinfo["interface_name"]                 
                                 })
-    return delete_paylod
+    return delete_payloads
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-@pytest.mark.parametrize("payload, expected", get_tunnel_interface_microtek(), 200)
-def vlan_interface_delete_spoke_microtek(client, capfd, auth_token, payload, expected):   
+@pytest.mark.parametrize("payload, expected", delete_payloads, 200)
+def test_vlan_interface_delete_spoke_microtek1(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
     headers = {
