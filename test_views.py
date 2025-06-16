@@ -738,17 +738,25 @@ def create_tunnel_microtek_payload(n=20):
                     "uuid": "microtek21_microtek.net",
                     "link":"ether1",
                     "tunnel_intfc_name":"1234",
-                    "destination_ip":"192.168.255.255",
+                    "destination_ip":"192.168.23.23",
                     "addresses": ["127.0.0.1/32"]            
                     }
-    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid(Tunnel IP -Invalid(Loopback))"))
+    payload_ne = { "tunnel_ip": "10.8.0.19", 
+                    "uuid": "microtek21_microtek.net",
+                    "link":"ether1",
+                    "tunnel_intfc_name":"1234",
+                    "destination_ip":"192.168.255.255",
+                    "addresses": ["192.168.24.24/31"]            
+                    }
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid(Destination IP -Invalid(Broadcast))"))
     payload_ne = { "tunnel_ip": "10.8.0.19", 
                     "uuid": "microtek21_microtek.net"                    
                     }
-    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
+    cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid(Parameter_missed)"))
     payload_neg = {                    
                     }
-    cases.append(pytest.param(payload_neg, 400, id=f"Microtek_Invalid_case"))
+    cases.append(pytest.param(payload_neg, 400, id=f"Microtek_Invalid(empty_paylod)"))
     return cases  
 
 @override_settings(SECURE_SSL_REDIRECT=False)
