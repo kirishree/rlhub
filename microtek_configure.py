@@ -880,6 +880,7 @@ def createtunnelinterface(data):
                 break  
         addresses_info = output.split("\n")  
         interface_addresses = [] 
+        local_address = "0.0.0.0"
         for addr in addresses_info:
             if "address=" in addr:
                     if " I " in addr:
@@ -895,7 +896,7 @@ def createtunnelinterface(data):
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while creating Tunnel interface due to address conflict {int_addr}"}]
                     ssh_client.close()            
-                    return response, 422             
+                    return response, 422                
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
         response = [{"message": f"Tunnel interface {greintfcname} created "}]

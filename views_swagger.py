@@ -1995,9 +1995,13 @@ def create_tunnel_interface_spoke(request):
             data["router_password"] = router_info["router_password"]
             response = router_configure.createtunnelinterface(data)                   
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(f"Error: Create Tunnel Interface Spoke:{e}")
         response = [{"message": f"Error: While craeting Tunnel interface"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
