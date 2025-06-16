@@ -842,32 +842,36 @@ def test_create_tunnel_interface_spoke_microtek(client, capfd, auth_token, paylo
     else:
         assert "Error" in json_data[0]["message"]
 
-delete_payloads = []
-
-def test_vlan_interface_delete_spoke_microtek(client, auth_token):   
-
-    # Step 2: Call branch_info with Authorization header
+@pytest.fixture(scope="session")
+def delete_payloads(client, auth_token):
     headers = {
         "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
-    }   
-    payload = { "tunnel_ip": "10.8.0.19", 
-                "uuid": "microtek21_microtek.net"}
+    }
+    payload = {
+        "tunnel_ip": "10.8.0.19",
+        "uuid": "microtek21_microtek.net"
+    }
     get_interface_url = reverse("get_interface_details_spoke")
-    response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
+    response = client.post(get_interface_url, payload, content_type="application/json", **headers)
     json_data = response.json()
     assert response.status_code == 200
-    global delete_payloads
-    delete_payloads = [] 
+
+    result = []
     for intfcinfo in json_data:
         if "gre" in intfcinfo["interface_name"]:
-            delete_payloads.append({ "tunnel_ip": "10.8.0.19", 
-                                    "uuid": "microtek21_microtek.net",
-                                    "intfc_name":intfcinfo["interface_name"]                 
-                                })    
-            
+            result.append((
+                {
+                    "tunnel_ip": "10.8.0.19",
+                    "uuid": "microtek21_microtek.net",
+                    "intfc_name": intfcinfo["interface_name"]
+                },
+                200
+            ))
+    return result
+
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-@pytest.mark.parametrize("payload, expected", delete_payloads, 200)
+@pytest.mark.parametrize("payload, expected", delete_payloads)
 def test_vlan_interface_delete_spoke_microtek1(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
