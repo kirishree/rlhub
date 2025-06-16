@@ -854,8 +854,8 @@ def test_vlan_interface_delete_spoke_microtek(client, auth_token):
                 "uuid": "microtek21_microtek.net"}
     get_interface_url = reverse("get_interface_details_spoke")
     response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
-    
     json_data = response.json()
+    assert response.status_code == 200
     global delete_payloads
     delete_payloads = [] 
     for intfcinfo in json_data:
@@ -863,9 +863,8 @@ def test_vlan_interface_delete_spoke_microtek(client, auth_token):
             delete_payloads.append({ "tunnel_ip": "10.8.0.19", 
                                     "uuid": "microtek21_microtek.net",
                                     "intfc_name":intfcinfo["interface_name"]                 
-                                })
-    return delete_payloads
-
+                                })    
+            
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload, expected", delete_payloads, 200)
