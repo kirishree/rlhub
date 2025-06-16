@@ -802,8 +802,9 @@ def createvlaninterface(data):
                 ip_obj = ipaddress.ip_address(int_addr.split("/")[0])                
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
-                    ssh_client.close()            
-                    return response, 422
+                    ssh_client.close()  
+                    respstatus = 422          
+                    return response, respstatus
         vlan_int_name = f"{data['link']}.{data['vlan_id']}"
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"]}')  
         for newaddr in data["addresses"]:
@@ -848,8 +849,8 @@ def createtunnelinterface(data):
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    greintfcname = "gretunnel" + data["tunnel_intfc_name"] 
     try:
+        greintfcname = "gretunnel" + data["tunnel_intfc_name"]
         try:
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
@@ -863,7 +864,9 @@ def createtunnelinterface(data):
                 "exception": str(e)
             }
             )
-            return [{"message": "Error: SSH connection timeout"}], 504
+            response = [{"message": "Error: SSH connection timeout"}]
+            respstatus = 504
+            return response, respstatus
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -895,8 +898,9 @@ def createtunnelinterface(data):
                 ip_obj = ipaddress.ip_address(int_addr.split("/")[0])                
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while creating Tunnel interface due to address conflict {int_addr}"}]
+                    respstatus = 422
                     ssh_client.close()            
-                    return response, 422                
+                    return response, respstatus               
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
         response = [{"message": f"Tunnel interface {greintfcname} created "}]
@@ -911,6 +915,7 @@ def createtunnelinterface(data):
             }
             )
     except Exception as e:
+        print(e)
         if isinstance(e, (KeyError, ValueError)):            
             respstatus=400
         else:
