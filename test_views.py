@@ -841,4 +841,43 @@ def test_create_tunnel_interface_spoke_microtek(client, capfd, auth_token, paylo
         assert new_intfc_added
     else:
         assert "Error" in json_data[0]["message"]
+
+
+def get_tunnel_interface_microtek(client, auth_token):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    payload = { "tunnel_ip": "10.8.0.19", 
+                "uuid": "microtek21_microtek.net"}
+    get_interface_url = reverse("get_interface_details_spoke")
+    response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
     
+    json_data = response.json()  
+    delete_paylod = []
+    for intfcinfo in json_data:
+        if "gre" in intfcinfo["interface_name"]:
+            delete_paylod.append({ "tunnel_ip": "10.8.0.19", 
+                                    "uuid": "microtek21_microtek.net",
+                                    "intfc_name":intfcinfo["interface_name"]                 
+                                })
+    return delete_paylod
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", get_tunnel_interface_microtek(), 200)
+def vlan_interface_delete_spoke_microtek(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    logger.info(f"Delete Interface Payload:{payload}")
+    delete_interface_url = reverse("vlan_interface_delete_spoke")
+    response = client.post(delete_interface_url,  payload, content_type="application/json", **headers)
+    json_data = response.json()  
+    print("Delete Tunnel interface response:", json_data) 
+    logger.info(f"Delete Tunnel interface response: {json_data}")
+    assert response.status_code == expected
+    assert "Error" not in json_data[0]["message"]

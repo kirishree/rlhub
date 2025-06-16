@@ -1300,8 +1300,8 @@ def homepage_info(request: HttpRequest):
                             }
                 # Store in cache for 60 seconds
                 cache.set(cache_key, response, timeout=60)
-                return JsonResponse(response, safe=False)
-    except Exception as e:
+                return JsonResponse(response, safe=False, status=200)
+    except Exception as e:        
         logger.error(f"Error: Home Page info",
                      extra={
                                 "device_type": "ReachlinkServer",
@@ -1344,7 +1344,7 @@ def homepage_info(request: HttpRequest):
                             }
     # Store in cache for 60 seconds
     cache.set(cache_key, response, timeout=60)
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=200)
 
 def adminbranch_info():
     try: 
@@ -2080,8 +2080,7 @@ def interface_config_spoke(request):
 @permission_classes([IsAuthenticated])
 def vlan_interface_delete_spoke(request):
     try:
-        data = json.loads(request.body)
-        print("vlan delete ", data)
+        data = json.loads(request.body)       
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')        
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2106,7 +2105,7 @@ def vlan_interface_delete_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "vlan_interface_delete", data=json_data, headers=headers)  # Timeout set to 5 seconds
-                               
+                respstatus = response.status_code             
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)                
@@ -2121,12 +2120,13 @@ def vlan_interface_delete_spoke(request):
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             if "overlay" in data['intfc_name'].lower() or "bridge" in data["intfc_name"].lower():
-                response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]                
+                response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
+                respstatus = 200                
             elif "." in data['intfc_name']:
-                response = microtek_configure.deletevlaninterface(data) 
+                response, respstatus = microtek_configure.deletevlaninterface(data) 
             else:
-                response = microtek_configure.deletetunnelinterface(data)             
-            return JsonResponse(response,safe=False) 
+                response, respstatus = microtek_configure.deletetunnelinterface(data)             
+            return JsonResponse(response,safe=False, status=respstatus) 
         elif "cisco" in data["uuid"]:
             if "virtual-template" in data["intfc_name"].lower() or "dialer1" in data["intfc_name"].lower():
                 response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
@@ -2151,9 +2151,21 @@ def vlan_interface_delete_spoke(request):
                                         }
                                     )
     except Exception as e:
-        logger.error(f"Error: Delete Interface Spoke:{e}")
-        response = [{"message": f"Error: "}]
-    return JsonResponse(response, safe=False)
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
+        logger.error(
+            f"Error while deleting interface",
+            extra={
+                "device_type": "",
+                "device_ip": data["tunnel_ip"],
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            ) 
+        response = [{"message": f"Error: while deleting interface"}]
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',

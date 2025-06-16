@@ -914,8 +914,7 @@ def createtunnelinterface(data):
                 "exception": " "
             }
             )
-    except Exception as e:
-        print(e)
+    except Exception as e:        
         if isinstance(e, (KeyError, ValueError)):            
             respstatus=400
         else:
@@ -958,7 +957,9 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
-            return [{"message":"Error: SSH Connection timeout"}]
+            response = [{"message":"Error: SSH Connection timeout"}]
+            respstatus = 504
+            return response, respstatus
         # Execute the trace command 
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan print detail')
         # Initialize variables for output collection
@@ -980,17 +981,15 @@ def deletevlaninterface(data):
         for addr in vlan_info:
             if "name=" in addr:
                     vlanname = addr.split("name=")[1].split(" ")[0].split('"')[1]                    
-                    print("vlanname", vlanname)
-                    print(data["intfc_name"])
-                    if vlanname == data['intfc_name']:
-                            print("hi")
-                            removeitemno = addr.split(" ")[1]
-                            print("vlan item", removeitemno)
+                    if vlanname == data['intfc_name']:                            
+                            removeitemno = addr.split(" ")[1]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan remove {removeitemno}')
                             response = [{"message": f"Interface {data['intfc_name']} deleted"}]
-                            ssh_client.close()       
-                            return response
+                            ssh_client.close() 
+                            respstatus = 200      
+                            return response, respstatus
         response = [{"message": f"Error no such interface {data['intfc_name']}"}]
+        respstatus = 400      
         logger.info(
             f"{response}",
             extra={
@@ -1001,6 +1000,10 @@ def deletevlaninterface(data):
             }
             )
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
             f"Error while deleting interface",
             extra={
@@ -1010,12 +1013,11 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
-        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]
-          
+        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]     
     finally:
         # Close the SSH connection
         ssh_client.close()       
-        return response
+        return response, respstatus
 
 def deletetunnelinterface(data):   
    # Define the router details
@@ -1027,9 +1029,22 @@ def deletetunnelinterface(data):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
-        # Execute the trace command 
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection timeout",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+            response = [{"message":"Error: SSH Connection timeout"}]
+            respstatus = 504
+            return response, respstatus
         stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre print detail')
         # Initialize variables for output collection
         start_time = time.time()
@@ -1054,16 +1069,30 @@ def deletetunnelinterface(data):
                             removeitemno = addr.split(" ")[1]                            
                             stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre remove {removeitemno}')
                             response = [{"message": f"Interface {data['intfc_name']} deleted"}]
-                            ssh_client.close()       
-                            return response
+                            ssh_client.close()  
+                            respstatus = 200     
+                            return response, respstatus
         response = [{"message": f"Error no such Tunnel interface {data['intfc_name']}"}]
+        respstatus = 400
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(
+            f"Error while deleting interface",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )        
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         response = [{"message": f"Error while deleting Tunnel interface {data['intfc_name']}. Pl try again!"}]          
     finally:
         # Close the SSH connection
         ssh_client.close()       
-        return response
+        return response, respstatus
 
 def configurepbr(data):   
    # Define the router details
