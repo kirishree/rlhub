@@ -842,7 +842,6 @@ def test_create_tunnel_interface_spoke_microtek(client, capfd, auth_token, paylo
     else:
         assert "Error" in json_data[0]["message"]
 
-@pytest.fixture(scope="session")
 def delete_payloads(client, auth_token):
     headers = {
         "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
@@ -855,7 +854,6 @@ def delete_payloads(client, auth_token):
     response = client.post(get_interface_url, payload, content_type="application/json", **headers)
     json_data = response.json()
     assert response.status_code == 200
-
     result = []
     for intfcinfo in json_data:
         if "gre" in intfcinfo["interface_name"]:
@@ -867,7 +865,7 @@ def delete_payloads(client, auth_token):
                 },
                 200
             ))
-    return result
+    
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
@@ -886,3 +884,25 @@ def test_vlan_interface_delete_spoke_microtek1(client, capfd, auth_token, payloa
     logger.info(f"Delete Tunnel interface response: {json_data}")
     assert response.status_code == expected
     assert "Error" not in json_data[0]["message"]
+
+@pytest.mark.django_db
+def test_delete_gre_microtek(client, auth_token):
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {auth_token}"}
+    payload = {
+        "tunnel_ip": "10.8.0.19",
+        "uuid": "microtek21_microtek.net"
+    }
+    get_url = reverse("get_interface_details_spoke")
+    res = client.post(get_url, payload, content_type="application/json", **headers)
+    assert res.status_code == 200
+    for info in res.json():
+        if "gre" in info["interface_name"]:
+            delete_payload = {
+                "tunnel_ip": "10.8.0.19",
+                "uuid": "microtek21_microtek.net",
+                "intfc_name": info["interface_name"]
+            }
+            del_url = reverse("vlan_interface_delete_spoke")
+            del_res = client.post(del_url, delete_payload, content_type="application/json", **headers)
+            assert del_res.status_code == 200
+            assert "Error" not in del_res.json()[0]["message"]
