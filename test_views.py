@@ -844,7 +844,7 @@ def test_create_tunnel_interface_spoke_microtek(client, capfd, auth_token, paylo
                                
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
-def test_vlan_interface_delete_spoke_microtek1(client, capfd, auth_token):   
+def test_gre_microtek(client, capfd, auth_token):   
 
     # Step 2: Call branch_info with Authorization header
     headers = {
@@ -858,6 +858,36 @@ def test_vlan_interface_delete_spoke_microtek1(client, capfd, auth_token):
     assert response.status_code == 200    
     for intfcinfo in json_data:
         if "gre" in intfcinfo["interface_name"]:
+            delete_payload ={ "tunnel_ip": "10.8.0.19", 
+                                    "uuid": "microtek21_microtek.net",
+                                    "intfc_name":intfcinfo["interface_name"]                 
+                                   }   
+                    
+            logger.info(f"Delete Interface Payload:{delete_payload}")
+            delete_interface_url = reverse("vlan_interface_delete_spoke")
+            response = client.post(delete_interface_url,  delete_payload, content_type="application/json", **headers)
+            json_data = response.json()  
+            print("Delete Tunnel interface response:", json_data) 
+            logger.info(f"Delete Tunnel interface response: {json_data}")
+            assert response.status_code == 200
+            assert "Error" not in json_data[0]["message"]
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+def test_delete_vlan_microtek(client, capfd, auth_token):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }   
+    payload = { "tunnel_ip": "10.8.0.19", 
+                "uuid": "microtek21_microtek.net"}
+    get_interface_url = reverse("get_interface_details_spoke")
+    response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
+    json_data = response.json()
+    assert response.status_code == 200    
+    for intfcinfo in json_data:
+        if "." in intfcinfo["interface_name"]:
             delete_payload ={ "tunnel_ip": "10.8.0.19", 
                                     "uuid": "microtek21_microtek.net",
                                     "intfc_name":intfcinfo["interface_name"]                 
