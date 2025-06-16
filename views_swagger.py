@@ -1987,7 +1987,10 @@ def create_tunnel_interface_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details,respstatus = microtek_configure.createtunnelinterface(data)       
+            interface_details,respstatus = microtek_configure.createtunnelinterface(data)   
+            print(interface_details)    
+            print("hiiiiii")
+            print(respstatus)
             return JsonResponse(interface_details,safe=False, status=respstatus) 
         elif "cisco" in data["uuid"]:            
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
