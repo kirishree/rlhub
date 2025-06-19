@@ -390,7 +390,7 @@ def test_add_route_spoke(client, capfd, extras):
                 })
                 break  # exit loop after valid network found
     addroute_data = {"tunnel_ip": "10.8.0.19",
-                     "uuid": "microtek21_microtek.net",
+                     "uuid": "microtek21_compedu_microtek.net",
                      "subnet_info": addroute}
     logger.info("Testing Started to add Routes in Spoke")
     logger.info(f"Randomly Generated routes: {addroute}")
@@ -408,7 +408,7 @@ def test_add_route_spoke(client, capfd, extras):
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
     getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
-                     "uuid": "microtek21_microtek.net"
+                     "uuid": "microtek21_compedu_microtek.net"
                      }
     getroute_spoke_url = reverse("get_routing_table_spoke")
     response = client.post(getroute_spoke_url, getroute_spoke_data, content_type="application/json", **headers)
@@ -456,7 +456,7 @@ def test_del_staticroute_spoke(client, capfd, extra):
         "HTTP_AUTHORIZATION": f"Bearer {token}"
     }
     getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
-                     "uuid": "microtek21_microtek.net"
+                     "uuid": "microtek21_compedu_microtek.net"
                      }
     #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
     getroute_spoke_url = reverse("get_routing_table_spoke")
@@ -474,7 +474,7 @@ def test_del_staticroute_spoke(client, capfd, extra):
                 deleteroute.append({"destination": routeinfo["destination"],
                                "gateway": routeinfo["gateway"]})    
     delroute_spoke_data = {"tunnel_ip": "10.8.0.19",
-                     "uuid": "microtek21_microtek.net",
+                     "uuid": "microtek21_compedu_microtek.net",
                      "routes_info": deleteroute
                      }
     delroute_spoke_url = reverse("del_staticroute_spoke")
@@ -489,7 +489,7 @@ def test_del_staticroute_spoke(client, capfd, extra):
     assert "Error" not in json_data[0]["message"]
     time.sleep(10)
     getroute_spoke_data = {"tunnel_ip": "10.8.0.19",
-                     "uuid": "microtek21_microtek.net"
+                     "uuid": "microtek21_compedu_microtek.net"
                      }
     #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
     getroute_spoke_url = reverse("get_routing_table_spoke")
@@ -597,17 +597,17 @@ def create_vlan_microtek_payload(n=20):
     cases = []
     for i in range(n):
         payload = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net",
+                    "uuid": "microtek21_compedu_microtek.net",
                     "links": ["ether2", "ether3", "ether4", "ether5"] 
                     }
         cases.append(pytest.param(payload, 200, id=f"Microtek_valid_case_{i+1}"))
     payload_ne = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net",
+                    "uuid": "microtek21_compedu_microtek.net",
                     "links": ["ether1"] 
                     }
     cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid_case"))
     payload_neg = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net"                    
+                    "uuid": "microtek21_compedu_microtek.net"                    
                     }
     cases.append(pytest.param(payload_neg, 400, id=f"Microtek_Invalid_case"))
     return cases
@@ -678,7 +678,7 @@ def test_create_vlan_interface_spoke(client, capfd, auth_token, payload, expecte
 def create_loopback_microtek_payload():
     cases = []    
     payload = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net"                    
+                    "uuid": "microtek21_compedu_microtek.net"                    
                     }
     cases.append(pytest.param(payload, 501, id=f"Microtek_Valid_case"))
     payload_ne = { "tunnel_ip": "10.8.0.19"}
@@ -730,12 +730,12 @@ def create_tunnel_microtek_payload(n=20):
     cases = []
     for i in range(n):
         payload = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net",
+                    "uuid": "microtek21_compedu_microtek.net",
                     "links": ["ether1", "ether2", "ether3", "ether4", "ether5"] 
                     }
         cases.append(pytest.param(payload, 200, id=f"Microtek_valid_case_{i+1}"))
     payload_ne = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net",
+                    "uuid": "microtek21_compedu_microtek.net",
                     "link":"ether1",
                     "tunnel_intfc_name":"1234",
                     "destination_ip":"192.168.23.23",
@@ -743,7 +743,7 @@ def create_tunnel_microtek_payload(n=20):
                     }
     cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid(Tunnel IP -Invalid(Loopback))"))
     payload_ne = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net",
+                    "uuid": "microtek21_compedu_microtek.net",
                     "link":"ether1",
                     "tunnel_intfc_name":"1234",
                     "destination_ip":"192.168.255.255",
@@ -751,7 +751,7 @@ def create_tunnel_microtek_payload(n=20):
                     }
     cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid(Destination IP -Invalid(Broadcast))"))
     payload_ne = { "tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net"                    
+                    "uuid": "microtek21_compedu_microtek.net"                    
                     }
     cases.append(pytest.param(payload_ne, 400, id=f"Microtek_Invalid(Parameter_missed)"))
     payload_neg = {                    
@@ -851,7 +851,7 @@ def test_gre_microtek(client, capfd, auth_token):
         "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
     }   
     payload = { "tunnel_ip": "10.8.0.19", 
-                "uuid": "microtek21_microtek.net"}
+                "uuid": "microtek21_compedu_microtek.net"}
     get_interface_url = reverse("get_interface_details_spoke")
     response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
     json_data = response.json()
@@ -859,7 +859,7 @@ def test_gre_microtek(client, capfd, auth_token):
     for intfcinfo in json_data:
         if "gre" in intfcinfo["interface_name"]:
             delete_payload ={ "tunnel_ip": "10.8.0.19", 
-                                    "uuid": "microtek21_microtek.net",
+                                    "uuid": "microtek21_compedu_microtek.net",
                                     "intfc_name":intfcinfo["interface_name"]                 
                                    }   
                     
@@ -881,7 +881,7 @@ def test_delete_vlan_microtek(client, capfd, auth_token):
         "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
     }   
     payload = { "tunnel_ip": "10.8.0.19", 
-                "uuid": "microtek21_microtek.net"}
+                "uuid": "microtek21_compedu_microtek.net"}
     get_interface_url = reverse("get_interface_details_spoke")
     response = client.post(get_interface_url,  payload, content_type="application/json", **headers)
     json_data = response.json()
@@ -889,7 +889,7 @@ def test_delete_vlan_microtek(client, capfd, auth_token):
     for intfcinfo in json_data:
         if "." in intfcinfo["interface_name"]:
             delete_payload ={ "tunnel_ip": "10.8.0.19", 
-                                    "uuid": "microtek21_microtek.net",
+                                    "uuid": "microtek21_compedu_microtek.net",
                                     "intfc_name":intfcinfo["interface_name"]                 
                                    }   
                     

@@ -87,3 +87,40 @@ def test_activate(client, capfd, auth_token, payload, expected):
             assert device["status"] == "active" 
     logger.info(f"Validated. Branch Activated successfully")
     
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", [({"tunnel_ip": "10.8.0.19", 
+                                                 "subnet":"8.8.8.8",
+                                        "uuid": "microtek21_compedu_microtek.net"}, 200)])
+def test_ping_spoke(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }  
+    ping_spoke_url = reverse("ping_spoke")
+    logger.info(f"Testing ping from spoke: {payload}")
+    response = client.post(ping_spoke_url,  payload, content_type="application/json", **headers)
+    json_data = response.json() 
+    logger.info(f"Ping response: {json_data}")
+    assert response.status_code == expected    
+    assert "Error" not in json_data[0]["message"]
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", [({"tunnel_ip": "10.8.0.19", 
+                                                 "trace_ip":"8.8.8.8",
+                                        "uuid": "microtek21_compedu_microtek.net"}, 200)])
+def test_traceroute_spoke(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }  
+    traceroute_spoke_url = reverse("traceroute_spoke")
+    logger.info(f"Testing traceroute from spoke: {payload}")
+    response = client.post(traceroute_spoke_url,  payload, content_type="application/json", **headers)
+    json_data = response.json() 
+    logger.info(f"Traceroute response: {json_data}")
+    assert response.status_code == expected    
+    assert "Error" not in json_data[0]["message"]
