@@ -72,7 +72,7 @@ def test_case_login():
     return cases
 
 @override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.parametrize("login_data,expected", test_case_login("Branch_info"))
+@pytest.mark.parametrize("login_data,expected", test_case_login())
 @pytest.mark.django_db
 def test_branch_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
@@ -104,7 +104,7 @@ def test_branch_info(client, capfd, login_data, expected):
         assert "active_branches" in json_data
 
 @override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.parametrize("login_data,expected", test_case_login("HUB_info"))
+@pytest.mark.parametrize("login_data,expected", test_case_login())
 @pytest.mark.django_db
 def test_hub_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
@@ -137,7 +137,7 @@ def test_hub_info(client, capfd, login_data, expected):
         assert "active_hubs" in json_data
 
 @override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.parametrize("login_data,expected", test_case_login("Home_page_info"))
+@pytest.mark.parametrize("login_data,expected", test_case_login())
 @pytest.mark.django_db
 def test_homepage_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
