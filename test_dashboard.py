@@ -49,7 +49,8 @@ def test_login(client, capfd, payload, expected):
     out, err = capfd.readouterr() 
     assert login_response.status_code == expected
 
-def test_case_login(testpoint):
+def test_case_login():
+    testpoint = "login_info"
     cases = []
     cases.append(pytest.param({  "username": "xogaw4457@edectus.com",
         "password": "xogaw4457@edectus.com"
