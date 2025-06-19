@@ -252,6 +252,9 @@ def activate(data):
                     command = f"sudo iptables -D INPUT -s {tunnel_ip} -j DROP"
                     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
                     os.system("sudo netfilter-persistent save")
+                    coll_spoke_disconnect.delete_many({ 
+                                      "tunnel_ip": data["tunnel_ip"]                                    
+                                        }) 
             except Exception as ex:
                     e = ex
                     if " returned non-zero exit status 1" in str(e):                        

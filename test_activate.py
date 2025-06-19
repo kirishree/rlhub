@@ -31,7 +31,8 @@ def auth_token(client):
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload, expected", [({"tunnel_ip": "10.8.0.19", 
-                    "uuid": "microtek21_microtek.net"}, 200)])
+                                                 "hub_ip":"185.69.209.251",
+                                        "uuid": "microtek21_microtek.net"}, 200)])
 def test_deactivate(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
@@ -55,4 +56,34 @@ def test_deactivate(client, capfd, auth_token, payload, expected):
         if device["uuid"] == payload["uuid"]:
             assert device["status"] == "inactive" 
     logger.info(f"Validated. Branch deactivated successfully")
+
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload, expected", [({"tunnel_ip": "10.8.0.19", 
+                                                 "hub_ip":"185.69.209.251",
+                                        "uuid": "microtek21_microtek.net"}, 200)])
+def test_activate(client, capfd, auth_token, payload, expected):   
+
+    # Step 2: Call branch_info with Authorization header
+    headers = {
+        "HTTP_AUTHORIZATION": f"Bearer {auth_token}"
+    }  
+    activate_url = reverse("activate")
+    logger.info(f"Testing for activation of {payload}")
+    response = client.post(activate_url,  payload, content_type="application/json", **headers)
+    json_data = response.json() 
+    logger.info(f"Activation response: {json_data}")
+    assert response.status_code == expected    
+    assert "Error" not in json_data[0]["message"]
+    branch_info_url = reverse("branch_info")
+    logger.info(f"Validating by getting branch info")
+    response = client.get(branch_info_url, content_type="application/json", **headers)
+    assert response.status_code == expected
+    json_data = response.json() 
+    logger.info(f"Branch info after Activating. {json_data}")
+    for device in json_data["data"]:
+        if device["uuid"] == payload["uuid"]:
+            assert device["status"] == "active" 
+    logger.info(f"Validated. Branch Activated successfully")
     

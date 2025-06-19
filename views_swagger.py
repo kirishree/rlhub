@@ -2764,7 +2764,7 @@ def activate(request: HttpRequest):
                     )
     if ".net" not in data.get("uuid", ""):         
         response = ubuntu_info.activate(data)
-    if "ciscodevice" in data.get("uuid", ""):
+    elif "ciscodevice" in data.get("uuid", ""):
         cache1_key = f"HUB_details_{data['uuid']}"
         hubinfo = cache.get_or_set(
                         cache1_key,
@@ -2789,10 +2789,22 @@ def activate(request: HttpRequest):
                 else:
                     response = [{"message":f"Error:while activating data['tunnel_ip']"}]
                     respstatus = 500     
-    if "microtek" in data.get("uuid", ""):
+    elif "microtek" in data.get("uuid", ""):
         response, respstatus = ubuntu_info.activate(data)
-    if "robustel" in data.get("uuid", ""):
+    elif "robustel" in data.get("uuid", ""):
         response, respstatus = ubuntu_info.activate(data)
+    if "Error" not in response[0]["message"]:
+            with open(device_info_path, "r") as f:
+                total_devices = json.load(f)
+            f.close()
+            for device in total_devices:
+                if device["organization_name"] in data["uuid"]:
+                    for branch in device["branch_info_only"]:
+                        if branch["uuid"] == data["uuid"]:
+                            branch["status"] = "active"
+            with open(device_info_path, "w") as f:
+                json.dump(total_devices, f)
+                f.close()       
     return JsonResponse(response, safe=False, status=respstatus)
 
 ###############HUB info page##############################
