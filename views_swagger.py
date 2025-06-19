@@ -432,6 +432,7 @@ def login(request: HttpRequest):
         response1 = HttpResponse(content_type='text/plain')
         response1['X-Message'] = json.dumps(response)
     return response1
+
 @swagger_auto_schema(
     method='post',
     tags=['Add Device'],
@@ -1051,36 +1052,46 @@ def add_cisco_hub(request: HttpRequest):
                 response = HttpResponse(content_type='application/zip')
                 response['X-Message'] = json.dumps(json_response)
                 response["Access-Control-Expose-Headers"] = "X-Message"
-                return response
-    orgstatus = False
-    print("cisco hub data", data)    
-    if "organization_id" in data:
+                return response    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+            return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)        
+    organization_id = decodedtoken.get("onboarding_org_id", "admin")                
+    if organization_id == "admin":
         org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
         if org_info:
             orgname = org_info["organization_name"]
-            data["username"] = org_info["regusers"][0]["username"]
-            orgstatus = True
-        else:
-            orgstatus = False
-    elif "access_token" in data:
-        orgname, orgstatus = onboarding.organization_name(data)
-    if not orgstatus:
-        logger.error(
-                            "Error: Error in getting organization name ",
+            data["username"] = org_info["regusers"][0]["username"]            
+        else:               
+            logger.error(
+                            f"Error: Configure spoke: Error in getting organization name ",
                             extra={
                                 "device_type": "ReachlinkServer",
                                 "device_ip": hub_ip,
-                                "be_api_endpoint": "configure HUB",
+                                "be_api_endpoint": "configure spoke",
                                 "exception": ""
                             }
                         ) 
-        json_response = [{"message": f"Error:Error in getting organization name"}]
-        response = HttpResponse(content_type='application/zip')
-        response['X-Message'] = json.dumps(json_response)
-        response["Access-Control-Expose-Headers"] = "X-Message"
-        return response
-    data["uuid"] = data['branch_location'] + f"_{orgname}_ciscohub.net"
-    data["username"] = "none"
+            return JsonResponse(
+                {"message": "client-side input error"},
+                status=400
+            )
+    else:
+        data["organization_id"] = organization_id
+        orgname = decodedtoken.get("onboarding_org_name", "NA")
+        data["username"] = decodedtoken.get("onboarding_first_name", "NA")  
+    data["uuid"] = data['branch_location'] + f"_{orgname}_ciscohub.net"    
     data["password"] = "none" 
     global newuser
     try:
@@ -1207,7 +1218,12 @@ def add_cisco_hub(request: HttpRequest):
             return response
         else:
             json_response = [{"message": f"Error:{response[0]['message']}"}]
-    except Exception as e:        
+            respstatus = 200
+    except Exception as e:   
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500         
         logger.error(
                             f"Error while configuring HUB",
                             extra={
@@ -1218,11 +1234,10 @@ def add_cisco_hub(request: HttpRequest):
                             }
                         ) 
         json_response = [{"message": f"Error:Internal Server Error, pl try again!"}]
-    print(json_response)
-    response = HttpResponse(content_type='application/zip')
-    response['X-Message'] = json.dumps(json_response)
-    response["Access-Control-Expose-Headers"] = "X-Message"
-    return response
+    return JsonResponse(
+                {"message": f"Error:{response[0]['message']}"},
+                status=respstatus
+            )
 
 @swagger_auto_schema(
     method='get',    
@@ -1553,41 +1568,58 @@ def hub_info(request: HttpRequest):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def deactivate(request: HttpRequest):
-    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    data = json.loads(request.body) 
-    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+    try:
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        data = json.loads(request.body) 
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "deactivate" }
                     )
-    if ".net" not in data.get("uuid", ""):         
-        response = ubuntu_info.deactivate(data)
-    if "ciscodevice" in data.get("uuid", ""):
-        hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
-        if hubinfo:
-            dialerinfo = coll_dialer_ip.find_one({"dialerip":data.get("tunnel_ip", "")})
-            if dialerinfo:
-                deactivate_data = {"tunnel_ip": data["hub_ip"],
+        if ".net" not in data.get("uuid", ""):         
+            response, respstatus = ubuntu_info.deactivate(data)
+        if "ciscodevice" in data.get("uuid", ""):
+            hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
+            if hubinfo:
+                dialerinfo = coll_dialer_ip.find_one({"dialerip":data.get("tunnel_ip", "")})
+                if dialerinfo:
+                    deactivate_data = {"tunnel_ip": data["hub_ip"],
                                    "router_username": hubinfo["router_username"],
                                    "router_password": hubinfo["router_password"],
                                    "username": dialerinfo["dialerusername"]
                                    }
-                response = router_configure.removeuser(deactivate_data)
-                if response:                    
-                    os.system("systemctl restart reachlink_test")   
-                    coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
+                    response, respstatus = router_configure.removeuser(deactivate_data)
+                    if response:                    
+                        os.system("systemctl restart reachlink_test")   
+                        coll_spoke_disconnect.insert_one({"hub_ip": data["hub_ip"], 
                                       "dialer_ip": data["tunnel_ip"],
                                       "uuid":data["uuid"]                                     
                                                                           
                                     })
-                    response = [{"message":f"Successfully disconnected: {data['tunnel_ip']}"}]
-                else:
-                    response = [{"message":f"Error:while deactivating data['tunnel_ip']"}]   
+                        response = [{"message":f"Successfully disconnected: {data['tunnel_ip']}"}]
+                    else:
+                        response = [{"message":f"Error:while deactivating data['tunnel_ip']"}]  
+            else:
+                response = [{"message": "Error HUB IP is missed"}]
+                respstatus = 400
+        if "microtek" in data.get("uuid", ""):
+            response, respstatus = ubuntu_info.deactivate(data)  
+        if "robustel" in data.get("uuid", ""):
+            response, respstatus = ubuntu_info.deactivate(data) 
+    except Exception as e:
+        response = [{"message":"Error while deactivating"}]
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
         else:
-            response = [{"message": "Error HUB IP is missed"}]
-    if "microtek" in data.get("uuid", ""):
-        response = ubuntu_info.deactivate(data)  
-    if "robustel" in data.get("uuid", ""):
-        response = ubuntu_info.deactivate(data)  
-    return JsonResponse(response, safe=False)
+            respstatus = 500 
+        logger.error(
+            f"Error while deactivating",
+            extra={
+                "device_type": "",
+                "device_ip": "server",
+                "be_api_endpoint": "deactiavte",
+                "exception": str(e)
+            }
+            )  
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -1608,7 +1640,7 @@ def get_interface_details_spoke(request):
         cache_key = f"interfaces_branch_{branch_id}"
         interface_details = cache.get(cache_key)
         if interface_details:
-            return JsonResponse(interface_details, safe=False)
+            return JsonResponse(interface_details, safe=False, status=200)
         interface_details = []
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
@@ -1621,7 +1653,8 @@ def get_interface_details_spoke(request):
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
             try:
-                response = requests.get(url + "get_interface_details")                                
+                response = requests.get(url + "get_interface_details")  
+                respstatus = response.status_code                         
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     interface_details = json.loads(get_response)
@@ -1638,25 +1671,30 @@ def get_interface_details_spoke(request):
                                 "exception": str(e)
                             }
                     )     
-                interface_details =[]         
+                interface_details =[] 
+                respstatus = 504        
         elif "microtek" in data["uuid"]:           
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.interfacedetails(data)                 
+            interface_details, respstatus = microtek_configure.interfacedetails(data)                 
             #return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = router_configure.get_interface_cisco(data)
+            interface_details, respstatus = router_configure.get_interface_cisco(data)
         elif "robustel" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = robustel_configure.get_interface_robustel(data)
+            interface_details, respstatus = robustel_configure.get_interface_robustel(data)
         # Store in cache for 60 seconds
         cache.set(cache_key, interface_details, timeout=60)
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500 
         logger.error(f"Error in get interface details ",
                      extra={
                                 "device_type": "",
@@ -1665,7 +1703,7 @@ def get_interface_details_spoke(request):
                                 "exception": str(e)
                             }
                     )        
-    return JsonResponse(interface_details, safe=False)
+    return JsonResponse(interface_details, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -1724,8 +1762,7 @@ def create_vlan_interface_spoke(request):
                     response = json.loads(get_response)   
                 else:                    
                     response = [{"message":"Error while configuring VLAN interface in spoke"}]
-            except requests.exceptions.RequestException as e:
-                print("disconnected")
+            except requests.exceptions.RequestException as e:                
                 respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
         elif "microtek" in data["uuid"]:
@@ -1805,22 +1842,23 @@ def create_sub_interface_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "create_vlan_interface", data=json_data, headers=headers)                                 
-                if response.status_code == 200:           
-                    print(response.text)
+                respstatus = response.status_code
+                if response.status_code == 200:          
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)              
                 else:
                     response = [{"message":"Error while configuring VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "cisco" in data["uuid"]:
             if data["link"].lower() == "fastethernet4":
                 data["router_username"] = router_info["router_username"]
                 data["router_password"] = router_info["router_password"]
-                response = router_configure.createsubinterface(data) 
+                response, respstatus = router_configure.createsubinterface(data) 
             else:
-                response = [{"message": f"Error: {data['link']} doesn't support sub-interface"}]        
+                response = [{"message": f"Error: {data['link']} doesn't support sub-interface"}] 
+                respstatus = 501       
     except Exception as e:
         if isinstance(e, (KeyError, ValueError)):            
             respstatus=400
@@ -1882,6 +1920,7 @@ def create_loopback_interface_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "create_vlan_interface", data=json_data, headers=headers)  # Timeout set to 5 seconds
+                respstatus = response.status_code
                 if response.status_code == 200:           
                     print(response.text)
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
@@ -1889,13 +1928,13 @@ def create_loopback_interface_spoke(request):
                 else:
                     response = [{"message":"Error while configuring Loopback interface in spoke"}]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]            
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createloopbackinterface(data)                       
+            response, respstatus = router_configure.createloopbackinterface(data)                       
     except Exception as e:
         if isinstance(e, (KeyError, ValueError)):            
             respstatus=400
@@ -1979,8 +2018,7 @@ def create_tunnel_interface_spoke(request):
                     response = json.loads(get_response)         
                 else:
                     response = [{"message":"Error while configuring VLAN interface in spoke"}]
-            except requests.exceptions.RequestException as e:
-                print("disconnected")
+            except requests.exceptions.RequestException as e:               
                 respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
@@ -1993,7 +2031,7 @@ def create_tunnel_interface_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.createtunnelinterface(data)                   
+            response, respstatus = router_configure.createtunnelinterface(data)                   
     except Exception as e:
         if isinstance(e, (KeyError, ValueError)):            
             respstatus=400
@@ -2013,8 +2051,7 @@ def create_tunnel_interface_spoke(request):
 @permission_classes([IsAuthenticated])
 def interface_config_spoke(request):
     try:
-        data = json.loads(request.body)
-        print(data)
+        data = json.loads(request.body)        
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2038,37 +2075,40 @@ def interface_config_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "interface_config", data=json_data, headers=headers)                           
+                respstatus = response.status_code
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)               
                 else:
                     response = [{"message":"Error while configuring interface in spoke"}]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.interfaceconfig(data)                 
+            interface_details, respstatus = microtek_configure.interfaceconfig(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:            
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = router_configure.interfaceconfig(data)
-            print(response)
+            response, respstatus = router_configure.interfaceconfig(data)            
         elif "robustel" in data["uuid"]:            
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
             data["spokedevice_name"] = router_info["spokedevice_name"]
-            response = robustel_configure.interface_config(data)
-            print(response)
+            response, respstatus = robustel_configure.interface_config(data)            
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(f"Error: Configure Interface Spoke:{e}")
         response = [{"message": f"Error: while configuring interface"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -2108,12 +2148,11 @@ def vlan_interface_delete_spoke(request):
                 respstatus = response.status_code             
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    response = json.loads(get_response)                
-                               
+                    response = json.loads(get_response)                              
                 else:
                     response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
@@ -2125,23 +2164,24 @@ def vlan_interface_delete_spoke(request):
             elif "." in data['intfc_name']:
                 response, respstatus = microtek_configure.deletevlaninterface(data) 
             else:
-                response, respstatus = microtek_configure.deletetunnelinterface(data)             
-            return JsonResponse(response,safe=False, status=respstatus) 
+                response, respstatus = microtek_configure.deletetunnelinterface(data)           
         elif "cisco" in data["uuid"]:
             if "virtual-template" in data["intfc_name"].lower() or "dialer1" in data["intfc_name"].lower():
                 response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
-                return JsonResponse(response, safe=False)
-            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            response = router_configure.deletevlaninterface(data)
+                respstatus = 501
+            else:
+                #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+                data["router_username"] = router_info["router_username"]
+                data["router_password"] = router_info["router_password"]
+                response, respstatus = router_configure.deletevlaninterface(data)
         elif "robustel" in data["uuid"]:
             if "vlan" in data["intfc_name"].lower():
                 data["router_username"] = router_info["router_username"]
                 data["router_password"] = router_info["router_password"]
-                response = robustel_configure.deletevlaninterface(data)
+                response, respstatus = robustel_configure.deletevlaninterface(data)
             else:
                 response = [{"message": f"Error: {data['intfc_name']} deletion is prohibited"}]
+                respstatus = 501
                 logger.info(f"Error: {data['intfc_name']} deletion is prohibited",
                                         extra={
                                                 "device_type": "Robustel",
@@ -2199,36 +2239,41 @@ def get_routing_table_spoke(request):
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"               
             try:
-                response = requests.get(url + "get_routing_table")                                 
+                response = requests.get(url + "get_routing_table")    
+                respstatus = response.status_code                             
                 if response.status_code == 200:      
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     routing_table = json.loads(get_response)                               
                 else:                    
                     routing_table =[]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 routing_table = []
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            routing_table = microtek_configure.routingtable(data)                 
+            routing_table, respstatus = microtek_configure.routingtable(data)                 
         elif "cisco" in data["uuid"]:       
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            routing_table = router_configure.get_routingtable_cisco(data)
+            routing_table, respstatus = router_configure.get_routingtable_cisco(data)
         elif "robustel" in data["uuid"]:       
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            routing_table = robustel_configure.get_routingtable_robustel(data)
+            routing_table, respstatus = robustel_configure.get_routingtable_robustel(data)
         # Store in cache for 60 seconds
         cache.set(cache_key, routing_table, timeout=60)
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(f"Error: Get routing table spoke:{e}")
         routing_table = []
-    return JsonResponse(routing_table, safe=False)
+    return JsonResponse(routing_table, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -2265,25 +2310,25 @@ def add_route_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "addstaticroute", data=json_data, headers=headers)                                 
+                respstatus = response.status_code
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)                
                 else:
                     response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            route_details = microtek_configure.addroute(data)                 
-            return JsonResponse(route_details,safe=False) 
+            response, respstatus = microtek_configure.addroute(data)                    
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            status = router_configure.addroute(data)
+            status, respstatus = router_configure.addroute(data)
             if status:
                 response = [{"message": "Route(s) added"}]
             else:
@@ -2292,11 +2337,15 @@ def add_route_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = robustel_configure.addstaticroute(data)         
+            response, respstatus = robustel_configure.addstaticroute(data)         
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Adding route in Spoke:{e}")
         response = [{"message": f"Error: while adding route. Pl try again!"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -2332,20 +2381,20 @@ def del_staticroute_spoke(request):
             json_data = json.dumps(data)           
             try:
                 response = requests.post(url + "delstaticroute", data=json_data, headers=headers)                                 
+                respstatus = response.status_code
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)             
                 else:
                     response = [{"message":"Error while deleting VLAN interface in spoke"}]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]   
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            route_details = microtek_configure.delstaticroute(data)                 
-            return JsonResponse(route_details,safe=False) 
+            response, respstatus = microtek_configure.delstaticroute(data)           
         elif "robustel" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             subnets = data["routes_info"]
@@ -2355,8 +2404,7 @@ def del_staticroute_spoke(request):
                     break
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            route_details = robustel_configure.delstaticroute(data)                 
-            return JsonResponse(route_details,safe=False) 
+            response, respstatus = robustel_configure.delstaticroute(data)                 
         elif "cisco" in data["uuid"]:
             #router_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -2364,16 +2412,20 @@ def del_staticroute_spoke(request):
             for subnet in data["routes_info"]:
                 if subnet["destination"].split("/")[0] == router_info["dialer_hub_ip"]:
                     response = [{"message":f"Error: This route ({subnet}) not able to delete"}]
-                    return JsonResponse(response, safe=False)  
-            status = router_configure.delstaticroute(data)
+                    return JsonResponse(response, safe=False, status=422)  
+            status, respstatus = router_configure.delstaticroute(data)
             if status:
                 response = [{"message": "Successfully route deleted"}]
             else:
                 response = [{"message":"Error in deleting route"}]
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Delete route in Spoke:{e}")
         response = [{"message": f"Error: while deleting route"}]
-    return JsonResponse(response, safe=False)        
+    return JsonResponse(response, safe=False, status=respstatus)        
 
 @swagger_auto_schema(
     method='post',
@@ -2402,21 +2454,21 @@ def get_pbr_info_spoke(request):
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"                   
             try:
-                response = requests.get(url + "getpbrinfo")                                 
+                response = requests.get(url + "getpbrinfo")  
+                respstatus = response.status_code                               
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     response = json.loads(get_response)
                 else:
                     response =[]
             except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = []
         elif "microtek" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details = microtek_configure.getconfigurepbr(data)                 
-            return JsonResponse(interface_details,safe=False) 
+            response, respstatus = microtek_configure.getconfigurepbr(data)                 
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
@@ -2424,10 +2476,13 @@ def get_pbr_info_spoke(request):
             #status = router_configure.addroute(data)
             response = []
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: get pbr info spoke:{e}")
-        response = []
-    print(response)
-    return JsonResponse(response, safe=False)
+        response = [{"message": "Error: get pbr info spoke"}]
+    return JsonResponse(response, safe=False, status=respstatus )
 
 #Ping_hub end point
 @swagger_auto_schema(
@@ -2457,12 +2512,10 @@ def diagnostics(request: HttpRequest):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]     
-                ping_result = router_configure.pingspoke(data)
+                ping_result, respstatus = router_configure.pingspoke(data)
                 re = ping_result.split("\n")
-                last_line = re[-2]
-                print(last_line)
-                out = last_line.split(" ")[3]            
-                print(out)
+                last_line = re[-2]                
+                out = last_line.split(" ")[3]         
                 if out == "0":
                     response = [{"message":f"Error: Subnet {data['subnet']} Not Reachable"}]
                 else:
@@ -2470,12 +2523,18 @@ def diagnostics(request: HttpRequest):
                     print(rtt)
                     response = [{"message":f"Subnet {data['subnet']} Reachable with RTT: {rtt}ms"}]
             else:
-                response = [{"message":f"Error: Hub info not found"}]        
+                response = [{"message":f"Error: Hub info not found"}]  
+                respstatus = 422      
         else:
-            response = ubuntu_info.diagnostics(data)
+            response, respstatus = ubuntu_info.diagnostics(data)
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Ping from HUB:{e}")
-    return JsonResponse(response, safe=False)  
+        response = {{"message": "Error in ping"}}
+    return JsonResponse(response, safe=False, status=respstatus)  
 
 @swagger_auto_schema(
     method='post',
@@ -2501,7 +2560,6 @@ def ping_spoke(request: HttpRequest):
                         timeout=300
                         )    
         if ".net" not in data["uuid"]:       
-            print(data)
             route_add = {"subnet": data["subnet"]}
             tunnel_ip = data["tunnel_ip"].split("/")[0]
             json_data = json.dumps(route_add)    
@@ -2509,6 +2567,7 @@ def ping_spoke(request: HttpRequest):
             # Set the headers to indicate that you are sending JSON data
             headers = {"Content-Type": "application/json"}
             response = requests.post(url+"checksubnet", data=json_data, headers=headers)
+            respstatus = response.status_code
             # Check the response
             if response.status_code == 200:           
                 json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
@@ -2525,7 +2584,7 @@ def ping_spoke(request: HttpRequest):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            ping_result = microtek_configure.pingspoke(data)          
+            ping_result, respstatus = microtek_configure.pingspoke(data)          
             if ping_result == "-1":
                 response = [{"message":f"Error: Subnet {data['subnet']} Not Reachable"}]
             else:                
@@ -2534,7 +2593,7 @@ def ping_spoke(request: HttpRequest):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            ping_result = router_configure.pingspoke(data)
+            ping_result, respstatus = router_configure.pingspoke(data)
             re = ping_result.split("\n")
             last_line = re[-2]
             print(last_line)
@@ -2549,11 +2608,15 @@ def ping_spoke(request: HttpRequest):
         elif "robustel" in data["uuid"]:
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = robustel_configure.pingspoke(data)            
-    except Exception as e:    
+            response, respstatus = robustel_configure.pingspoke(data)            
+    except Exception as e:   
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(f"Error: Ping from Spoke:{e}")
         response = [{"message": f"Error: Subnet {data['subnet']} Not Reachable" }]   
-    return JsonResponse(response, safe=False)    
+    return JsonResponse(response, safe=False, status=respstatus)    
 
 @swagger_auto_schema(
     method='post',
@@ -2582,38 +2645,39 @@ def traceroute_spoke(request):
         #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
         data["router_username"] = router_info["router_username"]
         data["router_password"] = router_info["router_password"]
-        trace_result = microtek_configure.traceroute(data)   
+        trace_result, respstatus = microtek_configure.traceroute(data)   
         response_msg = [{"message": trace_result}]        
-        return JsonResponse(response_msg,safe=False) 
+        return JsonResponse(response_msg,safe=False, status=respstatus) 
     if "robustel" in data["uuid"]:
         #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
         data["router_username"] = router_info["router_username"]
         data["router_password"] = router_info["router_password"]
-        trace_result = robustel_configure.traceroute(data)   
+        trace_result,respstatus = robustel_configure.traceroute(data)   
         response_msg = [{"message": trace_result}]           
-        return JsonResponse(response_msg,safe=False) 
+        return JsonResponse(response_msg,safe=False, status=respstatus) 
     if "ciscodevice" in data["uuid"]:        
         #device_info = coll_dialer_ip.find_one({"uuid":data["uuid"]})        
         if router_info:
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = router_info["router_username"]
                 data["router_password"] = router_info["router_password"]        
-                trace_result = router_configure.traceroute(data)   
+                trace_result, respstatus = router_configure.traceroute(data)   
                 response_msg = [{"message": trace_result} ]  
                 print("traceroute spoke",response_msg)    
         else:
             response_msg = [{"message": "Error in connecting HUB"} ]
-        return JsonResponse(response_msg,safe=False)   
+            respstatus =500
+        return JsonResponse(response_msg,safe=False, status=respstatus)   
     if host_ip:
         tunnel_ip = data["tunnel_ip"].split("/")[0] 
         url = "http://" + tunnel_ip + ":5000/"
         # Set the headers to indicate that you are sending JSON data
         headers = {"Content-Type": "application/json"}        
         trace_add = {"trace_ip": host_ip}
-        json_data = json.dumps(trace_add)
-        print(json_data)
+        json_data = json.dumps(trace_add)        
         try:
             response = requests.post(url + "traceroute_spoke", data=json_data, headers=headers) 
+            respstatus = response.status_code
             if response.status_code == 200:              
                 try:
                     content = response.content.decode(response.encoding or 'utf-8', errors='ignore')
@@ -2625,11 +2689,11 @@ def traceroute_spoke(request):
             else:
                     response = [{"message":"Error while sending route info to spoke"}]
         except requests.exceptions.RequestException as e:
-                print("disconnected")
+                respstatus = 504
                 response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
     else:
         response = [{"message":"Error:Trace ip is invalid"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -2660,14 +2724,16 @@ def traceroute_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]        
-                trace_result = router_configure.traceroute(data)   
+                trace_result, respstatus = router_configure.traceroute(data)   
                 response = [{"message": trace_result}]                   
         else:
+            respstatus = 504
             response = [{"message": "Error in connecting HUB"}]        
     else:           
             result1 = subprocess.run(['traceroute', '-d', host_ip], capture_output=True, text=True)
             response = [{"message":result1.stdout}]
-    return JsonResponse(response,safe=False)
+            respstatus = 200
+    return JsonResponse(response,safe=False, status=respstatus)
 
 ##############Inactive branch##############
 @swagger_auto_schema(
@@ -2705,15 +2771,17 @@ def activate(request: HttpRequest):
                                    }
                 response = router_configure.adduser(activate_data)
                 if response:
+                    respstatus = 200
                     coll_spoke_disconnect.delete_many({"uuid": data["uuid"]})
                     response = [{"message":f"Successfully activated: {data['tunnel_ip']}"}]
                 else:
-                    response = [{"message":f"Error:while activating data['tunnel_ip']"}]     
+                    response = [{"message":f"Error:while activating data['tunnel_ip']"}]
+                    respstatus = 500     
     if "microtek" in data.get("uuid", ""):
-        response = ubuntu_info.activate(data)
+        response, respstatus = ubuntu_info.activate(data)
     if "robustel" in data.get("uuid", ""):
-        response = ubuntu_info.activate(data)
-    return JsonResponse(response, safe=False)
+        response, respstatus = ubuntu_info.activate(data)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 ###############HUB info page##############################
 @swagger_auto_schema(
@@ -2748,17 +2816,21 @@ def get_routing_table(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                routing_table = router_configure.get_routingtable_cisco(data)
+                routing_table, respstatus = router_configure.get_routingtable_cisco(data)
             else:
                 routing_table = []
         elif data["hub_wan_ip"] == hub_ip:
-            routing_table =ubuntu_info.get_routing_table_ubuntu() 
+            routing_table, respstatus =ubuntu_info.get_routing_table_ubuntu() 
         # Store in cache for 60 seconds
         cache.set(cache_key, routing_table, timeout=60)       
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Get hub routing table:{e}")
         routing_table = []
-    return JsonResponse(routing_table, safe=False)
+    return JsonResponse(routing_table, safe=False, status=respstatus)
 
 def is_excluded(network):
     return (
@@ -2798,7 +2870,7 @@ def addstaticroute_hub(request: HttpRequest):
                                        "exception": ""
                                        }
                                        )
-                return JsonResponse(response, safe=False) 
+                return JsonResponse(response, safe=False, status=400) 
             if dialernetworkip in route["destination"]:
                 response = [{"message":f"Error Route conflict {route['destination']}"}]
                 logger.error(f"Error Route conflict {route['destination']}",
@@ -2806,7 +2878,7 @@ def addstaticroute_hub(request: HttpRequest):
                                        "exception": ""
                                        }
                                        )
-                return JsonResponse(response, safe=False) 
+                return JsonResponse(response, safe=False, status=422) 
         if "ciscohub" in data["uuid"]:
             print("hiciscohub")
             cache1_key = f"HUB_details_{data['uuid']}"
@@ -2821,19 +2893,24 @@ def addstaticroute_hub(request: HttpRequest):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 data["subnet_info"] = data["routes_info"]
-                status = router_configure.addroute(data)
+                status, respstatus = router_configure.addroute(data)
                 if status:
                     response = [{"message": "Successfully route added"}]
                 else:
                     response = [{"message":"Error in adding route"}]
             else:
+                respstatus = 500
                 response = [{"message":"Error in getting hub info"}]
         elif data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.addstaticroute_ubuntu(data)
+            response, respstatus = ubuntu_info.addstaticroute_ubuntu(data)
     except Exception as e:  
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Add static routing in HUB:{e}")
         response =[{"message": f"Error in adding route, pl try again." }]
-    return JsonResponse(response, safe=False) 
+    return JsonResponse(response, safe=False, status=respstatus) 
 
 @swagger_auto_schema(
     method='post',
@@ -2873,17 +2950,21 @@ def delstaticroute_hub(request: HttpRequest):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                status = router_configure.delstaticroute(data)
+                status, respstatus = router_configure.delstaticroute(data)
                 if status:
                     response = [{"message": "Successfully route deleted"}]
                 else:
                     response = [{"message":"Error in deleting route"}]
         elif data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.delstaticroute_ubuntu(data)
+            response, respstatus = ubuntu_info.delstaticroute_ubuntu(data)
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Delete static route HUB:{e}")
         response = [{"message":f"Error while deleting route"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -2920,17 +3001,22 @@ def get_interface_details_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                interface_details = router_configure.get_interface_cisco(data)
+                interface_details, respstatus = router_configure.get_interface_cisco(data)
             else:
+                respstatus = 500
                 interface_details = []
         elif data["hub_wan_ip"] == hub_ip:            
-            interface_details = ubuntu_info.get_interface_details_ubuntu(data)
+            interface_details, respstatus = ubuntu_info.get_interface_details_ubuntu(data)
         # Store in cache for 60 seconds
         cache.set(cache_key, interface_details, timeout=60)            
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Get Interface_details of HUB:{e}")
         interface_details = []    
-    return JsonResponse(interface_details, safe=False)
+    return JsonResponse(interface_details, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -2962,13 +3048,17 @@ def create_vlan_interface_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.createvlaninterface(data)
+                response, respstatus = router_configure.createvlaninterface(data)
         elif data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.create_vlan_interface(data)        
+            response, respstatus = ubuntu_info.create_vlan_interface(data)        
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Create VLAN INterface HUB:{e}")
         response = [{"message": f"Error: {e}"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3000,13 +3090,17 @@ def create_sub_interface_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.createsubinterface(data) 
+                response, respstatus = router_configure.createsubinterface(data) 
         elif data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.create_vlan_interface(data)        
+            response, respstatus = ubuntu_info.create_vlan_interface(data)        
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Create Sub Interface HUB:{e}")
         response = [{"message": f"Error: {e}"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3038,13 +3132,17 @@ def create_loopback_interface_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.createloopbackinterface(data) 
+                response, respstatus = router_configure.createloopbackinterface(data) 
         elif data["hub_wan_ip"] == hub_ip:
-            response = [{"message":"Error: This device doesn't support Loopback interface"}] 
+            response, respstatus = [{"message":"Error: This device doesn't support Loopback interface"}] 
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Create Loopback Interface HUB:{e}")
         response = [{"message": f"Error: Some issue. Pl try again later."}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3076,13 +3174,17 @@ def create_tunnel_interface_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.createtunnelinterface(data) 
+                response, respstatus = router_configure.createtunnelinterface(data) 
         elif data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.create_tunnel_interface(data)            
+            response,respstatus = ubuntu_info.create_tunnel_interface(data)            
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Create Tunnel Interface in HUB:{e}")
         response = [{"message": f"Error: while Creating Tunnel Interface"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3106,10 +3208,10 @@ def vlan_interface_delete_hub(request):
         if "ciscohub" in data["uuid"]:
             if data["intfc_name"].lower() == "loopback1":
                 response = [{"message": f"Error Don't try to modify interface interface {data['intfc_name']}"}] 
-                return JsonResponse(response, safe=False)
+                return JsonResponse(response, safe=False, status=422)
             if "virtual-template" in data["intfc_name"].lower():
                 response = [{"message": f"Error: Deleting {data['intfc_name']} is prohibited"}]
-                return JsonResponse(response, safe=False)
+                return JsonResponse(response, safe=False, status=422)
             cache1_key = f"HUB_details_{data['uuid']}"
             hub_info = cache.get_or_set(
                         cache1_key,
@@ -3121,7 +3223,7 @@ def vlan_interface_delete_hub(request):
                 data["tunnel_ip"] = data["hub_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]                
-                response = router_configure.deletevlaninterface(data)                
+                response, respstatus = router_configure.deletevlaninterface(data)                
         elif data["hub_ip"] == hub_ip:
             response = [] 
             intfc_name = data["intfc_name"] 
@@ -3134,7 +3236,7 @@ def vlan_interface_delete_hub(request):
                                 "be_api_endpoint": "delete_interface",
                                 "exception": ""
                             })
-                return JsonResponse(response, safe=False)
+                return JsonResponse(response, safe=False, status=422)
             if os.path.exists("/etc/netplan/00-installer-config.yaml"):
                 # Open and read the Netplan configuration
                 with open("/etc/netplan/00-installer-config.yaml", "r") as f:
@@ -3173,10 +3275,15 @@ def vlan_interface_delete_hub(request):
             #                   cmd, shell=True, text=True
             #                   )            
             response = [{"message": f"Successfully  deleted VLAN Interface: {intfc_name}"}]
+            respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Delete Interface HUB:{e}")
         response = [{"message": f"Error while deleting the VLAN interface interface {data['intfc_name']}: {e}"}] 
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3198,12 +3305,12 @@ def interface_config_hub(request):
         cache_key = f"interfaces_hub_{branch_id}"
         cache.delete(cache_key)
         if data["hub_wan_ip"] == hub_ip:
-            response = ubuntu_info.interface_config(data)       
+            response, respstatus = ubuntu_info.interface_config(data)       
         elif "ciscohub" in data["uuid"]:
             if data["intfc_name"].lower() == "loopback1":
                 response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
-                print(response)
-                return JsonResponse(response, safe=False)
+                
+                return JsonResponse(response, safe=False, status=422)
             cache1_key = f"HUB_details_{data['uuid']}"
             hub_info = cache.get_or_set(
                         cache1_key,
@@ -3215,11 +3322,15 @@ def interface_config_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]                
-            response = router_configure.interfaceconfig(data)            
+            response, respstatus = router_configure.interfaceconfig(data)            
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500  
         logger.error(f"Error: Interface configure HUB:{e}")
         response = [{"message": f"Error: interface config"}]
-    return JsonResponse(response, safe=False)
+    return JsonResponse(response, safe=False, status=respstatus)
 ##################HUB COMPLETE#################
 
 
@@ -3240,7 +3351,7 @@ def get_ciscohub_config(request: HttpRequest):
                     )
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
-        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False, status=400)
 
     token = auth_header.split(' ')[1]
     try:
@@ -3248,21 +3359,21 @@ def get_ciscohub_config(request: HttpRequest):
         decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])      
 
     except jwt.ExpiredSignatureError:
-        return JsonResponse({'message': 'Token has expired'}, safe=False)
+        return JsonResponse({'message': 'Token has expired'}, safe=False, status=400)
 
     except jwt.InvalidTokenError:
-        return JsonResponse({'message': 'Invalid token'}, safe=False)
+        return JsonResponse({'message': 'Invalid token'}, safe=False, status=400)
     orgname = decodedtoken.get("onboarding_org_name", False)
     orgid = decodedtoken.get("onboarding_org_id", False)
     if not orgname or not orgid:
         logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
         json_response = {"message": f"Error:Error in getting organization name or id"}
-        return JsonResponse(json_response, safe=False)     
+        return JsonResponse(json_response, safe=False, status=400)     
     data["uuid"] = data['branch_loc'] + f"_{orgname}_ciscohub.net"
     data["orgid"] = orgid
     data["orgname"] = orgname
-    response = hub_config.get_ciscohub_config(data)
-    return JsonResponse(response, safe=False)
+    response, respstatus = hub_config.get_ciscohub_config(data)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3280,7 +3391,7 @@ def get_ciscospoke_config(request: HttpRequest):
                     )
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
-        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False, status=400)
 
     token = auth_header.split(' ')[1]
     try:
@@ -3288,7 +3399,7 @@ def get_ciscospoke_config(request: HttpRequest):
         decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])      
 
     except jwt.ExpiredSignatureError:
-        return JsonResponse({'message': 'Token has expired'}, safe=False)
+        return JsonResponse({'message': 'Token has expired'}, safe=False, status=400)
 
     except jwt.InvalidTokenError:
         return JsonResponse({'message': 'Invalid token'}, safe=False)
@@ -3297,12 +3408,12 @@ def get_ciscospoke_config(request: HttpRequest):
     if not orgname or not orgid:
         logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
         json_response = {"message": f"Error:Error in getting organization name or id"}
-        return JsonResponse(json_response, safe=False)     
+        return JsonResponse(json_response, safe=False, status=400)     
     data["uuid"] = data['branch_loc'] + f"_{orgname}_{data['ciscohub']}.net" 
     data["orgid"] = orgid
     data["orgname"] = orgname        
-    response = hub_config.get_ciscospoke_config(data)
-    return JsonResponse(response, safe=False)
+    response,respstatus = hub_config.get_ciscospoke_config(data)
+    return JsonResponse(response, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3320,7 +3431,7 @@ def get_microtekspoke_config(request: HttpRequest):
                     )
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
-        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False, status=400)
 
     token = auth_header.split(' ')[1]
     try:
@@ -3328,16 +3439,16 @@ def get_microtekspoke_config(request: HttpRequest):
         decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
 
     except jwt.ExpiredSignatureError:
-        return JsonResponse({'message': 'Token has expired'}, safe=False)
+        return JsonResponse({'message': 'Token has expired'}, safe=False, status=400)
 
     except jwt.InvalidTokenError:
-        return JsonResponse({'message': 'Invalid token'}, safe=False)
+        return JsonResponse({'message': 'Invalid token'}, safe=False, status=400)
     orgname = decodedtoken.get("onboarding_org_name", False)
     orgid = decodedtoken.get("onboarding_org_id", False)
     if not orgname or not orgid:
         logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
         json_response = {"message": f"Error:Error in getting organization name or id"}
-        return JsonResponse(json_response, safe=False)     
+        return JsonResponse(json_response, safe=False, status=400)     
     
     data["uuid"] = data['branch_loc'] + f"_{orgname}_microtek.net"
     data["orgid"] = orgid
@@ -3352,8 +3463,8 @@ def get_microtekspoke_config(request: HttpRequest):
                         }        
         setass_task.apply_async(args=[response, "microtek"], countdown=60)
     else:
-        spokedetails= {"message": response[0]["message"]}    
-    return JsonResponse(spokedetails, safe=False)
+        spokedetails, respstatus= {"message": response[0]["message"]}    
+    return JsonResponse(spokedetails, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',
@@ -3372,7 +3483,7 @@ def get_robustelspoke_config(request: HttpRequest):
                     )
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
-        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False, status=400)
 
     token = auth_header.split(' ')[1]
     try:
@@ -3380,16 +3491,16 @@ def get_robustelspoke_config(request: HttpRequest):
         decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])      
 
     except jwt.ExpiredSignatureError:
-        return JsonResponse({'message': 'Token has expired'}, safe=False)
+        return JsonResponse({'message': 'Token has expired'}, safe=False, status=400)
 
     except jwt.InvalidTokenError:
-        return JsonResponse({'message': 'Invalid token'}, safe=False)
+        return JsonResponse({'message': 'Invalid token'}, safe=False, status=400)
     orgname = decodedtoken.get("onboarding_org_name", False)
     orgid = decodedtoken.get("onboarding_org_id", False)
     if not orgname or not orgid:
         logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
         json_response = {"message": f"Error:Error in getting organization name or id"}
-        return JsonResponse(json_response, safe=False)     
+        return JsonResponse(json_response, safe=False, status=400)     
     data["uuid"] = data['branch_loc'] + f"_{orgname}_robustel.net"
     data["orgid"] = orgid
     data["orgname"] = orgname   
@@ -3402,9 +3513,9 @@ def get_robustelspoke_config(request: HttpRequest):
                         }        
         setass_task.apply_async(args=[response, "robustel"], countdown=60)
     else:
-        spokedetails= {"message": response[0]["message"]}
+        spokedetails,respstatus = {"message": response[0]["message"]}
     
-    return JsonResponse(spokedetails, safe=False)
+    return JsonResponse(spokedetails, safe=False, status=respstatus)
 
 @swagger_auto_schema(
     method='post',

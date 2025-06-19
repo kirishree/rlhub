@@ -54,13 +54,18 @@ def get_ciscohub_config(data):
                     extra={ "be_api_endpoint": "get_ciscohub_config",
                            "exeception": "" }
                     )
-    except Exception as e:   
+        respstatus = 200
+    except Exception as e:  
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500     
         logger.error(f"Error in getting cisco hub configuration",
                     extra={ "be_api_endpoint": "get_ciscohub_config",
                            "exeception": str(e) }
                     )     
         response = {"message": "Some internal error. Pl try again"}
-    return response
+    return response, respstatus
 
 def get_ciscospoke_config(data):
     current_datetime = datetime.now()
@@ -103,13 +108,18 @@ def get_ciscospoke_config(data):
                     extra={ "be_api_endpoint": "get_ciscospoke_config",
                            "exeception": "" }
                     )  
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(f"Error in getting cisco spoke configuration",
                     extra={ "be_api_endpoint": "get_ciscospoke_config",
                            "exeception": str(e) }
                     )  
         response = {"message": "Some internal error. Pl try again"}
-    return response
+    return response, respstatus
 
 def generate_dialer_password():
     # Define character pools
@@ -229,8 +239,6 @@ def get_dialer_ip_fromciscohub(devicename, dialerip):
     except Exception as e:
         print(e)
     return False
-
-
 
 def generate_router_password_cisco():
     # Define character pools

@@ -984,14 +984,19 @@ def get_microtek_config(data):
         logger.error(f"{response}",
                     extra={ "be_api_endpoint": "get_microtek_config",
                            "exception": ""}
-                    )       
+                    ) 
+        respstatus = 200      
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(f"Error in get Microtek spoke",
                     extra={ "be_api_endpoint": "get_microtek_config",
                            "exception": str(e)}
                     )
         response = [{"message": "Some internal error. Pl try again"}]
-    return response
+    return response, respstatus
 
 def get_robustel_config(data):
     current_datetime = datetime.now()
@@ -1021,11 +1026,16 @@ def get_robustel_config(data):
         logger.error(f"{response}",
                     extra={ "be_api_endpoint": "get_robustel_config",
                            "exception": ""}
-                    )       
+                    )  
+        respstatus = 200     
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(f"Error in get Microtek spoke",
                     extra={ "be_api_endpoint": "get_robustel_config",
                            "exception": str(e)}
                     )
         response = [{"message": "Some internal error. Pl try again"}]
-    return response
+    return response, respstatus

@@ -50,19 +50,20 @@ def send_command_wo(shell, command, delay=1):
     return output
 
 def addroute(data):
-    # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
-    # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-    except Exception as e:
-        logger.error(
+        # Define the router details
+        router_ip = data.get("tunnel_ip").split("/")[0]
+        username = data.get("router_username")
+        password = data.get('router_password')
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+        # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+        except Exception as e:
+            logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
@@ -71,77 +72,117 @@ def addroute(data):
                 "exception": str(e)
             }
             )
-        return False
+            status = False
+            respstatus = 504
+            return status, respstatus
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
 
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
-
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
         
-    send_command(shell, 'configure terminal')
-    subnets = data["subnet_info"]
-    for subnet in subnets:        
-        subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
-        if subnet_key:
-            subnet_ip = subnet[subnet_key].split("/")[0]
-            netmask = str(ipaddress.IPv4Network(subnet[subnet_key]).netmask)
-            send_command(shell, f'ip route {subnet_ip} {netmask} {subnet["gateway"]}')
-    send_command(shell, 'end')
-    # Save the configuration
-    send_command(shell, 'write memory')    
-    # Close the SSH connection
-    ssh_client.close()
-    return True
-
-def delroute(data):
-    # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    try:
-    # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+        send_command(shell, 'configure terminal')
+        subnets = data["subnet_info"]
+        for subnet in subnets:        
+            subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
+            if subnet_key:
+                subnet_ip = subnet[subnet_key].split("/")[0]
+                netmask = str(ipaddress.IPv4Network(subnet[subnet_key]).netmask)
+                send_command(shell, f'ip route {subnet_ip} {netmask} {subnet["gateway"]}')
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')   
+        respstatus = 200
+        status = True
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(
-            f"SSH Connection Error",
+            f"Error while add route",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "be_api_endpoint": "delete_static_route",
+                "be_api_endpoint": "add_static_route",
                 "exception": str(e)
             }
-            )
-        return False
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
+            ) 
+        status = False
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+        return status, respstatus
 
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)    
-    send_command(shell, 'configure terminal')
-    subnets = data["subnet_info"]
-    for subnet in subnets:
-        subnet_ip = subnet["subnet"].split("/")[0]
-        netmask = str(ipaddress.IPv4Network(subnet["subnet"]).netmask)
-        send_command(shell, f'no ip route {subnet_ip} {netmask}')
-    send_command(shell, 'end')
-    # Save the configuration
-    send_command(shell, 'write memory')    
+def delroute(data):
+    try:
+        # Define the router details
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+        # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+        except Exception as e:
+            logger.error(
+                f"SSH Connection Error",
+                extra={
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "delete_static_route",
+                    "exception": str(e)
+                }
+            )
+            status = False
+            respstatus = 504
+            return status, respstatus
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)    
+        send_command(shell, 'configure terminal')
+        subnets = data["subnet_info"]
+        for subnet in subnets:
+            subnet_ip = subnet["subnet"].split("/")[0]
+            netmask = str(ipaddress.IPv4Network(subnet["subnet"]).netmask)
+            send_command(shell, f'no ip route {subnet_ip} {netmask}')
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')  
+        status = True
+        respstatus = 200  
+    except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
+        logger.error(
+                f"Error in delete route",
+                extra={
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "delete_static_route",
+                    "exception": str(e)
+                }
+            )
+        status = False
     # Close the SSH connection
-    ssh_client.close()
-    return True
+    finally:
+        ssh_client.close()
+        return status, respstatus
 
 def send_command_ping(shell, command, wait_time=5, buffer_size=4096, timeout=5, end_marker="Success rate"):
     """
@@ -192,45 +233,45 @@ def send_command_ping(shell, command, wait_time=5, buffer_size=4096, timeout=5, 
     return full_output
 
 def pingspoke(data):   
-    
-    # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
-    # Connect to the router
-        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-    except Exception as e:
-        logger.error(
-            f"SSH Connection Error",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "ping",
-                "exception": str(e)
-            }
+        status = ""
+        # Define the router details
+        router_ip = data["tunnel_ip"].split("/")[0]
+        username = data["router_username"]
+        password = data['router_password']
+        # Create an SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+        # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+        except Exception as e:
+            logger.error(
+                f"SSH Connection Error",
+                extra={
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "ping",
+                    "exception": str(e)
+                }
             )
-        return False
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
+            respstatus = 504
+            return status, respstatus
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
 
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
 
-    #data["subnet"] = "10.200.202.2"
-    subnet_ip = data["subnet"].split("/")[0]
-    status = send_command_ping(shell, f'ping {subnet_ip}', wait_time=5)
-    # Close the SSH connection
-    ssh_client.close()
-    logger.info(
+        #data["subnet"] = "10.200.202.2"
+        subnet_ip = data["subnet"].split("/")[0]
+        status = send_command_ping(shell, f'ping {subnet_ip}', wait_time=5)
+        logger.info(
             f"{status}",
             extra={
                 "device_type": "Cisco",
@@ -239,17 +280,34 @@ def pingspoke(data):
                 "exception": ""
             }
             )
-    return status
+        respstatus = 200
+    except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
+        logger.error(
+                f"Error in Ping Spoke",
+                extra={
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "ping",
+                    "exception": str(e)
+                }
+            )        
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+    return status, respstatus
 
-def traceroute(data):    
+def traceroute(data): 
     # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
@@ -257,40 +315,56 @@ def traceroute(data):
         logger.error(
             f"SSH Connection Error",
             extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "traceroute",
-                "exception": str(e)
-            }
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "traceroute",
+                    "exception": str(e)
+                }
+        )
+        respstatus = 504
+        return False, respstatus     
+    try:
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        host_ip = data.get('trace_ip', None) 
+        status = send_command_ping(shell, f'trace ip {host_ip}', wait_time=5)
+        traceout = status.split("\r")
+        final_out = ""
+        for traceline in traceout:       
+            if "type escape" in traceline.lower():
+                continue
+            if "tracing the route" in traceline.lower():
+                continue
+            if "info:" in traceline.lower():
+                continue
+            if "#" in traceline:
+                continue
+            final_out += traceline
+        respstatus = 200
+    except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
+        logger.error(
+                f"Error in trace",
+                extra={
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "traceroute",
+                    "exception": str(e)
+                }
             )
-        return False
-
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
-
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
-    host_ip = data.get('trace_ip', None) 
-    status = send_command_ping(shell, f'trace ip {host_ip}', wait_time=5)
-    traceout = status.split("\r")
-    final_out = ""
-    for traceline in traceout:       
-        if "type escape" in traceline.lower():
-            continue
-        if "tracing the route" in traceline.lower():
-            continue
-        if "info:" in traceline.lower():
-            continue
-        if "#" in traceline:
-            continue
-        final_out += traceline
-    # Close the SSH connection
-    ssh_client.close()
-    return final_out
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return final_out, respstatus
 
 
 def get_command_output(shell, command, wait_time=1, buffer_size=4096, max_wait=15):
@@ -325,20 +399,18 @@ def get_routingtable_cisco(data):
     """
     Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
     """
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data["router_password"]
-
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+    except Exception as e:
+        logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
@@ -347,8 +419,9 @@ def get_routingtable_cisco(data):
                 "exception": str(e)
             }
             )
-            return []        
-
+        respstatus = 504
+        return [], respstatus
+    try:      
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
@@ -399,17 +472,31 @@ def get_routingtable_cisco(data):
                                                     "protocol":routes_protocol_map.get(protocol, "static"),
                                                     "table_id":"Main Routing Table"
                                                     })
-
+        respstatus = 200
+    except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
+        logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_routing_table",
+                "exception": str(e)
+            }
+            )
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return routing_table
+    return routing_table, respstatus
 
 def delstaticroute(data):
     # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -426,47 +513,69 @@ def delstaticroute(data):
                 "exception": str(e)
             }
             )
-        return False
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
+        respstatus = 504
+        status = False
+        return status, respstatus
+    try:    
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
 
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
 
-    send_command(shell, 'configure terminal')
-    subnets = data["routes_info"]
-    for subnet in subnets:
-        subnet_ip = subnet["destination"].split("/")[0]
-        netmask = str(ipaddress.IPv4Network(subnet["destination"]).netmask)
-        send_command(shell, f'no ip route {subnet_ip} {netmask}')
-    send_command(shell, 'end')
-    # Save the configuration
-    send_command(shell, 'write memory')    
-    # Close the SSH connection
-    ssh_client.close()
-    return True
+        send_command(shell, 'configure terminal')
+        subnets = data["routes_info"]
+        for subnet in subnets:
+            subnet_ip = subnet["destination"].split("/")[0]
+            netmask = str(ipaddress.IPv4Network(subnet["destination"]).netmask)
+            send_command(shell, f'no ip route {subnet_ip} {netmask}')
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')
+        status = True
+        respstatus - 200    
+    except Exception as e:
+        status = False
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500     
+        logger.error(
+            f"Error occured when deleting route",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return status, respstatus
 
 def createvlaninterface(data):
-    # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    for intfcname in data['link']:
+    for intfcname in data.get('link'):
         if intfcname.lower() == "fastethernet4":
             response = [{"message": "Pl remove  Layer 3 interface from Link interface"}]
             logger.info(
-            f"{response}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "createvlan_interface",
-                "exception": ""
-            }
+                f"{response}",
+                extra={
+                    "device_type": "Cisco",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "createvlan_interface",
+                    "exception": ""
+                }
             )
-            return response
+            respstatus = 400
+            return response, respstatus
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -483,75 +592,76 @@ def createvlaninterface(data):
                 "exception": str(e)
             }
             )
-        return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
-
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
-
-    vlan_ip = data["addresses"][0].split("/")[0]
-    subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-    netmask = str(subnet.netmask)    
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'vlan {data["vlan_id"]}')
-    send_command(shell, f'end')
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'interface vlan {data["vlan_id"]}')
-    ipoutput = get_command_output(shell, f'ip address {vlan_ip} {netmask}')
-    if "overlaps" in ipoutput:
-        overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
-        overlapintfc = False                              
-        overlapintfc = overlap_intfc[0].split("\r")[0]
-        if overlapintfc:
-            response = [{"message": f"Error: while configuring vlan due to address conflict with {overlapintfc}"}]
-        else:
-            response = [{"message": f"Error: while configuring vlan due to address conflict"}]
-        send_command(shell, 'end')
+        respstatus = 504
+        status = False
+        return status, respstatus
+    try:    
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        vlan_ip = data["addresses"][0].split("/")[0]
+        subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+        netmask = str(subnet.netmask)    
         send_command(shell, 'configure terminal')
-        send_command(shell, f'no interface vlan {data["vlan_id"]}')
-        send_command(shell, 'end')
-
-    else:
-        send_command(shell, 'no shutdown')
-        send_command(shell, 'end')
-        for link_intfc in data["link"]:            
-            #output = get_command_output(shell, f'sh run | section include interface {link_intfc}')                   
-            vlanmode = f'switchport mode access'           
-            vlanaddcommand = f'switchport access vlan {data["vlan_id"]}'
-            send_command(shell, 'configure terminal')
-            send_command(shell, f'interface {link_intfc}')
-            send_command(shell, f'{vlanmode}') 
-            send_command(shell, f'no switchport access vlan') 
-            vlanmodeout2 = get_command_output(shell, f'{vlanaddcommand}')   
-            if "Vlan can not be added." in vlanmodeout2:                            
-                if " Maximum number of 8 vlan(s) in the database" in vlanmodeout2:
-                    response = [{"message": f"Error: Maximum number of 8 vlan(s) only allowed"}] 
-                else:                    
-                    response = [{"message": f"Error: vlan{data['vlan_id']} not linked with {link_intfc} "}]   
-                logger.error(
-                    f"{response}",
-                    extra={
-                            "device_type": "Cisco",
-                            "device_ip": router_ip,
-                            "be_api_endpoint": "createvlan_interface",
-                            "exception": vlanmodeout2
-                        }
-                    )
-                send_command(shell, 'end')
-                break
+        send_command(shell, f'vlan {data["vlan_id"]}')
+        send_command(shell, f'end')
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'interface vlan {data["vlan_id"]}')
+        ipoutput = get_command_output(shell, f'ip address {vlan_ip} {netmask}')
+        if "overlaps" in ipoutput:
+            respstatus = 422
+            overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
+            overlapintfc = False                              
+            overlapintfc = overlap_intfc[0].split("\r")[0]
+            if overlapintfc:
+                response = [{"message": f"Error: while configuring vlan due to address conflict with {overlapintfc}"}]
             else:
-                response = [{"message": f"Interface vlan{data['vlan_id']} created"}]      
-                send_command(shell, 'end')        
-        # Save the configuration
-    send_command(shell, 'write memory')     
-    # Close the SSH connection
-    ssh_client.close()
-    logger.info(
+                response = [{"message": f"Error: while configuring vlan due to address conflict"}]
+            send_command(shell, 'end')
+            send_command(shell, 'configure terminal')
+            send_command(shell, f'no interface vlan {data["vlan_id"]}')
+            send_command(shell, 'end')
+        else:
+            send_command(shell, 'no shutdown')
+            send_command(shell, 'end')
+            for link_intfc in data["link"]:            
+                #output = get_command_output(shell, f'sh run | section include interface {link_intfc}')                   
+                vlanmode = f'switchport mode access'           
+                vlanaddcommand = f'switchport access vlan {data["vlan_id"]}'
+                send_command(shell, 'configure terminal')
+                send_command(shell, f'interface {link_intfc}')
+                send_command(shell, f'{vlanmode}') 
+                send_command(shell, f'no switchport access vlan') 
+                vlanmodeout2 = get_command_output(shell, f'{vlanaddcommand}')   
+                if "Vlan can not be added." in vlanmodeout2:   
+                    respstatus = 422                      
+                    if " Maximum number of 8 vlan(s) in the database" in vlanmodeout2:
+                        response = [{"message": f"Error: Maximum number of 8 vlan(s) only allowed"}]                         
+                    else:                    
+                        response = [{"message": f"Error: vlan{data['vlan_id']} not linked with {link_intfc} "}]                         
+                    logger.error(
+                        f"{response}",
+                        extra={
+                                "device_type": "Cisco",
+                                "device_ip": router_ip,
+                                "be_api_endpoint": "createvlan_interface",
+                                "exception": vlanmodeout2
+                            }
+                    )
+                    send_command(shell, 'end')
+                    break
+                else:
+                    response = [{"message": f"Interface vlan{data['vlan_id']} created"}] 
+                    respstatus = 200     
+                    send_command(shell, 'end')        
+            # Save the configuration
+        send_command(shell, 'write memory')  
+        logger.info(
             f"{response}",
             extra={
                 "device_type": "Cisco",
@@ -560,14 +670,32 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
-    return response
+    except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500     
+        logger.error(
+            f"Error occured when creating Vlan",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "createvlan_interface",
+                "exception": str(e)
+            }
+            )  
+        response = [{"message": f"Error in creation of Interface vlan{data['vlan_id']}"}] 
+    finally: 
+        # Close the SSH connection
+        ssh_client.close()        
+    return response, respstatus
 
 def createsubinterface(data):
     # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
-    data['link'] = "FastEthernet4"    
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')
+    data['link'] = "FastEthernet4" 
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -584,42 +712,41 @@ def createsubinterface(data):
                 "exception": str(e)
             }
             )
-        return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
-
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
-
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
-    subinterface_ip = data["addresses"][0].split("/")[0]
-    subnetip = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-    netmask1 = str(subnetip.netmask)
-    subinterfacename = data["link"] + "." + str(data["vlan_id"])
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'interface {subinterfacename}')
-    send_command(shell, f'encapsulation dot1Q {data["vlan_id"]}')    
-    ipoutput = get_command_output(shell, f'ip address {subinterface_ip} {netmask1}')
-    send_command(shell, 'no shutdown')
-    send_command(shell, 'end')
-    if "overlaps" in ipoutput:   
-        overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
-        overlapintfc = False                              
-        overlapintfc = overlap_intfc[0].split("\r")[0]
-        if overlapintfc:
-            response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict with {overlapintfc}"}]
+        respstatus = 504
+        response = [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        return response, respstatus    
+    try:
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
+        subinterface_ip = data["addresses"][0].split("/")[0]
+        subnetip = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+        netmask1 = str(subnetip.netmask)
+        subinterfacename = data["link"] + "." + str(data["vlan_id"])
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'interface {subinterfacename}')
+        send_command(shell, f'encapsulation dot1Q {data["vlan_id"]}')    
+        ipoutput = get_command_output(shell, f'ip address {subinterface_ip} {netmask1}')
+        send_command(shell, 'no shutdown')
+        send_command(shell, 'end')
+        if "overlaps" in ipoutput:   
+            overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
+            overlapintfc = False                              
+            overlapintfc = overlap_intfc[0].split("\r")[0]
+            if overlapintfc:
+                response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict with {overlapintfc}"}]
+            else:
+                response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict."}]        
         else:
-            response = [{"message": f"Interface {subinterfacename} created. Address is not assigned due to address conflict."}]        
-    else:
-        response = [{"message": f"Sub-Interface {subinterfacename} created"}]
-    # Save the configuration
-    send_command(shell, 'write memory')    
-    # Close the SSH connection
-    ssh_client.close()
-    logger.info(
+            response = [{"message": f"Sub-Interface {subinterfacename} created"}]
+        # Save the configuration
+        send_command(shell, 'write memory') 
+        logger.info(
             f"{response}",
             extra={
                 "device_type": "Cisco",
@@ -628,17 +755,35 @@ def createsubinterface(data):
                 "exception": ""
             }
             )
-    return response
+        respstatus = 200
+    except Exception as e:
+        response = [{"message": f"Error in Sub-Interface {subinterfacename} creation"}]
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500     
+        logger.error(
+            f"Error occured when creating sub interface",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "createsub_interface",
+                "exception": str(e)
+            }
+            )
+    finally:
+        # Close the SSH connection
+        ssh_client.close()   
+    return response, respstatus
 
 def createloopbackinterface(data):
     # Define the router details
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data['router_password']
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')    
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
     try:
     # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
@@ -652,39 +797,40 @@ def createloopbackinterface(data):
                 "exception": str(e)
             }
             )
-        return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
-    # Open an interactive shell session
-    shell = ssh_client.invoke_shell()
+        respstatus = 504
+        response = [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        return response, respstatus  
+    try:  
+        # Open an interactive shell session
+        shell = ssh_client.invoke_shell()
 
-    # Add a delay to allow the shell to be ready
-    time.sleep(1)
-    # Enter enable mode
-    output = send_command_wo(shell, 'enable')
-    if "Password" in output:  # Prompt for enable password
-        send_command_wo(shell, password)
+        # Add a delay to allow the shell to be ready
+        time.sleep(1)
+        # Enter enable mode
+        output = send_command_wo(shell, 'enable')
+        if "Password" in output:  # Prompt for enable password
+            send_command_wo(shell, password)
 
-    loopback_ip = data["addresses"][0].split("/")[0]
-    subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
-    netmask = str(subnet.netmask)
-    response = [{"message": f"Interface {data['loopback_intfc_name']} created"}]
-    send_command(shell, 'configure terminal')
-    send_command(shell, f'interface {data["loopback_intfc_name"]}')
-    ipoutput = get_command_output(shell, f'ip address {loopback_ip} {netmask}')    
-    if "overlaps" in ipoutput:
-        overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
-        overlapintfc = False                              
-        overlapintfc = overlap_intfc[0].split("\r")[0]
-        if overlapintfc:
-            response = [{"message": f"{data['loopback_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict with {overlapintfc}"}]
-        else:
-            response = [{"message": f"{data['loopback_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict"}]
-    send_command(shell, 'no shutdown')
-    send_command(shell, 'end')
-    # Save the configuration
-    send_command(shell, 'write memory')    
-    # Close the SSH connection
-    ssh_client.close()
-    logger.info(
+        loopback_ip = data["addresses"][0].split("/")[0]
+        subnet = ipaddress.IPv4Network(data["addresses"][0], strict=False)  # Allow non-network addresses
+        netmask = str(subnet.netmask)
+        response = [{"message": f"Interface {data['loopback_intfc_name']} created"}]
+        send_command(shell, 'configure terminal')
+        send_command(shell, f'interface {data["loopback_intfc_name"]}')
+        ipoutput = get_command_output(shell, f'ip address {loopback_ip} {netmask}')    
+        if "overlaps" in ipoutput:
+            overlap_intfc = ipoutput.split("overlaps with ")[1].split(" ")
+            overlapintfc = False                              
+            overlapintfc = overlap_intfc[0].split("\r")[0]
+            if overlapintfc:
+                response = [{"message": f"{data['loopback_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict with {overlapintfc}"}]
+            else:
+                response = [{"message": f"{data['loopback_intfc_name']} created. {data['addresses'][0]} is not configured due to address conflict"}]
+        send_command(shell, 'no shutdown')
+        send_command(shell, 'end')
+        # Save the configuration
+        send_command(shell, 'write memory')  
+        logger.info(
             f"{response}",
             extra={
                 "device_type": "Cisco",
@@ -693,7 +839,27 @@ def createloopbackinterface(data):
                 "exception": ""
             }
             )
-    return response
+        respstatus = 200
+    except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500     
+        logger.error(
+            f"Error occured when creating loopback",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "createloopback_interface",
+                "exception": str(e)
+            }
+            ) 
+        response = [{"message": f"Error in Loopback-Interface {data['loopback_intfc_name']} creation"}]
+    finally: 
+        # Close the SSH connection
+        ssh_client.close()
+    return response, respstatus
+
 def adduser(data):
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -757,22 +923,21 @@ def adduser(data):
         return False
 
 def deletevlaninterface(data):
+    if "ether" in data.get("intfc_name").lower() and "." not in data.get("intfc_name").lower():            
+        response = [{"message": f"Error: Not able to delete physical interface"}]
+        return response 
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')    
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Define the router details
-        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():            
-            response = [{"message": f"Error: Not able to delete physical interface"}]
-            return response        
-        router_ip = data["tunnel_ip"].split("/")[0]
-        username = data["router_username"]
-        password = data['router_password']
-        # Create an SSH client
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+    except Exception as e:
+        logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
@@ -781,7 +946,10 @@ def deletevlaninterface(data):
                 "exception": str(e)
             }
             )
-            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        respstatus = 504
+        response = [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        return response, respstatus  
+    try:        
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
@@ -808,19 +976,32 @@ def deletevlaninterface(data):
         send_command(shell, f'no interface {data["intfc_name"]}')
         deleteoutput = send_command_wo(shell, 'end')
         if " not be deleted" in deleteoutput:
-            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]  
+            response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}] 
+            respstatus = 429 
         else:
             for linkvlan in vlanlinkinfo:
                 send_command(shell, 'configure terminal')
                 send_command(shell, f'interface {linkvlan["intfc"]}')                
                 send_command(shell, f'{linkvlan["vlancommand"]}')
                 send_command_wo(shell, 'end')
-            response = [{"message": f"Interface {data['intfc_name']} deleted"}]   
+            response = [{"message": f"Interface {data['intfc_name']} deleted"}]  
+            respstatus = 200 
         #Save the configuration
-        send_command(shell, 'write memory')    
-        # Close the SSH connection
-        ssh_client.close()
+        send_command(shell, 'write memory') 
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Cisco",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": ""
+            }
+            )           
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
             f"Error while deleting Interface",
             extra={
@@ -831,32 +1012,24 @@ def deletevlaninterface(data):
             }
             )
         response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]      
-    logger.info(
-            f"{response}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "delete_interface",
-                "exception": ""
-            }
-            )
-    return response
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return response, respstatus
 
 def createtunnelinterface(data):
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')    
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Define the router details
-        router_ip = data["tunnel_ip"].split("/")[0]
-        username = data["router_username"]
-        password = data['router_password']
-        # Create an SSH client
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+    except Exception as e:
+        logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
@@ -865,10 +1038,12 @@ def createtunnelinterface(data):
                 "exception": str(e)
             }
             )
-            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        respstatus = 504
+        response = [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        return response, respstatus  
+    try:        
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
-
         # Add a delay to allow the shell to be ready
         time.sleep(1)
         # Enter enable mode
@@ -896,9 +1071,7 @@ def createtunnelinterface(data):
         send_command(shell, 'no shutdown')
         send_command(shell, 'end')
         # Save the configuration
-        send_command(shell, 'write memory')           
-        # Close the SSH connection
-        ssh_client.close()
+        send_command(shell, 'write memory')        
         logger.info(
             f"{response}",
             extra={
@@ -908,7 +1081,12 @@ def createtunnelinterface(data):
                 "exception": ""
             }
             )
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         response = [{"message": f"Error while creating tunnel interface"}]
         logger.error(
             response,
@@ -918,33 +1096,35 @@ def createtunnelinterface(data):
                 "be_api_endpoint": "createtunnel_interface",
                 "exception": str(e)
             }
-            )    
-    return response
+            ) 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()   
+    return response, respstatus
 
 def interfaceconfig(data):
+    # Define the router details
+    if data.get("intfc_name").lower() == "fastethernet4" or data.get("intfc_name").lower() == "dialer1":
+        response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
+        return response
+    if "ether" in data.get("intfc_name").lower() and "." not in data.get("intfc_name").lower():
+        response = [{"message": f"Error Not able to configure IP on layer 2 interface"}]
+        return response
+    if "virtual-template" in data.get("intfc_name").lower():
+        response = [{"message": f"Error Not able to configure IP on {data['intfc_name']} interface"}]
+        return response
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')    
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Define the router details
-        if data["intfc_name"].lower() == "fastethernet4" or data["intfc_name"].lower() == "dialer1":
-            response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
-            return response
-        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():
-            response = [{"message": f"Error Not able to configure IP on layer 2 interface"}]
-            return response
-        if "virtual-template" in data["intfc_name"].lower():
-            response = [{"message": f"Error Not able to configure IP on {data['intfc_name']} interface"}]
-            return response
-        router_ip = data["tunnel_ip"].split("/")[0]
-        username = data["router_username"]
-        password = data['router_password']
-        # Create an SSH client
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+    except Exception as e:
+        logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
@@ -953,7 +1133,10 @@ def interfaceconfig(data):
                 "exception": str(e)
             }
             )
-            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        respstatus = 504
+        response = [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        return response, respstatus          
+    try:
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
@@ -999,9 +1182,8 @@ def interfaceconfig(data):
         send_command(shell, "no shutdown")
         send_command(shell, 'end')
         # Save the configuration
-        send_command(shell, 'write memory')    
-        # Close the SSH connection
-        ssh_client.close()
+        send_command(shell, 'write memory')   
+        respstatus = 200
         logger.info(
             f"{response}",
             extra={
@@ -1013,6 +1195,10 @@ def interfaceconfig(data):
             )
     except Exception as e:
         response = [{"message": f"Error while updating the interface {data['intfc_name']} "}]
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
             f"Error while configuring interface",
             extra={
@@ -1021,129 +1207,29 @@ def interfaceconfig(data):
                 "be_api_endpoint": "createtunnel_interface",
                 "exception": str(e)
             }
-            )    
-    return response
-
-def interfaceconfig1(data):
-    try:
-        # Define the router details
-        if data["intfc_name"].lower() == "fastethernet4" or data["intfc_name"].lower() == "dialer1":
-            response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
-            return response
-        if "ether" in data["intfc_name"].lower() and "." not in data["intfc_name"].lower():
-            response = [{"message": f"Error Not able to configure IP on layer 2 interface"}]
-            return response
-        router_ip = data["tunnel_ip"].split("/")[0]
-        username = data["router_username"]
-        password = data['router_password']
-        # Create an SSH client
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
-            f"SSH Connection Error",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "interface_config",
-                "exception": str(e)
-            }
-            )
-            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
-        # Open an interactive shell session
-        shell = ssh_client.invoke_shell()
-
-        # Add a delay to allow the shell to be ready
-        time.sleep(1)
-        # Enter enable mode
-        output = send_command_wo(shell, 'enable')
-        if "Password" in output:  # Prompt for enable password
-            send_command_wo(shell, password)
-        send_command(shell, "configure terminal")
-        send_command(shell, f"interface {data['intfc_name']}")
-        send_command(shell, "no ip address")
-        send_command(shell, 'end')
-        # Disable paging
-        get_command_output(shell, 'terminal length 0', wait_time=1)
-        # Send the command and get the output
-        output = get_command_output(shell, 'show ip int brief')
-        interfacedetails = output.split("\n")[2:-1]
-        interface_addresses = [] 
-        for intfcinfo in interfacedetails:            
-            intfcinfo = intfcinfo.strip()
-            # Clean up extra spaces or non-visible characters using regex
-            intfcinfo = re.sub(r'\s+', ' ', intfcinfo)  # Replace multiple spaces with a single space
-            if intfcinfo.split(" ")[1] != "unassigned":
-                interface_addresses.append(intfcinfo.split(" ")[1]) 
-        for int_addr in data["new_addresses"]:
-            for address in interface_addresses:
-                corrected_subnet = ipaddress.ip_network(address, strict=False)
-                ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
-                if ip_obj in corrected_subnet:  
-                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
-                    ssh_client.close()            
-                    return response
-        send_command(shell, "configure terminal")
-        send_command(shell, f"interface {data['intfc_name']}") 
-        for newaddr in data["new_addresses"]:
-            interface_ip = newaddr['address'].split("/")[0]
-            subnet = ipaddress.IPv4Network(newaddr['address'], strict=False)  # Allow non-network addresses
-            netmask = str(subnet.netmask)
-            if newaddr['primary'].lower() == "true":
-                send_command(shell, f"ip address {interface_ip} {netmask}") 
-            else:
-                send_command(shell, f"ip address {interface_ip} {netmask} sec")             
-        response = [{"message": f"Interface {data['intfc_name']} updated"}]
-        send_command(shell, "no shutdown")
-        send_command(shell, 'end')
-        # Save the configuration
-        send_command(shell, 'write memory')    
+            )   
+    finally:
         # Close the SSH connection
-        ssh_client.close()
-    except Exception as e:
-        response = [{"message": f"Error while updating the interface {data['intfc_name']} "}]
-        logger.error(
-            f"Error while configuring interface",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "createtunnel_interface",
-                "exception": str(e)
-            }
-            )
-    logger.info(
-            f"{response}",
-            extra={
-                "device_type": "Cisco",
-                "device_ip": router_ip,
-                "be_api_endpoint": "interface_config",
-                "exception": ""
-            }
-            )
-    return response
-
+        ssh_client.close() 
+    return response, respstatus
 
 def get_interface_cisco(data):
     """
     Connects to a Cisco router via SSH and retrieves the output of 'show ip int brief'.
     """
-    router_ip = data["tunnel_ip"].split("/")[0]
-    username = data["router_username"]
-    password = data["router_password"]
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')    
+    intfcdetails = []
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    intfcdetails = []
     try:
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+    except Exception as e:
+        logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
@@ -1152,8 +1238,9 @@ def get_interface_cisco(data):
                 "exception": str(e)
             }
             )
-            return intfcdetails
-
+        respstatus = 504        
+        return intfcdetails, respstatus        
+    try:
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
@@ -1270,8 +1357,13 @@ def get_interface_cisco(data):
                                  "protocol": infonew["protocol"],
                                  "method": infonew["method"],
                                  "vlan_link": info["vlan_link"]
-                                })    
+                                })
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
             f"Error while get interface",
             extra={
@@ -1284,32 +1376,34 @@ def get_interface_cisco(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return interfaceinfo
+    return interfaceinfo, respstatus
 
 def removeuser(data):
+    # Define the router details
+    router_ip = data.get("tunnel_ip").split("/")[0]
+    username = data.get("router_username")
+    password = data.get('router_password')    
+    intfcdetails = []
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        # Define the router details
-        router_ip = data["tunnel_ip"].split("/")[0]
-        username = data["router_username"]
-        password = data['router_password']
-        # Create an SSH client
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try:
-            # Connect to the router
-            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
-        except Exception as e:
-            logger.error(
+    # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
+    except Exception as e:
+        logger.error(
             f"SSH Connection Error",
             extra={
                 "device_type": "Cisco",
                 "device_ip": router_ip,
-                "be_api_endpoint": "remove user",
+                "be_api_endpoint": "Deactivate",
                 "exception": str(e)
             }
             )
-            return [{"message": f"Error: {router_ip} refued to connect. Try later"}]
+        status = False
+        respstatus = 504        
+        return status, respstatus     
+    try:       
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
 
@@ -1330,13 +1424,15 @@ def removeuser(data):
         send_command_wo(shell, 'end')
         
         # Save the configuration
-        send_command_wo(shell, 'write memory')
-        
-        # Close the SSH connection
-        ssh_client.close()
-        return True
-    
+        send_command_wo(shell, 'write memory')      
+        respstatus = 200
+        status = True    
     except Exception as e:
+        status = False
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(
             f"Error while removing user (Dialer) for deactivating",
             extra={
@@ -1346,4 +1442,7 @@ def removeuser(data):
                 "exception": str(e)
             }
             )
-        return False
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+    return status, respstatus

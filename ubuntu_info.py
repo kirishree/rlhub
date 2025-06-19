@@ -133,7 +133,12 @@ def get_routing_table_ubuntu():
                                   "protocol":routes_protocol_map.get(protocol, "unknown"),
                                   "table_id": table
                                 })  
-    except Exception as e:        
+        respstatus = 200
+    except Exception as e:   
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500        
         logger.error(
             f"Failed to fetch Routing table",
             extra={
@@ -143,39 +148,7 @@ def get_routing_table_ubuntu():
                 "exception": str(e)
             }
             )        
-    return response 
-
-def deactivate_gre(data):
-    try:
-        
-        response = [{"message":f"Successfully disconnected: {data['tunnel_ip']}"}]
-        tunnel_ip = data["tunnel_ip"].split("/")[0]
-        if ipaddress.ip_address(tunnel_ip) in ipaddress.ip_network(vrf1_ip):
-            try:
-                command = f"sudo ip neighbor del {tunnel_ip} lladdr {data['public_ip']} dev Reach_link1"
-                print(command)
-                subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                os.system("systemctl restart reachlink_test")               
-                for i in data["subnet"]:
-                   try:
-                        command = f"sudo ip route del {i} via {tunnel_ip}"
-                        print(command)
-                        subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                   except Exception as e:
-                       print(f"Error occured while deleting route for {i}:",e)
-            except:
-                print(f"Error occured while deleting {tunnel_ip} as neighbor:", e)
-                response = [{"message":f"Device already disconnected: {data['tunnel_ip']}"}] 
-          
-        coll_spoke_disconnect.insert_one({"public_ip": data["public_ip"], 
-                                      "tunnel_ip": data["tunnel_ip"],
-                                      "uuid":data["uuid"],                                      
-                                      "subnet": data["subnet"]                                     
-                                    })
-    except Exception as e:
-        print(e)
-        response = [{"message":f"Error:while deactivating data['tunnel_ip']"} ]                 
-    return response
+    return response, respstatus
 
 def deactivate(data):
     try:        
@@ -195,7 +168,8 @@ def deactivate(data):
                         }
             ) 
             already_availble = True
-        except Exception as e:                    
+        except Exception as e:  
+                      
             if " returned non-zero exit status 1" in str(e): 
                 logger.info(
                         f"No DROP rule found for {tunnel_ip}",
@@ -237,7 +211,7 @@ def deactivate(data):
             ) 
             if already_availble:
                 response = [{"message":f"Already deactivated: {data['tunnel_ip']}"}]
-
+            respstatus = 200
         except Exception as e:
                 logger.error(
                     f"Failed to insert DROP rule or restart for {tunnel_ip}",
@@ -249,7 +223,12 @@ def deactivate(data):
                     }
                 )
                 response = [{"message":f"Error:while deactivating {tunnel_ip}. Please try again later."}]
+                respstatus = 500
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(
             f"Failed to deactivate",
             extra={
@@ -260,11 +239,12 @@ def deactivate(data):
             }
             ) 
         response = [{"message":f"Error:while deactivating {tunnel_ip}. Please try again later."}]                  
-    return response
+    return response, respstatus
 
 def activate(data):
     try:       
         response = [{"message":f"Successfully activating...: {data['tunnel_ip']}"}]
+        respstatus = 200
         tunnel_ip = data["tunnel_ip"].split("/")[0]   
         e = None  # Initialize early
         if "." in tunnel_ip:
@@ -278,9 +258,11 @@ def activate(data):
                         response = [{"message":f"Error: Device isn't blocked, just unreachable. Please check branch connectivity."}]  
                     else:
                         response = [{"message":f"Error:while activating {tunnel_ip}. Please try again later."}]
+                        respstatus = 500
             
         else:
             response = [{"message":f"Error: Device isn't blocked, just unreachable. Please check branch internet before activation."}]
+            respstatus = 500
         logger.info(
             f"{response}",
             extra={
@@ -291,6 +273,10 @@ def activate(data):
             }
             )  
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500 
         logger.error(
             f"Failed to activate",
             extra={
@@ -301,52 +287,26 @@ def activate(data):
             }
             )  
         response =  [{"message":f"Error:while activating {tunnel_ip}. Please try again later."}] 
-    return response
-
-def activate_gre(data):
-    try:       
-        response = [{"message":f"Successfully activating...: {data['tunnel_ip']}"}]
-        tunnel_ip = data["tunnel_ip"].split("/")[0]   
-        if True:
-            if ipaddress.ip_address(tunnel_ip) in ipaddress.ip_network(vrf1_ip):
-                try:
-                    command = f"sudo ip neighbor replace {tunnel_ip} lladdr {data['public_ip']} dev Reach_link1"
-                    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                    os.system("systemctl restart reachlink_test") 
-                    for i in data["subnet"]:
-                        try:
-                            command = f"sudo ip route replace {i} via {tunnel_ip}"
-                            subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                            #command = f"ip route replace {i} dev vrf1"
-                            #subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-                        except Exception as e:
-                            print(f"Error occured while adding route for {i}:", e)
-                except Exception as e:
-                    print(f"Error occured while adding {tunnel_ip} as neighbor:", e)
-                    response = [{"message":f"Device already activated: {data['tunnel_ip']}"}]
-                coll_spoke_disconnect.delete_many({"uuid": data["uuid"]})
-    except Exception as e:
-        print(e)
-        response = [{"message":f"Error:"}]
-    return response
+    return response, respstatus
 
 def diagnostics(data):
-    ip_addresses = [data["subnet"].split("/")[0]]
-    for ip in ip_addresses:    
-        try:
-            command = (f"ping -c 5  {ip}")
-            output = subprocess.check_output(command.split()).decode()
-            lines = output.strip().split("\n")
-            # Extract the round-trip time from the last line of output
-            last_line = lines[-1].strip()
-            rtt = last_line.split()[3]
-            rtt_avg = rtt.split("/")[1]
-            response = [{"message": f"Subnet {data['subnet']} Reachable with RTT: {rtt_avg}ms"}]
-            return response
-        except subprocess.CalledProcessError:
-            rtt_avg = -1
-    response = [{"message": f"Error: Subnet {data['subnet']} not Reachable"}]
-    logger.info(
+    try:
+        ip_addresses = [data["subnet"].split("/")[0]]
+        for ip in ip_addresses:    
+            try:
+                command = (f"ping -c 5  {ip}")
+                output = subprocess.check_output(command.split()).decode()
+                lines = output.strip().split("\n")
+                # Extract the round-trip time from the last line of output
+                last_line = lines[-1].strip()
+                rtt = last_line.split()[3]
+                rtt_avg = rtt.split("/")[1]
+                response = [{"message": f"Subnet {data['subnet']} Reachable with RTT: {rtt_avg}ms"}]
+                return response
+            except subprocess.CalledProcessError:
+                rtt_avg = -1
+        response = [{"message": f"Error: Subnet {data['subnet']} not Reachable"}]
+        logger.info(
                         f"{response}",
                         extra={
                             "device_type": "ReachlinkServer",
@@ -355,103 +315,23 @@ def diagnostics(data):
                             "exception": ""
                         }
             )
-    return response
-
-def background_deletesubnet(data):
-    if ".net" not in data["uuid"]:
-            subnets = data["subnet_info"]
-            tunnel_ip = data["tunnel_ip"].split("/")[0] 
-            url = "http://" + tunnel_ip + ":5000/"
-            # Set the headers to indicate that you are sending JSON data
-            headers = {"Content-Type": "application/json"}
-            route_add = {"subnet_info": subnets}
-            json_data = json.dumps(route_add)
-            try:
-                response = requests.post(url + "delroute", data=json_data, headers=headers)  # Timeout set to 5 seconds
-                response.raise_for_status()
-                print(response) 
-            #response = requests.post(url+"delroute", data=json_data, headers=headers)
-            # Check the response
-                if response.status_code == 200:           
-                    json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    json_response = json.loads(json_response)
-                    print(json_response)
-                    response = [{"message":json_response["message"]}]              
-                else:
-                    response = [{"message": "Error while adding subnet in spoke side. Pl try again"}]
-            except requests.exceptions.RequestException as e:
-                print("disconnected")
-                response =[{"message": "Tunnel disconnected in the middle. So, pl try again"}] 
-    else:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            status = router_configure.delroute(data)
-            response = [{"message":status}]
-
-def delsubnet(data):
-    try:
-        
-        response = [{"message":f"Successfully deleted {len(data['subnet_info'])} subnet(s)"}]
-        subnets = data["subnet_info"]
-        tunnel_ip = data["tunnel_ip"].split("/")[0] 
-        tunnel_info = coll_tunnel_ip.find_one({"tunnel_ip": data['tunnel_ip']}) 
-        past_subnets = tunnel_info["subnet"]            
-        for subnet in subnets:
-            command = "sudo ip route del " + subnet["subnet"] + " via " + tunnel_ip          
-            subprocess.run(command, shell=True, check=True, capture_output=True, text=True)   
-            past_subnets.remove(subnet["subnet"])
-        past_subnets = list(set(past_subnets))        
-        query = {"tunnel_ip": data["tunnel_ip"] }
-        update_data = {"$set": {"subnet":past_subnets 
-                                    }
-                          }
-        coll_tunnel_ip.update_many(query, update_data) 
-        os.system("systemctl restart reachlink_test")        
-        background_thread = threading.Thread(target=background_deletesubnet, args=(data,))
-        background_thread.start()       
-       
+        respstatus = 200
     except Exception as e:
-        response = [{"message":f"Error: while deleting subnet"}]                  
-    return response
-
-def background_addsubnet(data):
-    if ".net" not in data["uuid"]:
-            subnets = data["subnet_info"]
-            tunnel_ip = data["tunnel_ip"].split("/")[0] 
-            url = "http://" + tunnel_ip + ":5000/"
-            # Set the headers to indicate that you are sending JSON data
-            headers = {"Content-Type": "application/json"}
-            route_add = {"subnet_info": subnets}
-            json_data = json.dumps(route_add)
-            try:
-                response = requests.post(url + "addroute", data=json_data, headers=headers)  # Timeout set to 5 seconds
-                response.raise_for_status()
-                print(response)
-                # response = requests.post(url+"addroute", data=json_data, headers=headers)
-                # Check the response
-                if response.status_code == 200:           
-                    json_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
-                    json_response = json.loads(json_response)
-                    print(json_response)
-                    response = [{"message":json_response["message"]}]            
-                else:
-                    response = [{"message":"Error while sending route info to spoke"}]
-            except requests.exceptions.RequestException as e:
-                print("disconnected")
-                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}]  
-    elif "microtek" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            status = microtek_configure.addroute(data)
-            response = [{"message":status}]
-    elif "cisco" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
-            status = router_configure.addroute(data)
-            response = [{"message":status}]
+        response = [{"message": f"Error: While Ping from HUB"}]
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
+        logger.info(
+                        "Error while Ping from HUB",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "be_api_endpoint": "pinghub",
+                            "exception": str(e)
+                        }
+            ) 
+    return response, respstatus
 
 def configurepbr_spoke(data):
     try:    
@@ -634,7 +514,12 @@ def addstaticroute_ubuntu(data):
                             "exception": ""
                         }
             )
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500     
         logger.error(
                         f"Failed to add route",
                         extra={
@@ -645,7 +530,7 @@ def addstaticroute_ubuntu(data):
                         }
             )
         response = [{"message": "Error while adding route. Pl try again"}]   
-    return response
+    return response, respstatus
 
 def get_interface_details_ubuntu(data):
     try:
@@ -714,8 +599,13 @@ def get_interface_details_ubuntu(data):
                     if intfc["interface_name"] == "Reach_link1":
                         intfc["interface_name"] = "Overlay Tunnel"
                     if intfc["interface_name"] == "tun0":
-                        intfc["interface_name"] = "Base Tunnel"        
+                        intfc["interface_name"] = "Base Tunnel"    
+        respstatus = 200    
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
                         f"Failed to fetch interface info",
                         extra={
@@ -725,93 +615,7 @@ def get_interface_details_ubuntu(data):
                             "exception": str(e)
                         }
             )        
-    return interface_details
-
-def addsubnet(data):
-    try:       
-        subnets = data["subnet_info"]
-        tunnel_ip = data["tunnel_ip"].split("/")[0] 
-        tunnel_info = coll_tunnel_ip.find_one({"tunnel_ip": data['tunnel_ip']}) 
-        past_subnets = tunnel_info["subnet"] 
-        subnet_na = [] 
-        real_routes = []
-        with open("/etc/netplan/00-installer-config.yaml", "r") as f:
-            data1 = yaml.safe_load(f)
-            f.close()
-        dat=[]
-        for rr in data1["network"]["tunnels"]["Reach_link1"]:
-            if rr == "routes":
-                dat = data1["network"]["tunnels"]["Reach_link1"]["routes"]         
-        for subnet in subnets:
-            if subnet["subnet"].split(".")[0] == "127" or subnet["subnet"].split(".")[0] == "169" or int(subnet["subnet"].split(".")[0]) > 223:
-                subnet_na.append(subnet["subnet"])
-            else:
-                try:                    
-                    if (ipaddress.ip_network(subnet["subnet"], strict=False) and ipaddress.ip_address(subnet["gateway"])):
-                        dat.append({"to": subnet["subnet"],
-                                    "via": tunnel_ip}
-                                )
-                        past_subnets.append(subnet["subnet"])                     
-                except ValueError:
-                    response = [{"message":"Either subnet or Gateway is not valid IP"}]  
-                    subnet_na.append(subnet["subnet"])     
-                if subnet["subnet"].split(".")[0] != "10":
-                    if subnet["subnet"].split(".")[0] == "172":
-                        if 15 < int(subnet["subnet"].split(".")[1]) < 32:
-                                private_ip = True
-                        else:
-                                private_ip = False
-                    elif subnet["subnet"].split(".")[0] == "192":
-                        if subnet["subnet"].split(".")[1] == "168":
-                            private_ip = True
-                        else:
-                            private_ip = False
-                    elif int(subnet["subnet"].split(".")[0]) > 223: 
-                        private_ip = True
-                    else:
-                        private_ip = False
-                else:
-                    private_ip = True
-                if not private_ip:
-                    real_routes.append(subnet)
-        data1["network"]["tunnels"]["Reach_link1"]["routes"] = dat
-        with open("/etc/netplan/00-installer-config.yaml", "w") as f:
-            yaml.dump(data1, f, default_flow_style=False)
-            f.close()
-        os.system("sudo netplan apply")  
-        for branch in coll_tunnel_ip.find({}):
-            try:
-                os.system(f"ip neighbor add {branch['tunnel_ip'].split('/')[0]} lladdr {branch['public_ip']} dev Reach_link1") 
-            except Exception as e:
-                print(f"Neighbor add error: add route")     
-        if len(real_routes) > 0:
-            pbr_spoke_data = {"tunnel_ip": data["tunnel_ip"],
-                              "uuid": data["uuid"],
-                              "realip_subnet": real_routes }
-            background_thread = threading.Thread(target=configurepbr_spoke, args=(pbr_spoke_data,))
-            background_thread.start()     
-        past_subnets = list(set(past_subnets))         
-        past_subnets = [item for item in past_subnets if item != "None"]      
-        query = {"tunnel_ip": data["tunnel_ip"] }
-        update_data = {"$set": {"subnet":past_subnets 
-                                    }
-                          }
-        coll_tunnel_ip.update_many(query, update_data)       
-        os.system("systemctl restart reachlink_test")        
-        past_subnets = list(set(past_subnets))
-        background_thread = threading.Thread(target=background_addsubnet, args=(data,))
-        background_thread.start() 
-        if len(subnet_na) == 0: 
-            response = [{"message":f"Successfully added {len(data['subnet_info'])} subnet(s)."}]    
-        else:
-            added_subnet = len(data['subnet_info']) - len(subnet_na)
-            if added_subnet == 0:
-                response = [{"message":f"{subnet_na} is already routed."}]
-            else:
-                response = [{"message":f"Successfully added {added_subnet} subnet(s). {subnet_na} is already routed."}]
-    except Exception as e:    
-        response = [{"message": f"Error in adding route, pl try again." }]
-    return response 
+    return interface_details, respstatus
 
 def configured_address():
     try:
@@ -834,8 +638,15 @@ def interface_config(data):
     try:
         if data["intfc_name"] == "enp0s3" or data["intfc_name"] == "Base Tunnel" or data["intfc_name"] == "Overlay Tunnel":
             response = [{"message": f"Error dont try to modify {data['intfc_name']} interface address"}]
-            print(response)
-            return response
+            logger.error(f"{response}",
+                        extra={
+                            "device_type": "ReachlinkServer",
+                            "device_ip": hub_ip,
+                            "be_api_endpoint": "interface_config",
+                            "exception": ""
+                        })
+            respstatus = 400
+            return response, respstatus
         for addr in data["current_addresses"]:
             os.system(f"sudo ip addr del {addr} dev {data['intfc_name']}")
         interface_addresses = configured_address()
@@ -846,7 +657,8 @@ def interface_config(data):
                 ip_obj = ipaddress.ip_address(int_addr.split("/")[0])
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
-                    return response
+                    respstatus = 422
+                    return response, respstatus
         intfc_name = data["intfc_name"]
         if os.path.exists("/etc/netplan/00-installer-config.yaml"):
             # Open and read the Netplan configuration
@@ -882,7 +694,12 @@ def interface_config(data):
                             "exception": ""
                         }
             )  
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
                         f"Failed to configure interface",
                         extra={
@@ -893,7 +710,7 @@ def interface_config(data):
                         }
             )    
         response = [{"message": f"Error while configuring interface with  {data['intfc_name']}. Pl try again!"}]        
-    return response
+    return response, respstatus
 
 def create_vlan_interface(data):
     try:
@@ -904,7 +721,8 @@ def create_vlan_interface(data):
                 ip_obj = ipaddress.ip_address(vlan_address.split("/")[0])
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring VLAN interface due to address conflict {vlan_address}"}]
-                    return response
+                    respstatus = 422
+                    return response, respstatus
         if os.path.exists("/etc/netplan/00-installer-config.yaml"):
             # Open and read the Netplan configuration
             with open("/etc/netplan/00-installer-config.yaml", "r") as f:
@@ -956,7 +774,12 @@ def create_vlan_interface(data):
                             "exception": ""
                         }
             )  
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
                         f"Failed to create VLAN Interface",
                         extra={
@@ -967,7 +790,7 @@ def create_vlan_interface(data):
                         }
             )   
         response = [{"message": f"Error while creating VLAN interface with id {data['vlan_id']}. Pl try again!"}]
-    return response
+    return response, respstatus
 
 def create_tunnel_interface(data):
     try:
@@ -978,7 +801,8 @@ def create_tunnel_interface(data):
                 ip_obj = ipaddress.ip_address(vlan_address.split("/")[0])
                 if ip_obj in corrected_subnet:  
                     response = [{"message": f"Error while configuring VLAN interface due to address conflict {vlan_address}"}]
-                    return response
+                    respstatus = 422
+                    return response, respstatus
         if os.path.exists("/etc/netplan/00-installer-config.yaml"):
             # Open and read the Netplan configuration
             with open("/etc/netplan/00-installer-config.yaml", "r") as f:
@@ -1016,7 +840,12 @@ def create_tunnel_interface(data):
                             "exception": ""
                         }
             )  
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
                         f"Failed to create tunnel Interface",
                         extra={
@@ -1027,7 +856,7 @@ def create_tunnel_interface(data):
                         }
             )   
         response = [{"message": f"Error while configuring tunnel interface with id {data['tunnel_intfc_name']}. Pl try again!"}]
-    return response
+    return response, respstatus
 
 def delstaticroute_ubuntu(data):
     try:
@@ -1105,7 +934,12 @@ def delstaticroute_ubuntu(data):
                             "exception": ""
                         }
             )  
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500    
         logger.error(
                         f"Failed to delete static route",
                         extra={
@@ -1116,7 +950,7 @@ def delstaticroute_ubuntu(data):
                         }
             )   
         response = [{"message": "Error while deleting route. Pl try again!"}]
-    return response
+    return response, respstatus
 
 def generate_dialerip(dialerips):
     random_no = random.randint(3,250)

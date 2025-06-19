@@ -82,7 +82,9 @@ def get_routingtable_robustel(data):
                 "exception": str(e)
             }
             )
-            return []    
+            respstatus = 504
+            response = []
+            return response, respstatus
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'status route')
@@ -151,7 +153,13 @@ def get_routingtable_robustel(data):
                                 "metric":"-",
                                 "outgoint_interface_name": intfc.split(" ")[3],
                                 "table_id": "main"})
-    except Exception as e:        
+        response = routing_table[1:]
+        respstatus = 200
+    except Exception as e:  
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500              
         logger.error(
             f"Failed to fetch routing table",
             extra={
@@ -162,13 +170,14 @@ def get_routingtable_robustel(data):
             }
             )    
         if len(routing_table) > 0:
-            return routing_table[1:]
+            response = routing_table[1:]
         else:
-            return [] 
+            response = []
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return routing_table[1:]
+    
+    return response, respstatus
 
 def pingspoke(data):
     """
@@ -197,7 +206,8 @@ def pingspoke(data):
             }
             )
             response = {"message":f"Connection Timeout. Pl try again!"}
-            return response    
+            respstatus = 504
+            return response, respstatus 
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, f'ping {data["subnet"]}')
@@ -210,7 +220,18 @@ def pingspoke(data):
             if "round-trip" in pinginfo:
                 avg_ms = pinginfo.split("=")[1].split("/")[1]  
                 response = {"message":f"Subnet {data['subnet']} Reachable with RTT: {avg_ms}ms"}
+        respstatus = 200
+        logger.info(f"{response}",
+                extra={
+                "device_type": "Robustel",
+                "device_ip": router_ip,
+                "be_api_endpoint": "pingspoke",
+                "exception": ""})
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Ping time out",
             extra={
@@ -223,9 +244,8 @@ def pingspoke(data):
         response = {"message":f"Error: Ping Timeout. Pl try again"}     
     finally:
         # Close the SSH connection
-        ssh_client.close()
-    logger.info(f"Response- Robustel Ping output: {response}")
-    return response
+        ssh_client.close()    
+    return response, respstatus
 
 def clean_traceroute_output(raw_output):
     # This regex matches ANSI escape sequences
@@ -258,13 +278,19 @@ def traceroute(data):
                 "exception": str(e)
             }
             )
-            return "Connection Time out. Pl try again!"      
+            response = "Connection Time out. Pl try again!"
+            respstatus = 504
+            return response, respstatus
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, f'traceroute {data["trace_ip"]}')
-        cleaned_output = clean_traceroute_output(output)
-        
+        response = clean_traceroute_output(output)
+        respstatus = 200        
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f" Failed to fetch trace info",
             extra={
@@ -274,11 +300,11 @@ def traceroute(data):
                 "exception": str(e)
             }
             )
-        cleaned_output = "Error while traceroute"      
+        response = "Error while traceroute"      
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return cleaned_output
+    return response, respstatus
 
 def get_interface_robustel(data):
     """
@@ -289,8 +315,8 @@ def get_interface_robustel(data):
     password = data["router_password"]
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    intfcdetails = []
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())    
+    intfc_datas = []
     try:
         try:
             # Connect to the router
@@ -304,14 +330,14 @@ def get_interface_robustel(data):
                 "be_api_endpoint": "get_interface_info",
                 "exception": str(e)
             }
-            )
-            return []  
+            )            
+            respstatus = 504
+            return intfc_datas, respstatus
         # Open an interactive shell session
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')
-        interfacedetails = output.split("\n")
-        intfc_datas = []
+        interfacedetails = output.split("\n")        
         status = "up"
         virtualaddresses = []
         for intfc in interfacedetails:
@@ -373,7 +399,13 @@ def get_interface_robustel(data):
                                  "vlan_link": "-",
                                  "interfaceid":virtual_interfacelastid
                                 })
+        intfc_datas.pop(1)        
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Failed to fetch interface info",
             extra={
@@ -382,12 +414,12 @@ def get_interface_robustel(data):
                 "be_api_endpoint": "trace",
                 "exception": str(e)
             }
-            )
+            )        
     finally:
         # Close the SSH connection
         ssh_client.close()
-    intfc_datas.pop(1)
-    return intfc_datas
+    
+    return intfc_datas, respstatus
 
 def createvlaninterface(data):
     """
@@ -410,7 +442,8 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
-        return response
+        respstatus = 422
+        return response, respstatus
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -484,7 +517,8 @@ def createvlaninterface(data):
                         }
                     )
             ssh_client.close()
-            return response 
+            respstatus = 501
+            return response, respstatus
         vlan_no = [i for i in range(1,11) if i not in vlan_ids][0]            
         output = send_command_wo(shell, f'add lan vlan {vlan_no}')
         response = [{"message": "Error while creating vlan interface"}]
@@ -526,7 +560,12 @@ def createvlaninterface(data):
                 "exception": ""
             }
             )
+        respstatus = 200
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Failed to add Vlan",
             extra={
@@ -539,7 +578,7 @@ def createvlaninterface(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return response
+    return response, respstatus
 
 def deletevlaninterface(data):
     """
@@ -566,7 +605,8 @@ def deletevlaninterface(data):
             }
             )
             response = [{"message": "Connection timeout. pl try again! "}] 
-            return response   
+            respstatus = 504
+            return response, respstatus  
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show lan all')        
@@ -587,8 +627,10 @@ def deletevlaninterface(data):
             output = send_command_wo(shell, f'del lan vlan {vlan_no}')        
         if "OK" in output:            
             response = [{"message": f"Interface {data['intfc_name']} deleted"}]
+            respstatus = 200
         else:            
             response = [{"message": f"Error: Interface {data['intfc_name']} may not be deleted"}]
+            respstatus = 409
         logger.info(
             f"{response}",
             extra={
@@ -600,6 +642,10 @@ def deletevlaninterface(data):
             )     
         output = send_command_wo(shell, f'config save_and_apply')                  
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Failed to delete VLAN interafce",
             extra={
@@ -612,7 +658,7 @@ def deletevlaninterface(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return response
+    return response, respstatus
 
 def addstaticroute(data):
     """
@@ -640,7 +686,8 @@ def addstaticroute(data):
             }
             )
             response = [{"message": "Connection timeout. pl try again! "}]   
-            return response    
+            respstatus = 504
+            return response, respstatus  
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show route all')
@@ -665,11 +712,13 @@ def addstaticroute(data):
                             "exception": ""
                         }
                 )
-                return response
+                respstatus = 409
+                return response, respstatus
             staticroute_no = int(staticroute_no) + 1
         else:
             staticroute_no = 1  
         subnets = data["subnet_info"]  
+        respstatus = 500
         for subnet in subnets:        
             subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
             if subnet_key:                
@@ -680,6 +729,7 @@ def addstaticroute(data):
                 ip_obj = ipaddress.ip_address(destination)
                 if ip_obj in corrected_subnet:
                     response = [{"message": f"Error while adding route due to address conflict {destination}"}]
+                    respstatus = 422
                     break                
                 output = send_command_wo(shell, f'add route static_route {staticroute_no}')
                 response = [{"message": "Error while adding static route"} ]             
@@ -691,6 +741,7 @@ def addstaticroute(data):
                             output = send_command_wo(shell, f'set route static_route {staticroute_no} gateway {subnet["gateway"]}')
                             if "OK" in output:   
                                 response = [{"message": "Route(s) added"}]
+                                respstatus = 200
                             else:
                                 response = [{"message": "Error in setting gateway. Pl check & try again"}]
                         else:
@@ -713,6 +764,10 @@ def addstaticroute(data):
             )    
         output = send_command_wo(shell, f'config save_and_apply')                  
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Failed to add route",
             extra={
@@ -725,7 +780,7 @@ def addstaticroute(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return response
+    return response, respstatus
 
 def delstaticroute(data):
     """
@@ -752,7 +807,8 @@ def delstaticroute(data):
             }
             )
             response = [{"message": "Connection timeout. pl try again! "}]   
-            return response     
+            respstatus = 504
+            return response, respstatus 
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
         output = get_command_output(shell, 'show route all')
@@ -777,9 +833,11 @@ def delstaticroute(data):
                         output = send_command_wo(shell, f'del route static_route {staticroute_no}')
                         
                         if "OK" in output:                                        
-                            response = [{"message": f"Route {subnet_ip} deleted"}]   
+                            response = [{"message": f"Route {subnet_ip} deleted"}]  
+                            respstatus = 200 
                         else:
                             response = [{"message": "Error while deleting route. Pl try again"}] 
+                            respstatus = 500
                         logger.info(
                             f"{response}",
                             extra={
@@ -791,6 +849,10 @@ def delstaticroute(data):
                         )  
         output = send_command_wo(shell, f'config save_and_apply')          
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Failed to delete route",
             extra={
@@ -803,7 +865,7 @@ def delstaticroute(data):
     finally:
         # Close the SSH connection
         ssh_client.close()
-    return response
+    return response, respstatus
 
 def interface_config(data):
     """
@@ -831,10 +893,10 @@ def interface_config(data):
             }
             )
             response = [{"message": "Connection timeout. pl try again! "}]   
-            return response      
+            respstatus = 504
+            return response, respstatus  
         shell = ssh_client.invoke_shell()
         # Send the command and get the output
-
         output = get_command_output(shell, 'show lan all')
         interfacedetails = output.split("\n")
         if "Vlan" in data['intfc_name']:
@@ -872,7 +934,8 @@ def interface_config(data):
                         }
                     )
                     ssh_client.close()
-                    return response     
+                    respstatus = 422
+                    return response, respstatus
             if vlan_no != "None":                
                 subnet = ipaddress.IPv4Network(data["new_addresses"][0]["address"], strict=False)  # Allow non-network addresses
                 netmask = str(subnet.netmask)
@@ -880,6 +943,7 @@ def interface_config(data):
                 ip_obj = ipaddress.ip_address(vlan_ip)
                 if ip_obj in corrected_subnet:
                     response = [{"message": f"Error while configuring  VLAN interface due to address conflict {multiple_ip}"}]
+                    respstatus = 422
                 else:     
                     output = send_command_wo(shell, f'set lan vlan {vlan_no} ip {vlan_ip}')
                     if "OK" in output:
@@ -887,12 +951,15 @@ def interface_config(data):
                         output = send_command_wo(shell, f'config save_and_apply')
                         if len(data["new_addresses"]) == 1:
                             response = [{"message": f"Interface {data['intfc_name']} updated"}]
+                            respstatus = 200
                         else:
                             response = [{"message": f"Configured the Primary address on {data['intfc_name']}. It doesn't support secondary address "}]
                     else:
-                        response = [{"message": f"Error while updating interface {data['intfc_name']}"}]                
+                        response = [{"message": f"Error while updating interface {data['intfc_name']}"}]
+                        respstatus = 500                
             else:
                 response = [{"message": "Error no such vlan available"}]
+                respstatus = 422
             
         elif "_IP_Alias" in data['intfc_name']:
             alias_id = []
@@ -967,6 +1034,7 @@ def interface_config(data):
                     if "OK" in output:
                         output = send_command_wo(shell, f'set lan multi_ip {ipid} netmask {netmask1}')    
                         response = [{"message": f"Interface {data['intfc_name']} updated "}]  
+                        respstatus = 200
                         
                         if multiple_ip.split(".")[0] != "10":
                             if multiple_ip.split(".")[0] == "172":
@@ -992,9 +1060,11 @@ def interface_config(data):
                                             
                     else:
                         response = [{"message": f"Error while updating interface {data['intfc_name']}"}]   
+                        respstatus = 500
                     ipid = ipid + 1
                 else:
-                    response = [{"message": "Error while adding Multiple IP "}]   
+                    response = [{"message": "Error while adding Multiple IP "}] 
+                    respstatus = 500  
                     break 
             output = send_command_wo(shell, f'config save_and_apply')
             spokename = data["spokedevice_name"]
@@ -1050,6 +1120,10 @@ def interface_config(data):
             }
             )
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500      
         logger.error(
             f"Failed to configure interface",
             extra={
@@ -1062,4 +1136,4 @@ def interface_config(data):
         # Close the SSH connection
         ssh_client.close()
     os.system("systemctl restart openvpn-server@server")  
-    return response
+    return response, respstatus
