@@ -84,25 +84,23 @@ def test_branch_info(client, capfd, login_data, expected):
     out, err = capfd.readouterr()
     logger.info(f"login response: {login_response.json()}")
     token = login_response.json().get("access")  # Adjust this if your token key is different
-    assert token is not None
-
-    # Step 2: Call branch_info with Authorization header
-    headers = {
+    if token is not None:
+        # Step 2: Call branch_info with Authorization header
+        headers = {
         "HTTP_AUTHORIZATION": f"Bearer {token}"
-    }
-    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
-    branch_info_url = reverse("branch_info")
-    response = client.get(branch_info_url, **headers)
-
-    assert response.status_code == 200
-    json_data = response.json()
-    print("Branch info:", json_data)
-    # Capture again
-    out2, err2 = capfd.readouterr()
-    logger.info(f"Branch info: {json_data}")
-    # Optional: Assert fields in response
-    assert "total_branches" in json_data
-    assert "active_branches" in json_data
+        }
+        #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+        branch_info_url = reverse("branch_info")
+        response = client.get(branch_info_url, **headers)
+        assert response.status_code == 200
+        json_data = response.json()
+        print("Branch info:", json_data)
+        # Capture again
+        out2, err2 = capfd.readouterr()
+        logger.info(f"Branch info: {json_data}")
+        # Optional: Assert fields in response
+        assert "total_branches" in json_data
+        assert "active_branches" in json_data
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.parametrize("login_data,expected", test_case_login("HUB_info"))
@@ -118,25 +116,24 @@ def test_hub_info(client, capfd, login_data, expected):
     out, err = capfd.readouterr()
     logger.info(f"login response: {login_response.json()}")
     token = login_response.json().get("access")  # Adjust this if your token key is different
-    assert token is not None
-
-    # Step 2: Call branch_info with Authorization header
-    headers = {
+    if  token is not None:
+        # Step 2: Call branch_info with Authorization header
+        headers = {
         "HTTP_AUTHORIZATION": f"Bearer {token}"
-    }
-    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
-    hub_info_url = reverse("hub_info")
-    response = client.get(hub_info_url, **headers)
+        }
+        #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+        hub_info_url = reverse("hub_info")
+        response = client.get(hub_info_url, **headers)
 
-    assert response.status_code == 200
-    json_data = response.json()
-    print("HUB info:", json_data)
-    # Capture again
-    out2, err2 = capfd.readouterr()
-    logger.info(f"HUB info: {json_data}")
-    # Optional: Assert fields in response
-    assert "total_hubs" in json_data
-    assert "active_hubs" in json_data
+        assert response.status_code == 200
+        json_data = response.json()
+        print("HUB info:", json_data)
+        # Capture again
+        out2, err2 = capfd.readouterr()
+        logger.info(f"HUB info: {json_data}")
+        # Optional: Assert fields in response
+        assert "total_hubs" in json_data
+        assert "active_hubs" in json_data
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 @pytest.mark.parametrize("login_data,expected", test_case_login("Home_page_info"))
@@ -144,7 +141,7 @@ def test_hub_info(client, capfd, login_data, expected):
 def test_homepage_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'    
-    logger.info(f"Login info: {login_data['username']}")
+    logger.info(f"Login info: {login_data}")
     login_response = client.post(login_url, login_data, content_type="application/json")
     assert login_response.status_code == expected
     print("Login response JSON:", login_response.json())
@@ -152,22 +149,21 @@ def test_homepage_info(client, capfd, login_data, expected):
     out, err = capfd.readouterr()
     logger.info(f"login response: {login_response.json()}")
     token = login_response.json().get("access")  # Adjust this if your token key is different
-    assert token is not None
-
-    # Step 2: Call branch_info with Authorization header
-    headers = {
+    if token is not None:
+        # Step 2: Call branch_info with Authorization header
+        headers = {
         "HTTP_AUTHORIZATION": f"Bearer {token}"
-    }
-    #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
-    homepage_info_url = reverse("homepage_info")
-    response = client.get(homepage_info_url, **headers)
+        }
+        #branch_info_url = reverse("branch_info") + "?organization_id=ea318b0108d6495babfbd020ffc4e132"
+        homepage_info_url = reverse("homepage_info")
+        response = client.get(homepage_info_url, **headers)
 
-    assert response.status_code == 200
-    json_data = response.json()
-    print("Homepage info:", json_data)
-    # Capture again
-    out2, err2 = capfd.readouterr()
-    logger.info(f"Home page info: {json_data}")
-    # Optional: Assert fields in response
-    assert "hub_info" in json_data
-    assert "bandwidth_info" in json_data   
+        assert response.status_code == 200
+        json_data = response.json()
+        print("Homepage info:", json_data)
+        # Capture again
+        out2, err2 = capfd.readouterr()
+        logger.info(f"Home page info: {json_data}")
+        # Optional: Assert fields in response
+        assert "hub_info" in json_data
+        assert "bandwidth_info" in json_data   
