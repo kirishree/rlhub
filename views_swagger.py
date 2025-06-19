@@ -234,7 +234,7 @@ def login_or_register(request):
             return Response({            
             "message": False,
             "msg_status": "Invalid Password"
-            })
+            }, status = 400)
         # Generate JWT tokens for new user
         refresh = RefreshToken.for_user(user)
         refresh['role'] = "admin"  # Assuming 'role' is a field on your user model
@@ -278,7 +278,7 @@ def login_or_register(request):
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
                 "message": True
-            })
+            }, status=200)
         else:
             details = coll_registered_organization.find_one({"organization_id":getattr(user, 'onboarding_org_id', 'NA')})
             if details:
@@ -297,7 +297,7 @@ def login_or_register(request):
                             "access": str(refresh.access_token),
                             "refresh": str(refresh),
                             "message": True
-                        })
+                        }, status=200)
                     else:
                         refresh['subscription_till'] = str(details["subscription_to"])
                         logger.info(
@@ -311,14 +311,14 @@ def login_or_register(request):
                                     "access": str(refresh.access_token),
                                     "refresh": str(refresh),         
                                     "message": True
-                                })  
+                                }, status=200)  
                 else:
                     refresh['subscription_till'] = str(details["subscription_to"])
                     return Response({
                             "access": str(refresh.access_token),
                             "refresh": str(refresh),
                             "message": True
-                        })
+                        }, status=200)
     # Perform your custom validation before creating a new user (add logic here)
     # Example: Check if username meets your policy, etc.
     onboard_status, onuser_role, onorg_id, user_id, first_name, last_name, org_name, to_date = onboarding.check_login_onboarding_new(username, password)
@@ -359,7 +359,7 @@ def login_or_register(request):
             "access": str(refresh.access_token),
             "refresh": str(refresh),            
             "message": True
-        })
+        }, status=200)
     else:
         logger.error(f"New user: {username} not added due to {onboard_status} ",
                             extra={                
@@ -370,7 +370,7 @@ def login_or_register(request):
         return Response({            
             "message": False,
             "msg_status": onboard_status
-        })
+        }, status=400)
 
 @swagger_auto_schema(
     method='post',
