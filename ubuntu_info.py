@@ -305,7 +305,8 @@ def diagnostics(data):
                 rtt = last_line.split()[3]
                 rtt_avg = rtt.split("/")[1]
                 response = [{"message": f"Subnet {data['subnet']} Reachable with RTT: {rtt_avg}ms"}]
-                return response
+                respstatus = 200
+                return response, respstatus
             except subprocess.CalledProcessError:
                 rtt_avg = -1
         response = [{"message": f"Error: Subnet {data['subnet']} not Reachable"}]
@@ -322,7 +323,7 @@ def diagnostics(data):
     except Exception as e:
         response = [{"message": f"Error: While Ping from HUB"}]
         if isinstance(e, (KeyError, ValueError)):            
-            respstatus=400
+            respstatus = 400
         else:
             respstatus = 500    
         logger.info(

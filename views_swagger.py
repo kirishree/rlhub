@@ -2545,7 +2545,7 @@ def diagnostics(request: HttpRequest):
         else:
             respstatus = 500  
         logger.error(f"Error: Ping from HUB:{e}")
-        response = {{"message": "Error in ping"}}
+        response = [{"message": "Error in ping"}]
     return JsonResponse(response, safe=False, status=respstatus)  
 
 @swagger_auto_schema(
