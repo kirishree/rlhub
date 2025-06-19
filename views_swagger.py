@@ -1576,7 +1576,7 @@ def deactivate(request: HttpRequest):
                     )
         if ".net" not in data.get("uuid", ""):         
             response, respstatus = ubuntu_info.deactivate(data)
-        if "ciscodevice" in data.get("uuid", ""):
+        elif "ciscodevice" in data.get("uuid", ""):
             hubinfo = coll_hub_info.find_one({"hub_wan_ip_only": data.get("hub_ip", "")})
             if hubinfo:
                 dialerinfo = coll_dialer_ip.find_one({"dialerip":data.get("tunnel_ip", "")})
@@ -1600,10 +1600,22 @@ def deactivate(request: HttpRequest):
             else:
                 response = [{"message": "Error HUB IP is missed"}]
                 respstatus = 400
-        if "microtek" in data.get("uuid", ""):
+        elif "microtek" in data.get("uuid", ""):
             response, respstatus = ubuntu_info.deactivate(data)  
-        if "robustel" in data.get("uuid", ""):
+        elif "robustel" in data.get("uuid", ""):
             response, respstatus = ubuntu_info.deactivate(data) 
+        if "Error" not in response[0]["message"]:
+            with open(device_info_path, "r") as f:
+                total_devices = json.load(f)
+            f.close()
+            for device in total_devices:
+                if device["organization_name"] in data["uuid"]:
+                    for branch in device["branch_info_only"]:
+                        if branch["uuid"] == data["uuid"]:
+                            branch["status"] = "inactive"
+            with open(device_info_path, "w") as f:
+                json.dump(total_devices, f)
+                f.close()            
     except Exception as e:
         response = [{"message":"Error while deactivating"}]
         if isinstance(e, (KeyError, ValueError)):            
@@ -3453,7 +3465,7 @@ def get_microtekspoke_config(request: HttpRequest):
     data["uuid"] = data['branch_loc'] + f"_{orgname}_microtek.net"
     data["orgid"] = orgid
     data["orgname"] = orgname
-    response = onboarding.get_microtek_config(data)
+    response, respstatus = onboarding.get_microtek_config(data)
     if "This Microtek Spoke is already Registered" in response[0]["message"]:           
         spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],
                         "router_username": response[0]["router_username"],
@@ -3463,7 +3475,7 @@ def get_microtekspoke_config(request: HttpRequest):
                         }        
         setass_task.apply_async(args=[response, "microtek"], countdown=60)
     else:
-        spokedetails, respstatus= {"message": response[0]["message"]}    
+        spokedetails= {"message": response[0]["message"]}    
     return JsonResponse(spokedetails, safe=False, status=respstatus)
 
 @swagger_auto_schema(
@@ -3504,7 +3516,7 @@ def get_robustelspoke_config(request: HttpRequest):
     data["uuid"] = data['branch_loc'] + f"_{orgname}_robustel.net"
     data["orgid"] = orgid
     data["orgname"] = orgname   
-    response = onboarding.get_robustel_config(data)
+    response, respstatus = onboarding.get_robustel_config(data)
     if "This Robustel Spoke is already Registered" in response[0]["message"]:
         #spokeinfo = coll_tunnel_ip.find_one({"uuid":data["uuid"]})        
         spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],                        
@@ -3513,7 +3525,7 @@ def get_robustelspoke_config(request: HttpRequest):
                         }        
         setass_task.apply_async(args=[response, "robustel"], countdown=60)
     else:
-        spokedetails,respstatus = {"message": response[0]["message"]}
+        spokedetails = {"message": response[0]["message"]}
     
     return JsonResponse(spokedetails, safe=False, status=respstatus)
 
