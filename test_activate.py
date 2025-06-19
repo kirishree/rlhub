@@ -32,7 +32,7 @@ def auth_token(client):
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload, expected", [({"tunnel_ip": "10.8.0.19", 
                                                  "hub_ip":"185.69.209.251",
-                                        "uuid": "microtek21_microtek.net"}, 200)])
+                                        "uuid": "microtek21_compedu_microtek.net"}, 200)])
 def test_deactivate(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
@@ -50,10 +50,10 @@ def test_deactivate(client, capfd, auth_token, payload, expected):
     logger.info(f"Validating by getting branch info")
     response = client.get(branch_info_url, content_type="application/json", **headers)
     assert response.status_code == expected
-    json_data = response.json() 
-    logger.info(f"Branch info after deactivating. {json_data}")
+    json_data = response.json()     
     for device in json_data["data"]:
         if device["uuid"] == payload["uuid"]:
+            logger.info(f"Branch info after deactivating. {device}")
             assert device["status"] == "inactive" 
     logger.info(f"Validated. Branch deactivated successfully")
 
@@ -62,7 +62,7 @@ def test_deactivate(client, capfd, auth_token, payload, expected):
 @pytest.mark.django_db
 @pytest.mark.parametrize("payload, expected", [({"tunnel_ip": "10.8.0.19", 
                                                  "hub_ip":"185.69.209.251",
-                                        "uuid": "microtek21_microtek.net"}, 200)])
+                                        "uuid": "microtek21_compedu_microtek.net"}, 200)])
 def test_activate(client, capfd, auth_token, payload, expected):   
 
     # Step 2: Call branch_info with Authorization header
@@ -80,10 +80,10 @@ def test_activate(client, capfd, auth_token, payload, expected):
     logger.info(f"Validating by getting branch info")
     response = client.get(branch_info_url, content_type="application/json", **headers)
     assert response.status_code == expected
-    json_data = response.json() 
-    logger.info(f"Branch info after Activating. {json_data}")
+    json_data = response.json()     
     for device in json_data["data"]:
         if device["uuid"] == payload["uuid"]:
+            logger.info(f"Branch info after Activating. {device}")
             assert device["status"] == "active" 
     logger.info(f"Validated. Branch Activated successfully")
     
