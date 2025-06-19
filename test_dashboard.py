@@ -76,7 +76,7 @@ def test_case_login(testpoint):
 def test_branch_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'    
-    logger.info(f"Login info: {login_data['username']}")
+    logger.info(f"Login info: {login_data}")
     login_response = client.post(login_url, login_data, content_type="application/json")
     assert login_response.status_code == expected
     print("Login response JSON:", login_response.json())
@@ -108,7 +108,7 @@ def test_branch_info(client, capfd, login_data, expected):
 def test_hub_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
     login_url = reverse("login_or_register")  # or use hardcoded '/api/auth/'    
-    logger.info(f"Login info: {login_data['username']}")
+    logger.info(f"Login info: {login_data}")
     login_response = client.post(login_url, login_data, content_type="application/json")
     assert login_response.status_code == expected
     print("Login response JSON:", login_response.json())
