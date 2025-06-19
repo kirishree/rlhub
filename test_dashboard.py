@@ -54,20 +54,20 @@ def test_case_login(testpoint):
     cases.append(pytest.param({  "username": "xogaw4457@edectus.com",
         "password": "xogaw4457@edectus.com"
         }, 200, id=f"{testpoint}:xogaw4457@edectus.com"))
-    cases.apped(pytest.param({"username": "cejavak731@wermink.com",
+    cases.append(pytest.param({"username": "cejavak731@wermink.com",
       "password": "cejavak731@wermink.com"
       }, 200, id=f"{testpoint}:cejavek731@wermink.com"))
-    cases.apped(pytest.param({
+    cases.append(pytest.param({
         "username": "xogaw4457@edectus.com",
         "password": "invalidpassword"
     }, 400, id=f"{testpoint}:Invalid Password"))
-    cases.apped(pytest.param({
+    cases.append(pytest.param({
         "username": "xogaw@edectus.com",
         "password": "xogaw4457@edectus.com"
     }, 400, id=f"{testpoint}:Invalid Login"))    
-    cases.apped(pytest.param({"password": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Username missed"))
-    cases.apped(pytest.param({"username": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Password missed"))
-    cases.apped(pytest.param({ }, 400, id=f"{testpoint}:Login missed"))
+    cases.append(pytest.param({"password": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Username missed"))
+    cases.append(pytest.param({"username": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Password missed"))
+    cases.append(pytest.param({ }, 400, id=f"{testpoint}:Login missed"))
     return cases
 
 @override_settings(SECURE_SSL_REDIRECT=False)
