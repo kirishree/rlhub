@@ -49,30 +49,29 @@ def test_login(client, capfd, payload, expected):
     out, err = capfd.readouterr() 
     assert login_response.status_code == expected
 
-def test_case_login():
-    testpoint = "login_info"
-    cases = []
-    cases.append(pytest.param({  "username": "xogaw4457@edectus.com",
+testpoint = "login_info"
+cases = []
+cases.append(pytest.param({  "username": "xogaw4457@edectus.com",
         "password": "xogaw4457@edectus.com"
         }, 200, id=f"{testpoint}:xogaw4457@edectus.com"))
-    cases.append(pytest.param({"username": "cejavak731@wermink.com",
+cases.append(pytest.param({"username": "cejavak731@wermink.com",
       "password": "cejavak731@wermink.com"
       }, 200, id=f"{testpoint}:cejavek731@wermink.com"))
-    cases.append(pytest.param({
+cases.append(pytest.param({
         "username": "xogaw4457@edectus.com",
         "password": "invalidpassword"
     }, 400, id=f"{testpoint}:Invalid Password"))
-    cases.append(pytest.param({
+cases.append(pytest.param({
         "username": "xogaw@edectus.com",
         "password": "xogaw4457@edectus.com"
     }, 400, id=f"{testpoint}:Invalid Login"))    
-    cases.append(pytest.param({"password": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Username missed"))
-    cases.append(pytest.param({"username": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Password missed"))
-    cases.append(pytest.param({ }, 400, id=f"{testpoint}:Login missed"))
-    return cases
+cases.append(pytest.param({"password": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Username missed"))
+cases.append(pytest.param({"username": "xogaw@edectus.com" }, 400, id=f"{testpoint}:Password missed"))
+cases.append(pytest.param({ }, 400, id=f"{testpoint}:Login missed"))
+
 
 @override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.parametrize("login_data,expected", test_case_login())
+@pytest.mark.parametrize("login_data,expected", cases)
 @pytest.mark.django_db
 def test_branch_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
@@ -104,7 +103,7 @@ def test_branch_info(client, capfd, login_data, expected):
         assert "active_branches" in json_data
 
 @override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.parametrize("login_data,expected", test_case_login())
+@pytest.mark.parametrize("login_data,expected", cases)
 @pytest.mark.django_db
 def test_hub_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
@@ -137,7 +136,7 @@ def test_hub_info(client, capfd, login_data, expected):
         assert "active_hubs" in json_data
 
 @override_settings(SECURE_SSL_REDIRECT=False)
-@pytest.mark.parametrize("login_data,expected", test_case_login())
+@pytest.mark.parametrize("login_data,expected", cases)
 @pytest.mark.django_db
 def test_homepage_info(client, capfd, login_data, expected):
     # Step 1: Login to get access token
