@@ -86,8 +86,7 @@ def setass_task(self, response, devicename):
                     coll_tunnel_ip.update_many(query, update_data)
                 os.system(f"python3 {reachlink_zabbix_path}")
                 os.system("systemctl restart reachlink_test")                           
-        if not newspokeconnstatus:
-            print(f"New spoke is not connected yet({newspokedevicename}). Trying again")
+        if not newspokeconnstatus:            
             logger.error(
                         f"New spoke is not connected yet({newspokedevicename}). Trying again",
                         extra={
