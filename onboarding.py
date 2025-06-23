@@ -975,7 +975,7 @@ def get_microtek_config(data):
                                                 "router_username": device["router_username"],
                                                 "router_password": device["router_password"]
                                                 }]                                   
-                                return response
+                                return response, 200
                         response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]
@@ -1016,8 +1016,9 @@ def get_robustel_config(data):
                                                 "organization_id":data["orgid"],
                                                 "router_username": device["router_username"],
                                                 "router_password": device["router_password"]
-                                                }]                                   
-                                return response
+                                                }]   
+                                respstatus = 200                                
+                                return response, respstatus
                         response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]

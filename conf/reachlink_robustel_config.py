@@ -7,9 +7,6 @@ import re
 import ipaddress
 hub_ip = "185.69.209.251"
 hub_ip_whitelist = "185.69.209.251/32"
-router_ip = "192.168.0.1"
-username = "admin"
-password = "admin"
 urllogin = "https://reachlinktest.cloudetel.com/beapi/auth"
 url = "https://reachlinktest.cloudetel.com/beapi/get_robustelspoke_config"
 def send_command(shell, command, wait_time=2):
@@ -23,6 +20,14 @@ def send_command_wo(shell, command, delay=1):
     output = shell.recv(65535).decode('utf-8')
     return output
 
+def is_valid_ip(ip):
+    """Check if the IP address is valid (IPv4 or IPv6)."""
+    try:
+        ipaddress.IPv4Address(ip)  # If this doesn't raise an error, it's a valid IP
+        return True
+    except ipaddress.AddressValueError:
+        return False
+    
 def set_openvpn_client():
     """
     Connects to a Robustel router via SSH and create OpenVPN tunnel in client mode'.
@@ -33,6 +38,27 @@ def set_openvpn_client():
 
     try:
         try:
+            print(f"Enter the Router IP Address:")
+            while True:
+                router_ip = input()
+                if not is_valid_ip(router_ip): 
+                    print("Enter a valid IP address.")
+                else:
+                    break
+            print(f"Enter the Router username:")
+            while True:
+                username = input()
+                if not username.strip():
+                    print("Router Username cannot be empty. Please try again.")
+                else:
+                    break         
+            print(f"Enter the Router Password:")
+            while True:
+                password = getpass.getpass()
+                if not password.strip():
+                    print("Router Password cannot be empty. Please try again.")
+                else:
+                    break            
             # Connect to the router
             ssh_client.connect(hostname=router_ip, username=username, password=password, timeout=30, banner_timeout=60)
         except Exception as e:
@@ -123,15 +149,7 @@ def set_openvpn_client():
     print("Enter a key to exit...")
     input()
     return
-
-def is_valid_ip(ip):
-    """Check if the IP address is valid (IPv4 or IPv6)."""
-    try:
-        ipaddress.ip_address(ip)  # If this doesn't raise an error, it's a valid IP
-        return True
-    except ValueError:
-        return False
-    
+   
 def is_valid_email(email):
     """Validate email format."""
     pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
@@ -204,7 +222,7 @@ def main():
         else:
             print("Error while authenticating data")            
     except Exception as e:
-        print(f"Error while getting configuration. Pl try again!")
+        print(f"Error while getting configuration. Pl try again!{e}")
     print("Enter a key to exit...")
     input()
     return   
