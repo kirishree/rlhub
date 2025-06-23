@@ -71,9 +71,9 @@ import onboarding
 import hub_config
 import ubuntu_info
 import onboardblock
-import robustel_configurefrom decouple import config
+import robustel_configure
+from decouple import config
 from datetime import timedelta
-
 import zabbix_gen_report
 import zabbix_ping_report
 import jwt
