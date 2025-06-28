@@ -1746,7 +1746,7 @@ def create_vlan_interface_spoke(request):
                 return JsonResponse(response, safe=False, status=400)
             
             ip = ipaddress.IPv4Address(int_addr.split("/")[0])
-            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:     
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
                 logger.error(f"Error: {int_addr} is invalid IP",
                     extra={ "be_api_endpoint": "create_vlan_interface_spoke" }
@@ -1830,7 +1830,7 @@ def create_sub_interface_spoke(request):
                 return JsonResponse(response, safe=False, status=400)
             
             ip = ipaddress.IPv4Address(int_addr.split("/")[0])
-            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:     
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
                 logger.error(f"Error: {int_addr} is invalid IP",
                     extra={ "be_api_endpoint": "create_sub_interface_spoke" }
@@ -1908,7 +1908,7 @@ def create_loopback_interface_spoke(request):
                 return JsonResponse(response, safe=False, status=400)
             
             ip = ipaddress.IPv4Address(int_addr.split("/")[0])
-            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_private:     
+            if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:     
                 response = [{"message": f"Error: {int_addr} is invalid IP"}]
                 logger.error(f"Error: {int_addr} is invalid IP",
                     extra={ "be_api_endpoint": "create_loopback_interface_spoke" }
@@ -3765,3 +3765,4 @@ def logfile_content(request):
 
     logfile_content.reverse()
     return JsonResponse({'log': logfile_content})
+
