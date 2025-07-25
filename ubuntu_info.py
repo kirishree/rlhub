@@ -735,37 +735,38 @@ def create_vlan_interface(data):
             # Ensure the `vlans` section exists
             if "vlans" not in network_config["network"]:
                 network_config["network"]["vlans"] = {}
-
-            # Create the VLAN interface name
-            vlan_int_name = f"{data['link']}.{data['vlan_id']}"
-            if vlan_int_name not in network_config["network"]["vlans"]:
-            # Add VLAN configuration
-                network_config["network"]["vlans"][vlan_int_name] = {
+            for vlanlink in data['link']:
+                # Create the VLAN interface name
+                vlan_int_name = f"{vlanlink}.{data['vlan_id']}"
+                if vlan_int_name not in network_config["network"]["vlans"]:
+                # Add VLAN configuration
+                    network_config["network"]["vlans"][vlan_int_name] = {
                                                                 "id": int(data["vlan_id"]),
-                                                                "link": data["link"],
+                                                                "link": vlanlink,
                                                                 "addresses": data["addresses"]                                                                ,
                                                                 }
 
-                # Write the updated configuration back to the file
-                with open("/etc/netplan/00-installer-config.yaml", "w") as f:
-                    yaml.dump(network_config, f, default_flow_style=False)
-                os.system("netplan apply")
-                response = [{"message": f"Successfully configured VLAN Interface: {vlan_int_name}"}]
-            else:
-                response = [{"message": f"Error already VLAN: {vlan_int_name} exist."}]
+                    # Write the updated configuration back to the file
+                else:
+                    response = [{"message": f"Error already VLAN: {vlan_int_name} exist."}]
+            with open("/etc/netplan/00-installer-config.yaml", "w") as f:
+                yaml.dump(network_config, f, default_flow_style=False)
+            os.system("netplan apply")
+            response = [{"message": f"Successfully configured VLAN Interface: {vlan_int_name}"}] 
         else:
-            vlan_int_name = data["link"] + "." + str(data["vlan_id"])
-            cmd = f"sudo ip link add link {data['link']} name {vlan_int_name} type vlan id {str(data['vlan_id'])}"
-            result = subprocess.run(
-                                cmd, shell=True, text=True
-                                )
-            for ip_addr in data["addresses"]:
-                cmd = f"sudo ip addr add {ip_addr} dev eth1.100"
+            for vlanlink in data['link']:
+                vlan_int_name = vlanlink + "." + str(data["vlan_id"])
+                cmd = f"sudo ip link add link {vlanlink} name {vlan_int_name} type vlan id {str(data['vlan_id'])}"
                 result = subprocess.run(
                                 cmd, shell=True, text=True
                                 )
-            cmd = f"sudo ip link set dev {vlan_int_name} up"
-            result = subprocess.run(
+                for ip_addr in data["addresses"]:
+                    cmd = f"sudo ip addr add {ip_addr} dev eth1.100"
+                    result = subprocess.run(
+                                cmd, shell=True, text=True
+                                )
+                cmd = f"sudo ip link set dev {vlan_int_name} up"
+                result = subprocess.run(
                                 cmd, shell=True, text=True
                                 )
             response = [{"message": f"Successfully configured VLAN Interface: {vlan_int_name}"}]
