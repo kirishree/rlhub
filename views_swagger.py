@@ -2885,7 +2885,7 @@ def addstaticroute_hub(request: HttpRequest):
         branch_id = data["hub_wan_ip"] 
         cache_key = f"routing_hub_{branch_id}"
         cache.delete(cache_key)
-        for route in routes:
+        for route in routes:            
             network = ipaddress.ip_network(route["destination"], strict=False)
             if is_excluded(network):
                 response = [{"message":f"Error Invalid destination {route['destination']}"}]
