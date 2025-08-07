@@ -538,7 +538,7 @@ def delstaticroute(data):
         # Save the configuration
         send_command(shell, 'write memory')
         status = True
-        respstatus - 200    
+        respstatus = 200    
     except Exception as e:
         status = False
         if isinstance(e, (KeyError, ValueError)):            
