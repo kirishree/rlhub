@@ -32,7 +32,7 @@ def set_openvpn_client(spokeinfo):
         # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         # Execute the ping command
-        clientname = spokeinfo["spokedevice_name"]
+        clientname = spokeinfo["spokedevice_name"] + ".ovpn"
         certname = clientname + "_1"
         stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=reachlink max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=no')
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp set enabled=yes')
