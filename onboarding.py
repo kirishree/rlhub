@@ -97,16 +97,23 @@ def authenticate_user(data):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            get_organization_name = requests.get(url+"org/", headers=headers)
+            org_response = get_organization_name.json()                
+            organization_name = org_response["data"]["company_name"].replace(" ", "")
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()            
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
-            if subscription_status:
-                get_organization_name = requests.get(url+"org/", headers=headers)
-                org_response = get_organization_name.json()                
-                organization_name = org_response["data"]["company_name"].replace(" ", "")
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
+                    break
+            if subscription_status: 
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -709,14 +716,21 @@ def check_onboarding(username, password):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            current_datetime = datetime.now() 
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
-            if subscription_status:
-                current_datetime = datetime.now() 
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
+                    break
+            if subscription_status:                
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -764,14 +778,21 @@ def check_login_onboarding(username, password):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            current_datetime = datetime.now() 
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
+                    break
             if subscription_status:
-                current_datetime = datetime.now() 
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -849,13 +870,20 @@ def check_login_onboarding_new(username, password):
                 if service_response.status_code == 200:
                     servicejson_response = service_response.json()
                     services_info = servicejson_response["data"]["services"]
+                    #subscription_status = False
+                    #for service in services_info:
+                    #    if service["name"] == "link":
+                    #        subscription_status = True
+                    #if subscription_status:                
+                    subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                    subsjson_response = subscription_response.json()
+                    services_info = subsjson_response["data"]["services"]
                     subscription_status = False
                     for service in services_info:
-                        if service["name"] == "link":
+                        if service["service_name"] == "link":
                             subscription_status = True
-                    if subscription_status:                
-                        subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                        subsjson_response = subscription_response.json()
+                            break
+                    if subscription_status:
                         timestamp = int(subsjson_response["data"]["created_at"])
                         # Convert Unix timestamp to datetime
                         from_date = datetime.utcfromtimestamp(timestamp)
@@ -923,13 +951,20 @@ def check_subscription_renewed_login(username, password, organization_id):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
+                    break
             if subscription_status:
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
