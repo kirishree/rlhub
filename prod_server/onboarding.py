@@ -27,6 +27,7 @@ hub_ip = config('HUB_IP')
 hub_host_id = config('HUB_HOSTID')
 hub_item_id_sent = config('HUB_ITEM_ID_SENT')
 hub_item_id_received = config('HUB_ITEM_ID_RECEIVED')
+
 def organization_name(data):
     try:
         if "access_token" not in data:
@@ -49,7 +50,7 @@ def organization_name(data):
                   }
         get_organization_name = requests.get(url+"org/", headers=headers)
         org_response = get_organization_name.json()
-        
+        print(org_response)
         organization_name = org_response["data"]["company_name"].replace(" ", "")
         return organization_name, True
     except Exception as e:
