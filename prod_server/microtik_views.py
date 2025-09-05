@@ -80,7 +80,9 @@ def add_microtik_hub(request: HttpRequest):
         else:
             orgstatus = False
     elif "access_token" in data:
+        print("hiiiiiii")
         orgname, orgstatus = onboarding.organization_name(data)
+        print(orgname, orgstatus)
     if not orgstatus:
         logger.error(
                             "Error: Error in getting organization name ",
@@ -91,14 +93,12 @@ def add_microtik_hub(request: HttpRequest):
                                 "exception": ""
                             }
                         ) 
-        json_response = [{"message": f"Error:Error in getting organization name"}]
-        response = HttpResponse(content_type='application/zip')
-        response['X-Message'] = json.dumps(json_response)
-        response["Access-Control-Expose-Headers"] = "X-Message"
-        return response
+        json_response = [{"message": f"Error:Error in getting organization name"}]        
+        return JsonResponse(json_response, safe=False, status=500)
+    
     data["uuid"] = data['branch_location'] + f"_{orgname}_microtikhub.net"
-    data["username"] = "none"
-    data["password"] = "none" 
+    #data["username"] = "none"
+    #data["password"] = "none" 
     global newuser
     try:
         response, newuser = onboarding.check_user(data, newuser)
