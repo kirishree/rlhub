@@ -102,17 +102,13 @@ def add_microtik_hub(request: HttpRequest):
     #data["password"] = "none" 
     global newuser
     try:
-        response, newuser = onboarding.check_user(data, newuser)
-        print(response)
-        print(newuser)
+        response, newuser = onboarding.check_user(data, newuser)        
         if newuser:
-            userStatus = onboarding.authenticate_user(data)
-            print(userStatus)
+            userStatus = onboarding.authenticate_user(data)            
             if userStatus:
                 response, newuser = onboarding.check_user(data, newuser)
             else:
-                response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]
-        print(response)
+                response = [{"message": userStatus,"expiry_date": dummy_expiry_date}]        
         if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Microtik HUB is already Registered":
             devicename = response[0]["spokedevice_name"]   
             #ping the dialer ip if it is reachable, already configured
@@ -164,8 +160,7 @@ def add_microtik_hub(request: HttpRequest):
                                                 "hub_dialer_network": devicehubinfo["hub_dialer_network"],
                                                 "hub_ip":data["hub_ip"],
                                                 "hub_wan_ip_only": devicehubinfo["hub_wan_ip_only"] ,
-                                                "hub_wan_ip_netmask": devicehubinfo["hub_wan_ip_netmask"],
-                                                "hub_wan_ip_gateway": data["hub_wan_ip_gateway"],
+                                                "hub_wan_ip_netmask": devicehubinfo["hub_wan_ip_netmask"],                                                
                                                 'branch_location': data["branch_location"],
                                                 "hub_dialer_ip_cidr": data["hub_dialer_ip"]
                                                 }
@@ -186,7 +181,7 @@ def add_microtik_hub(request: HttpRequest):
                             dev["microtik_hub_info"]["hub_ip"] = data["hub_ip"]
                             dev["microtik_hub_info"]["hub_wan_ip_only"] = devicehubinfo["hub_wan_ip_only"]
                             dev["microtik_hub_info"]["hub_wan_ip_netmask"] = devicehubinfo["hub_wan_ip_netmask"]
-                            dev["microtik_hub_info"]["hub_wan_ip_gateway"] = data["hub_wan_ip_gateway"]                      
+                                                
                             dev["microtik_hub_info"]["hub_dialer_ip_cidr"] = data["hub_dialer_ip"]
             query = {"organization_id": organizationid}
             update_data = {"$set": {
