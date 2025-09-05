@@ -79,10 +79,10 @@ def add_microtik_hub(request: HttpRequest):
             orgstatus = True
         else:
             orgstatus = False
-    elif "access_token" in data:
-        print("hiiiiiii")
-        orgname, orgstatus = onboarding.organization_name(data)
-        print(orgname, orgstatus)
+    #elif "access_token" in data:
+    #    print("hiiiiiii")
+    #    orgname, orgstatus = onboarding.organization_name(data)
+    #    print(orgname, orgstatus)
     if not orgstatus:
         logger.error(
                             "Error: Error in getting organization name ",
