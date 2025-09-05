@@ -53,6 +53,7 @@ def organization_name(data):
         organization_name = org_response["data"]["company_name"].replace(" ", "")
         return organization_name, True
     except Exception as e:
+        print(e)
         logger.error(
                         f"Error in getting organization name",
                         extra={
