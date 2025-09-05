@@ -651,8 +651,11 @@ def interfaceconfig(data):
                     if intfcname == data["intfc_name"]: 
                             print(addr)                                              
                             removeitemno = addr.split(" ")[0] 
+                            print("#######",removeitemno) 
                             if len(removeitemno) > 1:
-                                removeitemno = addresses_info[i-1].split(" ")[0]  
+                                print(addresses_info[i-1])
+                                print(addresses_info[i-1].strip())
+                                removeitemno = addresses_info[i-1].strip().split(" ")[0]  
                             print("hiii",removeitemno)                                               
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
         
