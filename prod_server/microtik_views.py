@@ -38,6 +38,7 @@ dummy_expiry_date = ""
 import hub_config
 import microtek_hub
 reachlink_zabbix_path = config('REACHLINK_ZABBIX_PATH')
+newuser = False
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -70,7 +71,7 @@ def add_microtik_hub(request: HttpRequest):
                 response["Access-Control-Expose-Headers"] = "X-Message"
                 return response
     orgstatus = False
-    print("Microtek hub data", data)    
+    #print("Microtek hub data", data)    
     if "organization_id" in data:
         org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
         if org_info:
