@@ -58,7 +58,7 @@ def openvpnserverconfig(data):
     username = data["router_username"]
     password = data["router_password"]
     public_ip = router_ip
-    openvpn_network = data["overlay_network_addr"]
+    openvpn_network = data["hub_dialer_ip"]
     
     openvpn_network_netmask = prefix_len_to_netmask(openvpn_network.split("/")[1])
     openvpn_network_addr = openvpn_network.split("/")[0]  
