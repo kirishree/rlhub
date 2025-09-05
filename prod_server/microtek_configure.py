@@ -1256,6 +1256,7 @@ def delstaticroute(data):
         # Close the SSH connection
         ssh_client.close()       
         return response
+
 def laninfo(data):   
    # Define the router details
     
@@ -1523,7 +1524,7 @@ def lanconfig(data):
             
             # Break if timeout is reached
             if time.time() - start_time > timeout:
-                print("Timeout reached. Terminating the traceroute command.")
+                print("Timeout reached. Terminating the address print command.")
                 break  
         addresses_info = output.split("\n")  
         interface_addresses = [] 
@@ -1684,3 +1685,88 @@ def dhcpconfig(data):
         ssh_client.close()       
         return response
                 
+def openvpnserverconfig(data):   
+   # Define the router details    
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]   
+    public_ip = data["public_ip"] 
+    openvpn_network_addr = data["overlay_network_addr"]
+    pool_start_addr = data["pool_start_addr"]
+    pool_end_addr = data["pool_end_addr"]
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the dhcp server command 
+        ca_cmd = f"""
+            /certificate add \
+            name=CA \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={public_ip} \
+            subject-alt-name=IP:{public_ip} \
+            key-usage=key-cert-sign,crl-sign
+        """
+        stdin, stdout, stderr = ssh_client.exec_command(ca_cmd)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate sign CA ca=CA ca-crl-host={public_ip} ')
+        server_cert_cmd = f"""
+            /certificate add \
+            name=Server \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={public_ip} \
+            subject-alt-name=IP:{public_ip} \
+            key-usage=digital-sign,key-encipherment,tls-server
+        """
+        stdin, stdout, stderr = ssh_client.exec_command(server_cert_cmd)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate sign Server ca=CA')
+        client_cert_cmd = f"""
+            /certificate add \
+            name=Client \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={public_ip} \
+            key-usage=tls-client
+        """
+        stdin, stdout, stderr = ssh_client.exec_command(client_cert_cmd)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate sign Client ca=CA')
+        #create IP pool - For openVPN clients
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool add name=ovpn-pool ranges={pool_start_addr}-{pool_end_addr}')
+        #create_ppp_profile
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ppp profile add name=ovpn-profile local-address={openvpn_network_addr} remote-address=ovpn-pool')
+        #Create ppp secrets
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ppp secret add name=rlhub password=rlpass profile=ovpn-profile service=ovpn')
+        #Enable & configure openvpn server
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface ovpn-server server set enabled=yes certificate=Server auth=sha1 cipher=aes256 default-profile=ovpn-profile require-client-certificate=yes')
+        #Export CA certificate
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate export-certificate CA')
+        #Export Client Certificate
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate export-certificate Client export-passphrase=rl123456')
+        # SFTP to download
+        sftp = ssh_client.open_sftp()
+        sftp.get("cert_export_CA.crt", "./cert_export_CA.crt")
+        sftp.get("cert_export_Client.crt", "./cert_export_Client.crt")
+        sftp.get("cert_export_Client.key", "./cert_export_Client.key")
+        sftp.close()
+
+    except Exception as e:
+        print(e)
+
+
+
+
+
+
+

@@ -278,8 +278,26 @@ def check_user(data, newuser):
                 if details["remaining_users"] > 0 and current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
-                    for device in registered_devices_info:                        
-                        if "ciscohub" in data["uuid"]:                            
+                    for device in registered_devices_info:   
+                        if "microtikhub" in data["uuid"]:                            
+                            if "microtik_hub_info" in device:
+                                if data["uuid"] == device["microtik_hub_info"]["uuid"]:
+                                    response =[{ "message": 'This Microtik HUB is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":device["microtik_hub_info"]["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                    logger.info(
+                                                f"This Microtik HUB is already Registered",
+                                                extra={
+                                                        "device_type": "Microtik",
+                                                        "device_ip": device["microtik_hub_info"]["hub_ip"],
+                                                        "be_api_endpoint": "add_microtik_hub",
+                                                        "exception": ""
+                                                    }
+                                    )
+                                    return response, newuser                     
+                        elif "ciscohub" in data["uuid"]:                            
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
                                     response =[{ "message": 'This Cisco HUB is already Registered',
@@ -401,7 +419,26 @@ def check_user(data, newuser):
                     #length = len(registered_devices_info)+1
                     #spokedevice_name =  generate_device_name(length, details)
                     gretunnel_ip =  "None"
-                    if "ciscohub" in data["uuid"]:
+                    if "microtikhub" in data["uuid"]:
+                        no_of_hubs = 1
+                        for dev in registered_devices_info:
+                            print("dev", dev)
+                            if "microtik_hub_info" in dev:
+                                no_of_hubs = no_of_hubs + 1
+                        print("number of hubs", no_of_hubs)
+                        spokedevice_name =  "microtikhub"+ str(no_of_hubs)+"-"+details["organization_name"]
+                        print("spokedevice_name", spokedevice_name)                
+                        new_hub_info = {"microtik_hub_info": {
+                                                "uuid": data["uuid"],
+                                                "spokedevice_name":  spokedevice_name,                                
+                                                "hub_ip": data.get("hub_ip", ""),
+                                                "branch_location": data.get("branch_location", "")
+                                                },
+                                            "microtik_spokes_info":[]
+                                            }
+                        registered_devices_info.append(new_hub_info) 
+
+                    elif "ciscohub" in data["uuid"]:
                         no_of_hubs = 1
                         for dev in registered_devices_info:
                             print("dev", dev)
