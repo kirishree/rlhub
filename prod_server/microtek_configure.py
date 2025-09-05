@@ -648,10 +648,12 @@ def interfaceconfig(data):
             if "address=" in addr:
                     intfcname = addr.split("interface=")[1].split(" ")[0] 
                     #print(intfcname)
-                    if intfcname == data["intfc_name"]:                                               
+                    if intfcname == data["intfc_name"]: 
+                            print(addr)                                              
                             removeitemno = addr.split(" ")[0] 
                             if len(removeitemno) > 1:
-                                removeitemno = addresses_info[i-1].split(" ")[0]                                                 
+                                removeitemno = addresses_info[i-1].split(" ")[0]  
+                            print("hiii",removeitemno)                                               
                             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
         
         stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
