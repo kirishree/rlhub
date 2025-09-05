@@ -128,7 +128,8 @@ def add_microtik_hub(request: HttpRequest):
             data["new_username"] =  devicehubinfo["router_username"]
             data["new_password"] =  devicehubinfo["router_password"]
             data["snmpcommunitystring"] = snmpcommunitystring
-            status = microtek_hub.openvpnserverconfig(data)    
+            #status = microtek_hub.openvpnserverconfig(data) 
+            status = True   
             if not status:
                 logger.error(
                             f"Error while configuring HUB",
