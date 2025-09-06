@@ -314,7 +314,7 @@ def check_user(data, newuser):
                                                 f"This Microtik Spoke is already Registered",
                                                 extra={
                                                         "device_type": "MicrotikSpoke",
-                                                        "device_ip": cispoke.get("dialerip", ""),
+                                                        "device_ip": "",
                                                         "be_api_endpoint": "add_microtik_device",
                                                         "exception": ""
                                                     }

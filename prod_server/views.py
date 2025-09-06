@@ -598,7 +598,7 @@ def add_cisco_device(request: HttpRequest):
                                         "device_type": "ReachlinkServer",
                                         "device_ip": hub_ip,
                                         "be_api_endpoint": "configure Microtik spoke",
-                                        "exception": str(e)
+                                        "exception": ""
                                     }
                                 )     
                     json_response = [{"message": f"Error while configuring, pl try again!"}]
