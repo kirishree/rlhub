@@ -104,6 +104,7 @@ def authenticate_user(data):
             for service in services_info:
                 if service["name"] == "link":
                     subscription_status = True
+                    break
             if subscription_status:
                 get_organization_name = requests.get(url+"org/", headers=headers)
                 org_response = get_organization_name.json()                
@@ -733,6 +734,7 @@ def check_subscription_renewed(data, organization_id):
             for service in services_info:
                 if service["name"] == "link":
                     subscription_status = True
+                    break
             if subscription_status:
                 subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
                 subsjson_response = subscription_response.json()
@@ -792,6 +794,7 @@ def check_onboarding(username, password):
             for service in services_info:
                 if service["name"] == "link":
                     subscription_status = True
+                    break
             if subscription_status:
                 current_datetime = datetime.now() 
                 subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
