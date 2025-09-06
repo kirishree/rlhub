@@ -267,6 +267,7 @@ def get_tunnel_ip(data, spokedevice_name):
     return tunnel_ip          
 
 def check_user(data, newuser):
+    print(data)
     current_datetime = datetime.now() 
     try:  
         if "organization_id" not in data:      
@@ -301,6 +302,7 @@ def check_user(data, newuser):
                                     )
                                     return response, newuser   
                         elif "m2m.net" in data["uuid"]:
+                            print(data)
                             if "microtik_hub_info" in device:
                                 if data["dialer_ip"] == device["microtik_hub_info"]["hub_ip"].split("/")[0]:
                                     for m2mspoke in device["microtik_spokes_info"]:
