@@ -2419,6 +2419,21 @@ def get_routing_table(request):
                 routing_table = router_configure.get_routingtable_cisco(data)
             else:
                 routing_table = []
+        if "microtikhub" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                routing_table = microtek_configure.routingtable(data) 
+            else:
+                routing_table = []
         elif data["hub_wan_ip"] == hub_ip:
             routing_table =ubuntu_info.get_routing_table_ubuntu() 
         # Store in cache for 60 seconds
@@ -2490,6 +2505,23 @@ def addstaticroute_hub(request: HttpRequest):
                     response = [{"message":"Error in adding route"}]
             else:
                 response = [{"message":"Error in getting hub info"}]
+        if "microtikhub" in data["uuid"]:
+            print("hiciscohub")
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                data["subnet_info"] = data["routes_info"]
+                response = microtek_configure.addroute(data)                
+            else:
+                response = [{"message":"Error in getting hub info"}]
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.addstaticroute_ubuntu(data)
     except Exception as e:  
@@ -2535,6 +2567,20 @@ def delstaticroute_hub(request: HttpRequest):
                     response = [{"message": "Successfully route deleted"}]
                 else:
                     response = [{"message":"Error in deleting route"}]
+        elif "microtikhub" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = microtek_configure.delstaticroute(data)
+                
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.delstaticroute_ubuntu(data)
     except Exception as e:
@@ -2574,6 +2620,21 @@ def get_interface_details_hub(request):
                 interface_details = router_configure.get_interface_cisco(data)
             else:
                 interface_details = []
+        elif "_microtikhub" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                interface_details = microtek_configure.interfacedetails(data)
+            else:
+                interface_details = []
         elif data["hub_wan_ip"] == hub_ip:            
             interface_details = ubuntu_info.get_interface_details_ubuntu(data)
         # Store in cache for 60 seconds
@@ -2608,6 +2669,19 @@ def create_vlan_interface_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 response = router_configure.createvlaninterface(data)
+        elif "_microtikhub" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = microtek_configure.createvlaninterface(data)
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.create_vlan_interface(data)        
     except Exception as e:
@@ -2639,7 +2713,20 @@ def create_sub_interface_hub(request):
                 data["tunnel_ip"] = data["hub_wan_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
-                response = router_configure.createsubinterface(data) 
+                response = router_configure.createsubinterface(data)
+        elif "_microtikhub" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = microtek_configure.createvlaninterface(data)  
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.create_vlan_interface(data)        
     except Exception as e:
@@ -2672,6 +2759,8 @@ def create_loopback_interface_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 response = router_configure.createloopbackinterface(data) 
+        elif "_microtikhub" in data["uuid"]:
+            response = [{"message":"Error: This device doesn't support Loopback interface"}] 
         elif data["hub_wan_ip"] == hub_ip:
             response = [{"message":"Error: This device doesn't support Loopback interface"}] 
     except Exception as e:
@@ -2704,6 +2793,19 @@ def create_tunnel_interface_hub(request):
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]
                 response = router_configure.createtunnelinterface(data) 
+        elif "_microtikhub" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]
+                response = microtek_configure.createtunnelinterface(data)
         elif data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.create_tunnel_interface(data)            
     except Exception as e:
@@ -2742,7 +2844,20 @@ def vlan_interface_delete_hub(request):
                 data["tunnel_ip"] = data["hub_ip"]
                 data["router_username"] = hub_info["router_username"]
                 data["router_password"] = hub_info["router_password"]                
-                response = router_configure.deletevlaninterface(data)                
+                response = router_configure.deletevlaninterface(data)   
+        if "_microtikhub" in data["uuid"]:            
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]                
+                response = microtek_configure.deletevlaninterface(data)                
         elif data["hub_ip"] == hub_ip:
             response = [] 
             intfc_name = data["intfc_name"] 
@@ -2814,10 +2929,18 @@ def interface_config_hub(request):
         cache.delete(cache_key)
         if data["hub_wan_ip"] == hub_ip:
             response = ubuntu_info.interface_config(data)                
-        elif "microtekhub" in data["uuid"]:
-            router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
-            data["router_username"] = router_info["router_username"]
-            data["router_password"] = router_info["router_password"]
+        elif "_microtikhub.net" in data["uuid"]:
+            cache1_key = f"HUB_details_{data['uuid']}"
+            hub_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]}),
+                        timeout=300
+                        )    
+            #hub_info = coll_hub_info.find_one({"hub_wan_ip_only": data["hub_wan_ip"]})
+            if hub_info:
+                data["tunnel_ip"] = data["hub_wan_ip"]
+                data["router_username"] = hub_info["router_username"]
+                data["router_password"] = hub_info["router_password"]  
             response = microtek_configure.interfaceconfig(data)      
         elif "ciscohub" in data["uuid"]:
             if data["intfc_name"].lower() == "loopback1":
