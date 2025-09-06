@@ -495,6 +495,7 @@ def check_user(data, newuser):
                                 if data["dialer_ip"] == devinfo["microtik_hub_info"]["hub_ip"].split("/")[0]:
                                     routerpassword = hub_config.generate_router_password_cisco()
                                     spokedevice_name =  "m2mspoke"+ str(len(devinfo["microtik_spokes_info"])+1)+"-"+details["organization_name"]
+                                    print("spokedevice", spokedevice_name)
                                     new_spoke_info = {"uuid": data["uuid"],
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name,
