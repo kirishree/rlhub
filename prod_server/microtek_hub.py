@@ -59,6 +59,7 @@ def openvpnserverconfig(data):
     password = data["router_password"]
     public_ip = router_ip
     openvpn_network = data["hub_dialer_ip"]
+    client_name = "reachlinkhub"
     
     openvpn_network_netmask = prefix_len_to_netmask(openvpn_network.split("/")[1])
     openvpn_network_addr = openvpn_network.split("/")[0]  
@@ -111,13 +112,13 @@ def openvpnserverconfig(data):
         # Client cert
         client_cert_cmd = f"""
             /certificate add \
-            name=Client \
+            name={client_name} \
             country=SA \
             state=Jeddah \
             locality=Jeddah \
             organization=CloudEtel \
             unit=ReachLink \
-            common-name={public_ip} \
+            common-name={client_name} \
             key-usage=tls-client
         """
         run_cmd(ssh_client, client_cert_cmd)
@@ -143,11 +144,11 @@ def openvpnserverconfig(data):
         sftp.close()
 
         # Build OVPN config with embedded certs
-        with open("./cert_export_CA.crt") as f:
+        with open("/etc/reach/CA.crt") as f:
             ca_content = f.read()
-        with open("./cert_export_Client.crt") as f:
+        with open(f"/etc/reach/{client_name}.crt") as f:
             client_crt_content = f.read()
-        with open("./cert_export_Client.key") as f:
+        with open(f"/etc/reach/{client_name}.key") as f:
             client_key_content = f.read()
 
         ovpn_template = f"""
@@ -174,7 +175,7 @@ remote-cert-tls server
 {client_key_content}
 </key>
 """
-        with open("client.ovpn", "w") as f:
+        with open(f"/etc/reach/{client_name}.ovpn", "w") as f:
             f.write(ovpn_template.strip())
 
         print("✅ OpenVPN client.ovpn created successfully!")
@@ -185,6 +186,96 @@ remote-cert-tls server
         #stdin, stdout, stderr = ssh_client.exec_command(f'snmp community add addresses=0.0.0.0/0 name={data["snmpcommunitystring"]} read-access=yes comment=reachlinkserver')
         #stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=22 comment=enable-ssh place-before=0')
         #stdin, stdout, stderr = ssh_client.exec_command(f'ip firewall filter add chain=input action=accept protocol=tcp src-address=10.8.0.0/24 dst-port=8291 place-before=0 comment=enable-winboxaccess')
+        status = True
+    except Exception as e:
+        print("❌ Error:", e)
+        status = False
+        
+    finally:
+        ssh_client.close()
+    return status
+
+
+def microtik_client_generation(data) :
+    router_ip = data["hub_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    client_name = data['client_name']
+    public_ip = router_ip 
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh_client.connect(
+            hostname=router_ip,
+            username=username,
+            password=password,
+            look_for_keys=False,
+            allow_agent=False
+        )
+        # Client cert
+        client_cert_cmd = f"""
+            /certificate add \
+            name={client_name} \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={client_name} \
+            key-usage=tls-client
+        """
+        run_cmd(ssh_client, client_cert_cmd)
+        run_cmd(ssh_client, "/certificate sign Client ca=CA")
+
+        # IP pool, profile, secret        
+        run_cmd(ssh_client, f"/ppp secret add name={client_name} password={client_name} profile=ovpn-profile service=ovpn")
+
+        # Export certs
+        run_cmd(ssh_client, "/certificate export-certificate CA")
+        run_cmd(ssh_client, f"/certificate export-certificate {client_name} export-passphrase=rl123456")
+
+        # Download certs via SFTP
+        sftp = ssh_client.open_sftp()
+        sftp.get("cert_export_CA.crt", "/etc/reach/CA.crt")
+        sftp.get(f"cert_export_{client_name}.crt", f"/etc/reach/{client_name}.crt")
+        sftp.get(f"cert_export_{client_name}.key", f"/etc/reach/{client_name}.key")
+        sftp.close()
+
+        # Build OVPN config with embedded certs
+        with open("/etc/reach/CA.crt") as f:
+            ca_content = f.read()
+        with open(f"/etc/reach/{client_name}.crt") as f:
+            client_crt_content = f.read()
+        with open(f"/etc/reach/{client_name}.key") as f:
+            client_key_content = f.read()
+
+        ovpn_template = f"""
+client
+dev tun
+proto tcp-client
+remote {public_ip} 1194
+auth SHA1
+cipher AES-256-CBC
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+
+<ca>
+{ca_content}
+</ca>
+
+<cert>
+{client_crt_content}
+</cert>
+
+<key>
+{client_key_content}
+</key>
+"""
+        with open(f"/etc/reach/{client_name}.ovpn", "w") as f:
+            f.write(ovpn_template.strip())
+        print("✅ OpenVPN client.ovpn created successfully!")        
         status = True
     except Exception as e:
         print("❌ Error:", e)

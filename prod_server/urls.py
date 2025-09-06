@@ -24,7 +24,9 @@ from reach.views import create_vlan_interface_hub, create_sub_interface_hub, cre
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
 from reach.microtik_views import add_microtik_hub
+from reach.views import get_m2mspoke_config
 urlpatterns = [  
+    path('beapi/get_m2mspoke_config', get_m2mspoke_config, name='get_m2mspoke_config'),
     path('beapi/config_microtik_hub', add_microtik_hub, name='add_microtik_hub'),
     path('beapi/homepage_info', homepage_info, name='homepage_info'),
     path('beapi/adminhomepage_info', adminhomepage_info, name='adminhomepage_info'),

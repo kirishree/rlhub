@@ -299,7 +299,27 @@ def check_user(data, newuser):
                                                         "exception": ""
                                                     }
                                     )
-                                    return response, newuser                     
+                                    return response, newuser   
+                        elif "m2m.net" in data["uuid"]:
+                            if "microtik_hub_info" in device:
+                                if data["dialer_ip"] == device["microtik_hub_info"]["hub_ip"].split("/")[0]:
+                                    for m2mspoke in device["microtik_spokes_info"]:
+                                        if data["uuid"] == m2mspoke["uuid"]:
+                                            response =[{ "message": 'This Microtik Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":m2mspoke["spokedevice_name"],
+                                                "organization_id":organization_id
+                                                }]
+                                            logger.info(
+                                                f"This Microtik Spoke is already Registered",
+                                                extra={
+                                                        "device_type": "MicrotikSpoke",
+                                                        "device_ip": cispoke.get("dialerip", ""),
+                                                        "be_api_endpoint": "add_microtik_device",
+                                                        "exception": ""
+                                                    }
+                                            )
+                                            return response, newuser                  
                         elif "ciscohub" in data["uuid"]:                            
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
@@ -468,7 +488,23 @@ def check_user(data, newuser):
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name
                                                       }
-                                    devinfo["cisco_spokes_info"].append(new_spoke_info)                                    
+                                    devinfo["cisco_spokes_info"].append(new_spoke_info)
+                    elif "m2m.net" in data["uuid"]:
+                        for devinfo in registered_devices_info:
+                            if "microtik_hub_info" in devinfo:
+                                if data["dialer_ip"] == devinfo["microtik_hub_info"]["hub_ip"].split("/")[0]:
+                                    routerpassword = hub_config.generate_router_password_cisco()
+                                    spokedevice_name =  "m2mspoke"+ str(len(devinfo["microtik_spokes_info"])+1)+"-"+details["organization_name"]
+                                    new_spoke_info = {"uuid": data["uuid"],
+                                                      "branch_location":data["branch_location"],
+                                                      "spokedevice_name":spokedevice_name,
+                                                      "hub_ip": data.get("dialer_ip", ""),
+                                                      "tunnel_ip": "None",
+                                                      "public_ip": "None",
+                                                      "router_username":spokedevice_name.lower(),
+                                                      "router_password": routerpassword
+                                                      }
+                                    devinfo["microtik_spokes_info"].append(new_spoke_info)                                      
                     elif "robustel" in data["uuid"]:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
@@ -1017,6 +1053,45 @@ def get_microtek_config(data):
                                                 "organization_id":data["orgid"],
                                                 "router_username": device["router_username"],
                                                 "router_password": device["router_password"]
+                                                }]                                   
+                                return response
+                        response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
+            else:
+                response = [{"message": "Your subscription was expired. Kindly renew it"}]
+        else:
+            response = [{"message": "This organization is not registered with ReachLink"}]  
+        logger.error(f"{response}",
+                    extra={ "be_api_endpoint": "get_microtek_config",
+                           "exception": ""}
+                    )       
+    except Exception as e:
+        logger.error(f"Error in get Microtek spoke",
+                    extra={ "be_api_endpoint": "get_microtek_config",
+                           "exception": str(e)}
+                    )
+        response = [{"message": "Some internal error. Pl try again"}]
+    return response
+
+def get_m2mspoke_config(data):
+    current_datetime = datetime.now()
+    try:
+        details = coll_registered_organization.find_one({"organization_id":data["orgid"]})
+        if details:                                                   
+            if current_datetime < details["subscription_to"]:
+                registered_devices_info = details["registered_devices"]  
+                expiry_date_original = str(details["subscription_to"]).split(" ")[0]                 
+                for devices in registered_devices_info:
+                    if "microtik_spokes_info" in devices:
+                        for device in devices["microtik_spokes_info"]:
+                            if device['uuid'] == data["uuid"]:  
+                                response =[{ "message": 'This Microtek Spoke is already Registered',
+                                                "expiry_date": expiry_date_original, 
+                                                "spokedevice_name":device["spokedevice_name"],
+                                                "organization_id":data["orgid"],
+                                                "router_username": device["router_username"],
+                                                "router_password": device["router_password"],
+                                                "hub_ip": device["hub_ip"]
+
                                                 }]                                   
                                 return response
                         response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
