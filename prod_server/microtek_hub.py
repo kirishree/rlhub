@@ -225,13 +225,13 @@ def microtik_client_generation(data) :
             key-usage=tls-client
         """
         run_cmd(ssh_client, client_cert_cmd)
-        run_cmd(ssh_client, "/certificate sign Client ca=CA")
+        run_cmd(ssh_client, f"/certificate sign {client_name} ca=CA")
 
         # IP pool, profile, secret        
         run_cmd(ssh_client, f"/ppp secret add name={client_name} password={client_name} profile=ovpn-profile service=ovpn")
 
         # Export certs
-        run_cmd(ssh_client, "/certificate export-certificate CA")
+        #run_cmd(ssh_client, "/certificate export-certificate CA")
         run_cmd(ssh_client, f"/certificate export-certificate {client_name} export-passphrase=rl123456")
 
         # Download certs via SFTP
