@@ -521,6 +521,7 @@ def add_cisco_device(request: HttpRequest):
             if  data.get("dialer_ip", "") != hub_ip:
                 data["uuid"] = data['branch_location'] + f"_{orgname}_m2m.net"
                 response, newuser = onboarding.check_user(data, newuser)  
+                print(response, newuser)
                 if "spokedevice_name" in response[0]:
                     client_name = response[0]["spokedevice_name"]
                     data['client_name'] = client_name
@@ -592,7 +593,7 @@ def add_cisco_device(request: HttpRequest):
                         return response1                            
                 else:
                     logger.error(
-                                    f'Error {response[0]["spokedevice_name"]}(M2M)',
+                                    f'Error {response}(M2M)',
                                     extra={
                                         "device_type": "ReachlinkServer",
                                         "device_ip": hub_ip,
