@@ -44,6 +44,7 @@ newuser = False
 @permission_classes([IsAuthenticated])
 def add_microtik_hub(request: HttpRequest):
     data = json.loads(request.body)    
+    print(data)
     data['branch_location'] = data['branch_location'].lower()
     public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
     logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
