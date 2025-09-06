@@ -519,33 +519,12 @@ def add_cisco_device(request: HttpRequest):
             return response1    
         if "microtik" in data["device"].lower():  
             if  data.get("dialer_ip", "") != hub_ip:
-                data["uuid"] = data['branch_location'] + f"_{orgname}_m2m.net"
-                response, newuser = onboarding.check_user(data, newuser)  
-                print(response, newuser)
-                if "spokedevice_name" in response[0]:
-                    client_name = response[0]["spokedevice_name"]
-                    data['client_name'] = client_name
-                    # Path configuration
-                    output_file = os.path.expanduser(f"/etc/reach/{client_name}.ovpn")
-                    if not os.path.exists(output_file):  
-                        microtik_hub_info = coll_hub_info.find_one({"hub_ip":data.get("dialer_ip", "")})
-                        if microtik_hub_info:
-                            data['router_username'] = microtik_hub_info['router_username'] 
-                            data["router_password"] = microtik_hub_info['router_password']                   
-                            client_status = microtek_hub.microtik_client_generation(data)  
-                            if not client_status:
-                                logger.error(
-                                    f"Error in Client file generation(M2M)",
-                                    extra={
-                                        "device_type": "ReachlinkServer",
-                                        "device_ip": hub_ip,
-                                        "be_api_endpoint": "configure Microtik spoke",
-                                        "exception": ""
-                                    }
-                                )     
-                                json_response = [{"message": f"Error while configuring, pl try again!"}]
-                        else:
-                            logger.error(
+                microtik_hub_info = coll_hub_info.find_one({"hub_ip":data.get("dialer_ip", "")})
+                if microtik_hub_info:
+                    data['router_username'] = microtik_hub_info['router_username'] 
+                    data["router_password"] = microtik_hub_info['router_password']  
+                else:
+                    logger.error(
                                     f"HUB is not Registered yet!",
                                     extra={
                                         "device_type": "ReachlinkServer",
@@ -554,28 +533,57 @@ def add_cisco_device(request: HttpRequest):
                                         "exception": ""
                                     }
                                 )     
-                            json_response = [{"message": f"HUB is not registered Yet!"}]
-                    else:
-                        with open(f"/etc/reach/{client_name}.ovpn", "r") as f:
-                            ovpnfile = f.read()
-                            f.close()                
-                        with open(m2m_exe_path, "rb") as f:
-                            microtekexe = f.read()
-                            f.close()
-                        files_to_send = {                    
-                            f"{client_name}.ovpn": ovpnfile,
-                            "reachlink_microtek_config.exe": microtekexe  # Keep binary
-                        }
-                        # Create a buffer for the ZIP file
-                        buffer = io.BytesIO()
-                        # Create a ZIP archive
-                        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                            for filename, content in files_to_send.items():
-                                zip_file.writestr(filename, content)
-                        # Prepare the response
-                        buffer.seek(0)
-                        json_response = [{"message": response[0]["message"]}]
-                        logger.info(
+                    json_response = [{"message": f"HUB is not registered Yet!"}]
+                    response1 = HttpResponse(content_type='text/plain')
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    return response1  
+                data["uuid"] = data['branch_location'] + f"_{orgname}_m2m.net"
+                response, newuser = onboarding.check_user(data, newuser)  
+                print(response, newuser)
+                if "spokedevice_name" in response[0]:
+                    client_name = response[0]["spokedevice_name"]
+                    data['client_name'] = client_name
+                    # Path configuration
+                    output_file = os.path.expanduser(f"/etc/reach/{client_name}.ovpn")
+                    if not os.path.exists(output_file): 
+                        client_status = microtek_hub.microtik_client_generation(data)  
+                        if not client_status:
+                            logger.error(
+                                    f"Error in Client file generation(M2M)",
+                                    extra={
+                                        "device_type": "ReachlinkServer",
+                                        "device_ip": hub_ip,
+                                        "be_api_endpoint": "configure Microtik spoke",
+                                        "exception": ""
+                                    }
+                            )     
+                            json_response = [{"message": f"Error while configuring, pl try again!"}]
+                            response1 = HttpResponse(content_type='text/plain')
+                            response1['X-Message'] = json.dumps(json_response)
+                            response1["Access-Control-Expose-Headers"] = "X-Message"
+                            return response1 
+                    
+                    with open(f"/etc/reach/{client_name}.ovpn", "r") as f:
+                        ovpnfile = f.read()
+                        f.close()                
+                    with open(m2m_exe_path, "rb") as f:
+                        microtekexe = f.read()
+                        f.close()
+                    files_to_send = {                    
+                        f"{client_name}.ovpn": ovpnfile,
+                        "reachlink_microtek_config.exe": microtekexe  # Keep binary
+                    }
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    json_response = [{"message": response[0]["message"]}]
+                    logger.info(
                                         f"New Microtek {client_name} added",
                                         extra={
                                             "device_type": "ReachlinkServer",
@@ -583,14 +591,14 @@ def add_cisco_device(request: HttpRequest):
                                             "be_api_endpoint": "configure spoke",
                                             "exception": ""
                                         }
-                        ) 
-                        response1 = HttpResponse(buffer, content_type='application/zip')
-                        response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
-                        response1['X-Message'] = json.dumps(json_response)
-                        response1["Access-Control-Expose-Headers"] = "X-Message"
-                        os.system(f"python3 {reachlink_zabbix_path}")
-                        os.system("systemctl restart reachlink_test")  
-                        return response1                            
+                    ) 
+                    response1 = HttpResponse(buffer, content_type='application/zip')
+                    response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    os.system(f"python3 {reachlink_zabbix_path}")
+                    os.system("systemctl restart reachlink_test")  
+                    return response1                            
                 else:
                     logger.error(
                                     f'Error {response}(M2M)',
@@ -602,10 +610,10 @@ def add_cisco_device(request: HttpRequest):
                                     }
                                 )     
                     json_response = [{"message": f"Error while configuring, pl try again!"}]
-                response1 = HttpResponse(content_type='text/plain')
-                response1['X-Message'] = json.dumps(json_response)
-                response1["Access-Control-Expose-Headers"] = "X-Message"
-                return response1                         
+                    response1 = HttpResponse(content_type='text/plain')
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    return response1                         
             #ReachLink Client
             data["uuid"] = data['branch_location'] + f"_{orgname}_microtek.net"     
             try:
