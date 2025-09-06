@@ -642,7 +642,7 @@ def main():
                             if "itemid_sent" in m2mspoke["branch_location"]:
                                 bits_received = get_history(m2mspoke["itemid_received"])
                                 bits_sent = get_history(m2mspoke["itemid_sent"])
-                                bandwidth_info_m2m.append({"branch_location": ciscospoke["branch_location"]["branch_location"],
+                                bandwidth_info_m2m.append({"branch_location": m2mspoke["branch_location"]["branch_location"],
                                                    "bits_recieved": bits_received,
                                                     "bits_sent": bits_sent })
                             else:
@@ -662,7 +662,7 @@ def main():
                                                     "bits_sent": bits_sent })
                         else:
                             m2mspoke["status"] = "inactive"
-                            inactive_m2mspokes.append(ciscospoke["branch_location"])
+                            inactive_m2mspokes.append(m2mspoke["branch_location"])
                             no_inactive_m2mspokes += 1
                             bandwidth_info_m2m.append({"branch_location": m2mspoke["branch_location"],
                                                    "bits_recieved": 0,
