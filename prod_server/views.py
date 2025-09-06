@@ -527,7 +527,7 @@ def add_cisco_device(request: HttpRequest):
                     # Path configuration
                     output_file = os.path.expanduser(f"/etc/reach/{client_name}.ovpn")
                     if not os.path.exists(output_file):  
-                        microtik_hub_info = coll_hub_info.find_one({"hub_ip":data["hub_ip"]})
+                        microtik_hub_info = coll_hub_info.find_one({"hub_ip":data.get("dialer_ip", "")})
                         if microtik_hub_info:
                             data['router_username'] = microtik_hub_info['router_username'] 
                             data["router_password"] = microtik_hub_info['router_password']                   
