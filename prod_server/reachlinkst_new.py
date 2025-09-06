@@ -633,7 +633,7 @@ def main():
                     bandwidth_info_m2m = []                   
                     m2mspokes_info = []
                     for m2mspoke in device["microtik_spokes_info"]:
-                        spoke_ip = m2mspoke["dialerip"].split("/")[0]
+                        spoke_ip = m2mspoke["tunnel_ip"].split("/")[0]
                         connectedStatus = check_tunnel_connection(spoke_ip)
                         if connectedStatus: 
                             m2mspoke["status"] = "active"
@@ -668,8 +668,8 @@ def main():
                                                    "bits_recieved": 0,
                                                     "bits_sent": 0 })
                         m2mspokes_info.append({  "uuid": m2mspoke["uuid"],
-                                                    "tunnel_ip": m2mspoke["dialerip"],
-                                                    "public_ip":m2mspoke["dialer_hub_ip"],
+                                                    "tunnel_ip": m2mspoke["tunnel_ip"],
+                                                    "public_ip":m2mspoke["public_ip"],
                                                     "branch_location": m2mspoke.get("branch_location", ""),
                                                     "subnet": m2mspoke.get("subnet", []),
                                                     "vrf": m2mspoke.get("vrf", ""),                                                
@@ -679,8 +679,8 @@ def main():
                                                     "spokedevice_name": m2mspoke.get("spokedevice_name", "")
                                                   })
                         org_info["branch_info_only"].append({  "uuid": m2mspoke["uuid"],
-                                                    "tunnel_ip": m2mspoke["dialerip"],
-                                                    "public_ip":m2mspoke["dialer_hub_ip"],
+                                                    "tunnel_ip": m2mspoke["tunnel_ip"],
+                                                    "public_ip":m2mspoke["public_ip"],
                                                     "branch_location": m2mspoke.get("branch_location", ""),
                                                     "subnet": m2mspoke.get("subnet", []),
                                                     "vrf": m2mspoke.get("vrf", ""),                                                
