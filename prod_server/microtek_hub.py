@@ -197,7 +197,7 @@ remote-cert-tls server
 
 
 def microtik_client_generation(data) :
-    router_ip = data["hub_ip"].split("/")[0]
+    router_ip = data["dialer_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
     client_name = data['client_name']
