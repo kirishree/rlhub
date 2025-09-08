@@ -710,6 +710,67 @@ def interfaceconfig(data):
                 routerrealip = newaddr["address"].split("/")[0]
                 routersubnet = str(ipaddress.ip_network(newaddr["address"], strict=False))
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
+        #DHCP POOL Config
+        if data["infc_name"] == "bridge":
+            lan_addr = data["new_addresses"][0]["address"]
+            netmask = prefix_len_to_netmask(lan_addr.split("/")[1])
+            ip_addr = lan_addr.split("/")[0]       
+            ip_addresses = get_ip_addresses(ip_addr, netmask) 
+            dhcp_start_address = ip_addresses["Host_IPs"][0]
+            dhcp_end_address = ip_addresses["Host_IPs"][1]
+            # Execute the dhcp server command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            dhcppool_info = output.split("\n")   
+            for addr in dhcppool_info:
+                if "interface=" in addr:
+                    intfcname = addr.split("interface=")[1].split(" ")[0]   
+                    if intfcname == "bridge":
+                        poolname = addr.split("address-pool=")[1].split(" ")[0]                
+                        break
+            if poolname:
+                # Execute the ip pool command 
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
+                # Initialize variables for output collection
+                start_time = time.time()
+                timeout = 10  # Stop after 10 seconds
+        
+                # Use a loop to monitor and collect output
+                output = ""
+                while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                    if stdout.channel.recv_ready():
+                        output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                    # Break if timeout is reached
+                    if time.time() - start_time > timeout:
+                        print("Timeout reached. Terminating the traceroute command.")
+                        break  
+                pool_info = output.split("\n")   
+                for addr in pool_info:
+                    if "name=" in addr:
+                        getpoolname = addr.split("name=")[1].split(" ")[0].split('"')[1]      
+                        if poolname == getpoolname:
+                            poolnumbers = addr.split(" ")[1]  
+                            break
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
+                response = [{"message":f"LAN configured successfully on {lan_addr}"}]
+            else:
+                response = [{"message":"LAN IP configured but error in DHCP configuration."}]
         response = [{"message": f"Interface {data['intfc_name']} updated"}]
         logger.info(
             f"{response}",
