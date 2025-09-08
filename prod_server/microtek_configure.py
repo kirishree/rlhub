@@ -775,14 +775,14 @@ def interfaceconfig(data):
                     print("Timeout reached. Terminating the traceroute command.")
                     break  
             dhcppool_info = output.split("\n")  
-            print(dhcppool_info) 
+            #print(dhcppool_info) 
             for addr in dhcppool_info:
                 if "interface=" in addr:
                     intfcname = addr.split("interface=")[1].split(" ")[0]   
                     if intfcname == "bridge":
                         poolname = addr.split("address-pool=")[1].split(" ")[0]                
                         break
-            print(poolname)
+            #print(poolname)
             if poolname:
                 # Execute the ip pool command 
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
