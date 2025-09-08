@@ -757,6 +757,10 @@ def interfaceconfig(data):
             ip_addresses = get_ip_addresses(ip_addr, netmask) 
             dhcp_start_address = ip_addresses["Host_IPs"][0]
             dhcp_end_address = ip_addresses["Host_IPs"][1]
+            #
+            subnet_id_lan = ip_addresses["Subnet_ID"] + "/" + lan_addr.split("/")[1]
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove 0')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address={subnet_id_lan} gateway={ip_addr} dns-server=8.8.8.8')
             # Execute the dhcp server command 
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
             # Initialize variables for output collection
