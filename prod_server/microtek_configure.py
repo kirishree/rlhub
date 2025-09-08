@@ -590,6 +590,45 @@ def interfacedetails(data):
             interface["addresses"] = [addr for addr in interface["addresses"] if addr["IPv4address"].strip()]    
         return collect
 
+def prefix_len_to_netmask(prefix_len):
+    # Validate the prefix length
+    print(prefix_len)
+    prefix_len = int(prefix_len)
+    if not 0 <= prefix_len <= 32:
+        raise ValueError("Prefix length must be between 0 and 32")
+    # Calculate the netmask using bitwise operations
+    netmask = 0xffffffff ^ (1 << (32 - prefix_len)) - 1
+    # Format the netmask into IP address format
+    netmask_str = ".".join(str((netmask >> i) & 0xff) for i in [24, 16, 8, 0])
+    return netmask_str
+
+def get_ip_addresses(ip_address, netmask):
+    # Create an IPv4Network object representing the subnet
+    subnet = ipaddress.IPv4Network(f"{ip_address}/{netmask}", strict=False)
+    # Get the subnet ID and broadcast address
+    subnet_id = subnet.network_address
+    broadcast_ip = subnet.broadcast_address
+
+    # Extract and return the list of host IPs (excluding subnet ID and broadcast IP)
+    #host_ips = [str(ip) for ip in subnet.hosts()]
+    
+    if subnet.prefixlen == 31:
+        # For /31, both IPs can act as hosts (point-to-point links)
+        first_host = subnet.network_address
+        last_host = subnet.broadcast_address
+    else:
+        # For other subnets, calculate first and last host IPs
+        first_host = subnet.network_address + 1
+        last_host = subnet.broadcast_address - 1
+
+   
+    host_ips = [first_host, last_host]    
+    return {
+        "Subnet_ID": str(subnet_id),
+        "Broadcast_IP": str(broadcast_ip),
+        "Host_IPs": host_ips
+    }
+
 def interfaceconfig(data):   
    # Define the router details       
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -735,13 +774,15 @@ def interfaceconfig(data):
                 if time.time() - start_time > timeout:
                     print("Timeout reached. Terminating the traceroute command.")
                     break  
-            dhcppool_info = output.split("\n")   
+            dhcppool_info = output.split("\n")  
+            print(dhcppool_info) 
             for addr in dhcppool_info:
                 if "interface=" in addr:
                     intfcname = addr.split("interface=")[1].split(" ")[0]   
                     if intfcname == "bridge":
                         poolname = addr.split("address-pool=")[1].split(" ")[0]                
                         break
+            print(poolname)
             if poolname:
                 # Execute the ip pool command 
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
@@ -1481,44 +1522,6 @@ def  validateIP(ip_address):
             return True    
     return False
 
-def prefix_len_to_netmask(prefix_len):
-    # Validate the prefix length
-    print(prefix_len)
-    prefix_len = int(prefix_len)
-    if not 0 <= prefix_len <= 32:
-        raise ValueError("Prefix length must be between 0 and 32")
-    # Calculate the netmask using bitwise operations
-    netmask = 0xffffffff ^ (1 << (32 - prefix_len)) - 1
-    # Format the netmask into IP address format
-    netmask_str = ".".join(str((netmask >> i) & 0xff) for i in [24, 16, 8, 0])
-    return netmask_str
-
-def get_ip_addresses(ip_address, netmask):
-    # Create an IPv4Network object representing the subnet
-    subnet = ipaddress.IPv4Network(f"{ip_address}/{netmask}", strict=False)
-    # Get the subnet ID and broadcast address
-    subnet_id = subnet.network_address
-    broadcast_ip = subnet.broadcast_address
-
-    # Extract and return the list of host IPs (excluding subnet ID and broadcast IP)
-    #host_ips = [str(ip) for ip in subnet.hosts()]
-    
-    if subnet.prefixlen == 31:
-        # For /31, both IPs can act as hosts (point-to-point links)
-        first_host = subnet.network_address
-        last_host = subnet.broadcast_address
-    else:
-        # For other subnets, calculate first and last host IPs
-        first_host = subnet.network_address + 1
-        last_host = subnet.broadcast_address - 1
-
-   
-    host_ips = [first_host, last_host]    
-    return {
-        "Subnet_ID": str(subnet_id),
-        "Broadcast_IP": str(broadcast_ip),
-        "Host_IPs": host_ips
-    }
 
 def lanconfig(data):   
    # Define the router details
