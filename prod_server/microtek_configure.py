@@ -750,7 +750,7 @@ def interfaceconfig(data):
                 routersubnet = str(ipaddress.ip_network(newaddr["address"], strict=False))
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
         #DHCP POOL Config
-        if data["infc_name"] == "bridge":
+        if data["intfc_name"] == "bridge":            
             lan_addr = data["new_addresses"][0]["address"]
             netmask = prefix_len_to_netmask(lan_addr.split("/")[1])
             ip_addr = lan_addr.split("/")[0]       
