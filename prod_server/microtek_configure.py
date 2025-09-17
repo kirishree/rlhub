@@ -760,7 +760,9 @@ def interfaceconfig(data):
             #
             subnet_id_lan = ip_addresses["Subnet_ID"] + "/" + lan_addr.split("/")[1]
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove 0')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address={subnet_id_lan} gateway={ip_addr} dns-server={ip_addr}')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address="{subnet_id_lan}" gateway="{ip_addr}" dns-server="{ip_addr}"')
+            print("DHCP-Server STDOUT:", stdout.read().decode())
+            print("DHCP-Server STDERR:", stderr.read().decode())
             
             #Add  Drop rule  for other DNS
             #delete old rule if any
