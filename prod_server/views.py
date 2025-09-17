@@ -2639,6 +2639,69 @@ def add_app_spoke(request):
         response = [{"message": f"Error: while configuring interface"}]
     return JsonResponse(response, safe=False)
 
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def add_firewall_filter_spoke(request):
+    try:
+        data = json.loads(request.body)
+        print(data)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "add_firewall_filter_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_branch_{branch_id}"              
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.addfirewallrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Add Firewall Filter Rule in Spoke:{e}")
+        response = [{"message": f"Error: while adding filter rule"}]
+    return JsonResponse(response, safe=False)
+
 ##############Inactive branch##############
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])

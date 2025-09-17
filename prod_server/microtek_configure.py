@@ -760,7 +760,38 @@ def interfaceconfig(data):
             #
             subnet_id_lan = ip_addresses["Subnet_ID"] + "/" + lan_addr.split("/")[1]
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove 0')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address={subnet_id_lan} gateway={ip_addr} dns-server=8.8.8.8')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address={subnet_id_lan} gateway={ip_addr} dns-server={ip_addr}')
+            
+            #Add  Drop rule  for other DNS
+            #delete old rule if any
+             # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            firewall_info = output.split("\n")[1:-1]
+            for old_rule in firewall_info:
+                if "Drop DNS not to MikroTik" in old_rule:
+                    old_rule = old_rule.stripe()
+                    old_rule = re.sub(r'\s+', ' ', old_rule)
+                    rule_no = old_rule.split(" ")[0]
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
+
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address=!{ip_addr} action=drop place-before=0 comment="Drop DNS not to MikroTik"')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address=!{ip_addr} action=drop place-before=0 comment="Drop TCP DNS not to MikroTik"')
+            
             # Execute the dhcp server command 
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
             # Initialize variables for output collection
@@ -813,6 +844,7 @@ def interfaceconfig(data):
                             poolnumbers = addr.split(" ")[1]  
                             break
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
+                
                 response = [{"message":f"LAN configured successfully on {lan_addr}"}]
             else:
                 response = [{"message":"LAN IP configured but error in DHCP configuration."}]
@@ -2342,3 +2374,63 @@ def addapp(data):
         ssh_client.close()        
         return response
 
+
+def addfirewallrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:   
+            if rule["protocol"] == "any" or rule["protocol"] == "all":    
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address={rule["src_address"]} dst-address={rule["dst_address"]} src-port={rule["src_port"]} dst-port={rule["dst_port"]} place-before=0 comment={rule["description"]}')     
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address={rule["src_address"]} dst-address={rule["dst_address"]} src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule['protocol']} place-before=0 comment={rule["description"]}')
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:               
+        
+        response = [{"message": f"Firewall Rule added successfully"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_rule_add",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding app",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_rule_add",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding filter rule in firewall. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
