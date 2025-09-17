@@ -2285,6 +2285,60 @@ def blockedappdetails(data):
             )
     return collect
 
+def addapp(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
 
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addapp",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for domain in data["domains"]:            
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=127.0.0.1')
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:               
+        
+        response = [{"message": f"App {data['domains']} added successfully for blocking"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addapp_block",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding app",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addapp_block",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding app for blocking. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
 
