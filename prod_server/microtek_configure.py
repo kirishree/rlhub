@@ -1833,6 +1833,155 @@ def openvpnserverconfig(data):
         print(e)
 
 
+def firewalldetails(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_interface_details",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting interface details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_interface_details",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []          
+        firewall_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for finfo in firewall_info:
+            if finfo.strip():
+                rules.append(finfo)
+            else:
+                rules_info.append(rules)
+                rules = []        
+        for rule in rules_info: 
+            chain = ""
+            action = ""
+            protocol = ""
+            src_address = ""
+            dst_address = ""
+            src_port = ""
+            dst_port = ""
+            description = ""
+            in_interface_list = ""
+            out_interface_list = ""
+            connection_state = ""
+            tls_host = ""          
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1]                    
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        firewall_status = "disabled"
+                    elif status_info == "I":
+                        firewall_status= "Invalid" 
+                    elif status_info == "D":
+                        firewall_status= "Dynamic" 
+                    else: 
+                        firewall_status= "Enabled" 
+                #if "defconf" in intinfostrip:
+                #    status_info = intinfostrip.split(" ")[1]
+                #    print("status_info", status_info)
+                #    if status_info == "R":
+                #        intfc_status = "up"
+                #    else:
+                #        intfc_status = "down"
+
+                if "chain=" in ruleinfostrip:
+                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]                    
+                if "action=" in ruleinfostrip:
+                    action = ruleinfostrip.split("action=")[1].split(" ")[0]
+                if "protocol=" in ruleinfostrip:
+                    protocol = ruleinfostrip.split("protocol=")[1].split(" ")[0]
+                if "src-address=" in ruleinfostrip:
+                    src_address = ruleinfostrip.split("src-address=")[1].split(" ")[0]
+                if "dst-address=" in ruleinfostrip:
+                    dst_address = ruleinfostrip.split("dst-address=")[1].split(" ")[0]
+                if "src-port=" in ruleinfostrip:
+                    src_port = ruleinfostrip.split("src-port=")[1].split(" ")[0]
+                if "dst-port=" in ruleinfostrip:
+                    dst_port = ruleinfostrip.split("dst-port=")[1].split(" ")[0]
+                if "in-interface-list=" in ruleinfostrip:
+                    in_interface_list = ruleinfostrip.split("in-interface-list=")[1].split(" ")[0]
+                if "out-interface-list=" in ruleinfostrip:
+                    out_interface_list = ruleinfostrip.split("out-interface-list=")[1].split(" ")[0]
+                if "connection-state=" in ruleinfostrip:
+                    connection_state = ruleinfostrip.split("connection-state=")[1].split(" ")[0]
+                if "tls-host=" in ruleinfostrip:
+                    tls_host= ruleinfostrip.split("tls-host=")[1].split(" ")[0]   
+                if "in-interface=" in ruleinfostrip:
+                    in_interface = ruleinfostrip.split("in-interface=")[1].split(" ")[0]
+                if "out-interface=" in ruleinfostrip:
+                    out_interface = ruleinfostrip.split("out-interface=")[1].split(" ")[0]                     
+            collect.append({"chain":chain ,
+                            "action": action,
+                            "protocol":protocol,
+                            "src_address":src_address,
+                            "dst_address":dst_address,
+                            "src_port": src_port,
+                            "dst_port":dst_port,
+                            "in_interface_list":in_interface_list,
+                            "out_interface_list": out_interface_list,
+                            "connection_state":connection_state,
+                            "tls_host":tls_host,
+                            "description":description,
+                            "firewall_status":firewall_status,
+                            "in_interface":in_interface,
+                            "out_interface":out_interface
+                            })         
+    except Exception as e:
+        print(e)
+    return collect
 
 
 

@@ -120,7 +120,7 @@ def post_mail(subject, body_mail):
 def check_tunnel_connection(Remote_tunnel_ip):
     try:        
         command = (f"ping -c 3  {Remote_tunnel_ip}")
-        output = subprocess.check_output(command.split()).decode()        
+        output = subprocess.check_output(command.split()).decode() 
         return True         
       
     except subprocess.CalledProcessError:
@@ -134,7 +134,23 @@ def main():
     with open(regdevice_path, "w") as f:
         json.dump(data, f, default=json_util.default, indent=4)
         f.close()
+    
     while(1):
+        tunnel_info = []
+        with open(r'/etc/openvpn/server/openvpn-status.log','r') as f:
+            lines = f.readlines()
+            for row in  lines:     
+                data=row.split(",")
+                if data[0] == "CLIENT_LIST":
+                    date = data[7].split(" ")[0]
+                    time = data[7].split(" ")[1]
+                    collection = {  "tunnel_ip":data[3], 
+                                "public_ip":data[2].split(":")[0],
+                                "date": date,
+                                "time":time,
+                                "edgedevice_name":data[1]
+                            }
+                    tunnel_info.append(collection)   
         with open(regdevice_path, "r") as f:
             registered_organization = json.load(f)
             f.close()
@@ -209,6 +225,9 @@ def main():
                                                     "bits_sent": 0 })
                             no_midevice_inactive += 1
                             inactive_spokes.append(midevice["branch_location"])
+                        for tunnels in tunnel_info:
+                            if midevice["tunnel_ip"] == tunnels["tunnel_ip"]:
+                                public_ip = tunnels["public_ip"]
                         microtek_info.append({  "uuid": midevice["uuid"],
                                                     "tunnel_ip": midevice["tunnel_ip"],
                                                     "public_ip":midevice["public_ip"],

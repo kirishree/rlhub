@@ -594,7 +594,11 @@ def addstaticroute_ubuntu(data):
                             f.close()
                     with open(f"/etc/openvpn/server/server.conf", "a") as f:
                         f.write(f"\nroute {subnet_ip} {netmask} ")  
-                        f.close()               
+                        f.close() 
+                    #with open(f"/etc/openvpn/server/server.conf", "a") as f:
+                    #    f.write(f'\nroute {subnet_ip} {netmask} \npush "route {subnet_ip} {netmask}"')  
+                    #    f.close()            
+                       
             if route["destination"].split(".")[0] != "10":
                 if route["destination"].split(".")[0] == "172":
                     if 15 < int(route["destination"].split(".")[1]) < 32:
