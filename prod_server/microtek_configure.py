@@ -784,7 +784,7 @@ def interfaceconfig(data):
             firewall_info = output.split("\n")[1:-1]
             for old_rule in firewall_info:
                 if "Drop DNS not to MikroTik" in old_rule:
-                    old_rule = old_rule.stripe()
+                    old_rule = old_rule.strip()
                     old_rule = re.sub(r'\s+', ' ', old_rule)
                     rule_no = old_rule.split(" ")[0]
                     stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
