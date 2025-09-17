@@ -2344,7 +2344,7 @@ def addapp(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
-
+    print("app add", data)
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
