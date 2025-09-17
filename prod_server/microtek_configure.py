@@ -788,22 +788,22 @@ def interfaceconfig(data):
                     print("DHCP-Server Remove STDOUT:", stdout.read().decode())
                     print("DHCP-Server Remove STDERR:", stderr.read().decode())                    
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address="{subnet_id_lan}" gateway="{ip_addr}" dns-server="{ip_addr}"')
-            print("DHCP-Server STDOUT:", stdout.read().decode())
-            print("DHCP-Server STDERR:", stderr.read().decode())
+            #print("DHCP-Server STDOUT:", stdout.read().decode())
+            #print("DHCP-Server STDERR:", stderr.read().decode())
             
             #Add  Drop rule  for other DNS
             #delete old rule if any
             stdin, stdout, stderr = ssh_client.exec_command(
                 '/ip firewall filter remove [find comment="Drop DNS not to MikroTik"]'
             )
-            print("Delete UDP STDOUT:", stdout.read().decode())
-            print("Delete UDP STDERR:", stderr.read().decode())
+            #print("Delete UDP STDOUT:", stdout.read().decode())
+            #print("Delete UDP STDERR:", stderr.read().decode())
 
             stdin, stdout, stderr = ssh_client.exec_command(
                 '/ip firewall filter remove [find comment="Drop TCP DNS not to MikroTik"]'
             )
-            print("Delete TCP STDOUT:", stdout.read().decode())
-            print("Delete TCP STDERR:", stderr.read().decode())
+            #print("Delete TCP STDOUT:", stdout.read().decode())
+            #print("Delete TCP STDERR:", stderr.read().decode())
             
             stdin, stdout, stderr = ssh_client.exec_command(
                 f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=[find comment="enable-snmpaccess"] comment="Drop DNS not to MikroTik"'
@@ -812,8 +812,8 @@ def interfaceconfig(data):
             stdin, stdout, stderr = ssh_client.exec_command(
                 f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=[find comment="enable-snmpaccess"] comment="Drop TCP DNS not to MikroTik"'
             )
-            print("STDOUT:", stdout.read().decode())
-            print("STDERR:", stderr.read().decode())
+            #print("STDOUT:", stdout.read().decode())
+            #print("STDERR:", stderr.read().decode())
             # Execute the dhcp server command 
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
             # Initialize variables for output collection
@@ -2344,7 +2344,7 @@ def addapp(data):
     router_ip = data["tunnel_ip"].split("/")[0]
     username = data["router_username"]
     password = data["router_password"]
-    print("app add", data)
+    #print("app add", data)
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
