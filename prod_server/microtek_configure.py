@@ -759,10 +759,10 @@ def interfaceconfig(data):
             dhcp_end_address = ip_addresses["Host_IPs"][1]
             #
             subnet_id_lan = ip_addresses["Subnet_ID"] + "/" + lan_addr.split("/")[1]
-            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove 0')
-            #print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            #print("DHCP-Server Remove STDERR:", stderr.read().decode())
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network set 0 address="{subnet_id_lan}" gateway="{ip_addr}" dns-server="{ip_addr}"')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove 0')
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address="{subnet_id_lan}" gateway="{ip_addr}" dns-server="{ip_addr}"')
             print("DHCP-Server STDOUT:", stdout.read().decode())
             print("DHCP-Server STDERR:", stderr.read().decode())
             
