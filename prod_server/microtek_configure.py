@@ -793,64 +793,24 @@ def interfaceconfig(data):
             
             #Add  Drop rule  for other DNS
             #delete old rule if any
-             # Execute the trace command 
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter print detail')
-            # Initialize variables for output collection
-            start_time = time.time()
-            timeout = 10  # Stop after 10 seconds
-        
-            # Use a loop to monitor and collect output
-            output = ""
-            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
-                if stdout.channel.recv_ready():
-                    output += stdout.channel.recv(2048).decode()  # Read available data
-                
-            
-                # Break if timeout is reached
-                if time.time() - start_time > timeout:
-                    print("Timeout reached. Terminating the traceroute command.")
-                    break  
-            firewall_info = output.split("\n")[1:-1]
-            for old_rule in firewall_info:
-                if "Drop DNS not to MikroTik" in old_rule:
-                    old_rule = old_rule.strip()
-                    old_rule = re.sub(r'\s+', ' ', old_rule)
-                    rule_no = old_rule.split(" ")[0]
-                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
-                    
-            #delete old rule if any
-             # Execute the trace command 
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter print detail')
-            # Initialize variables for output collection
-            start_time = time.time()
-            timeout = 10  # Stop after 10 seconds
-        
-            # Use a loop to monitor and collect output
-            output = ""
-            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
-                if stdout.channel.recv_ready():
-                    output += stdout.channel.recv(2048).decode()  # Read available data
-                
-            
-                # Break if timeout is reached
-                if time.time() - start_time > timeout:
-                    print("Timeout reached. Terminating the traceroute command.")
-                    break  
-            firewall_info = output.split("\n")[1:-1]
-            for old_rule in firewall_info:
-                if "Drop TCP DNS not to MikroTik" in old_rule:
-                    old_rule = old_rule.strip()
-                    old_rule = re.sub(r'\s+', ' ', old_rule)
-                    rule_no = old_rule.split(" ")[0]
-                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
-                    
+            stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall filter remove [find comment="Drop DNS not to MikroTik"]'
+            )
+            print("Delete UDP STDOUT:", stdout.read().decode())
+            print("Delete UDP STDERR:", stderr.read().decode())
 
             stdin, stdout, stderr = ssh_client.exec_command(
-                f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=1 comment="Drop DNS not to MikroTik"'
+                '/ip firewall filter remove [find comment="Drop TCP DNS not to MikroTik"]'
+            )
+            print("Delete TCP STDOUT:", stdout.read().decode())
+            print("Delete TCP STDERR:", stderr.read().decode())
+            
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=[find comment="enable-snmpaccess"] comment="Drop DNS not to MikroTik"'
             )
 
             stdin, stdout, stderr = ssh_client.exec_command(
-                f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=1 comment="Drop TCP DNS not to MikroTik"'
+                f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=[find comment="enable-snmpaccess"] comment="Drop TCP DNS not to MikroTik"'
             )
             print("STDOUT:", stdout.read().decode())
             print("STDERR:", stderr.read().decode())
