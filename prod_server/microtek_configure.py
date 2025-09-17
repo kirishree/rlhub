@@ -1853,7 +1853,7 @@ def firewalldetails(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "be_api_endpoint": "get_interface_details",
+                "be_api_endpoint": "get_firewall_details",
                 "exception": str(e)
             }
             )
@@ -1878,11 +1878,11 @@ def firewalldetails(data):
                     break             
         except Exception as e:
             logger.error(
-                f"Error while getting interface details",
+                f"Error while getting firewall details",
                 extra={
                     "device_type": "Microtek",
                     "device_ip": router_ip,
-                    "be_api_endpoint": "get_interface_details",
+                    "be_api_endpoint": "get_firewall_details",
                     "exception": str(e)
                 }
             )
@@ -1912,7 +1912,9 @@ def firewalldetails(data):
             in_interface_list = ""
             out_interface_list = ""
             connection_state = ""
-            tls_host = ""          
+            tls_host = ""  
+            in_interface = ""
+            out_interface = ""        
             for ruleinfo in rule:
                 ruleinfostrip = ruleinfo.strip()
                 # Clean up extra spaces or non-visible characters using regex
@@ -1981,6 +1983,15 @@ def firewalldetails(data):
                             })         
     except Exception as e:
         print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_firewall_details",
+                    "exception": str(e)
+                }
+            )
     return collect
 
 

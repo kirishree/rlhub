@@ -2359,7 +2359,7 @@ def get_firewall_details_spoke(request):
         data = json.loads(request.body)
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
-                    extra={ "be_api_endpoint": "get_interface_details" }
+                    extra={ "be_api_endpoint": "get_firewall_details" }
                     )
         branch_id = data["tunnel_ip"].split("/")[0]
         cache_key = f"firewall_branch_{branch_id}"
@@ -2378,7 +2378,7 @@ def get_firewall_details_spoke(request):
             tunnel_ip = data["tunnel_ip"].split("/")[0] 
             url = "http://" + tunnel_ip + ":5000/"
             try:
-                response = requests.get(url + "get_interface_details")                                
+                response = requests.get(url + "get_firewall_details")                                
                 if response.status_code == 200:           
                     get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
                     firewall_details = json.loads(get_response)
@@ -2391,7 +2391,7 @@ def get_firewall_details_spoke(request):
                      extra={
                                 "device_type": "ReachlinkSpoke",
                                 "device_ip": hub_ip,
-                                "be_api_endpoint": "get_interface_info",
+                                "be_api_endpoint": "get_firewall_info",
                                 "exception": str(e)
                             }
                     )     
