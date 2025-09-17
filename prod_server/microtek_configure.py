@@ -2263,7 +2263,8 @@ def blockedappdetails(data):
                     regexp = ruleinfostrip.split("regexp=")[1].split('"')[1]
                 if "address=" in ruleinfostrip:
                     address = ruleinfostrip.split("address=")[1].split(" ")[0]
-                                    
+            if name == "router.lan":
+                continue                       
             collect.append({"name":name ,
                             "regexp": regexp,
                             "address":address,
