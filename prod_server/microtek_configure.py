@@ -759,9 +759,34 @@ def interfaceconfig(data):
             dhcp_end_address = ip_addresses["Host_IPs"][1]
             #
             subnet_id_lan = ip_addresses["Subnet_ID"] + "/" + lan_addr.split("/")[1]
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove 0')
-            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            print("DHCP-Server Remove STDERR:", stderr.read().decode())
+
+            #Update network address
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            dhcpserver_info = output.split("\n")[1:-1]
+            for old_rule in dhcpserver_info:
+                if "address=" in old_rule:
+                    old_rule = old_rule.strip()
+                    old_rule = re.sub(r'\s+', ' ', old_rule)
+                    old_address = old_rule.split("address=")[1].split(" ")[0]
+                    print(old_address)
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove [find address="{old_address}"]')
+                    print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+                    print("DHCP-Server Remove STDERR:", stderr.read().decode())                    
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address="{subnet_id_lan}" gateway="{ip_addr}" dns-server="{ip_addr}"')
             print("DHCP-Server STDOUT:", stdout.read().decode())
             print("DHCP-Server STDERR:", stderr.read().decode())
@@ -787,12 +812,38 @@ def interfaceconfig(data):
                     break  
             firewall_info = output.split("\n")[1:-1]
             for old_rule in firewall_info:
+                if "Drop DNS not to MikroTik" in old_rule:
+                    old_rule = old_rule.strip()
+                    old_rule = re.sub(r'\s+', ' ', old_rule)
+                    rule_no = old_rule.split(" ")[0]
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
+                    
+            #delete old rule if any
+             # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            firewall_info = output.split("\n")[1:-1]
+            for old_rule in firewall_info:
                 if "Drop TCP DNS not to MikroTik" in old_rule:
                     old_rule = old_rule.strip()
                     old_rule = re.sub(r'\s+', ' ', old_rule)
                     rule_no = old_rule.split(" ")[0]
                     stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
-                    break
+                    
 
             stdin, stdout, stderr = ssh_client.exec_command(
                 f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=0 comment="Drop DNS not to MikroTik"'
