@@ -2404,7 +2404,7 @@ def addfirewallrule(data):
             if rule["protocol"] == "any" or rule["protocol"] == "all":    
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address={rule["src_address"]} dst-address={rule["dst_address"]} src-port={rule["src_port"]} dst-port={rule["dst_port"]} place-before=0 comment={rule["description"]}')     
             else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address={rule["src_address"]} dst-address={rule["dst_address"]} src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule['protocol']} place-before=0 comment={rule["description"]}')
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address={rule["src_address"]} dst-address={rule["dst_address"]} src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} place-before=0 comment={rule["description"]}')
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:               
