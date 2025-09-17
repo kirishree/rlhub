@@ -2266,7 +2266,7 @@ def blockedappdetails(data):
             if name == "router.lan":
                 continue                       
             collect.append({"name":name ,
-                            "regexp": regexp,
+                            "domain": regexp,
                             "address":address,
                             "rule_no":rule_no,                            
                             "description":description,
