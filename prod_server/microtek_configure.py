@@ -790,9 +790,15 @@ def interfaceconfig(data):
                     stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
                     break
 
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address=!{ip_addr} action=drop place-before=0 comment="Drop DNS not to MikroTik"')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address=!{ip_addr} action=drop place-before=0 comment="Drop TCP DNS not to MikroTik"')
-            
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=0 comment="Drop DNS not to MikroTik"'
+            )
+
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=0 comment="Drop TCP DNS not to MikroTik"'
+            )
+            print("STDOUT:", stdout.read().decode())
+            print("STDERR:", stderr.read().decode())
             # Execute the dhcp server command 
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
             # Initialize variables for output collection
