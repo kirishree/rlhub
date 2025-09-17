@@ -1914,14 +1914,16 @@ def firewalldetails(data):
             connection_state = ""
             tls_host = ""  
             in_interface = ""
-            out_interface = ""        
+            out_interface = "" 
+            rule_no = ""       
             for ruleinfo in rule:
                 ruleinfostrip = ruleinfo.strip()
                 # Clean up extra spaces or non-visible characters using regex
                 ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
                 if " ;;; " in ruleinfostrip:
                     description = ruleinfostrip.split(" ;;; ")[1]                  
-                    status_info = ruleinfostrip.split(" ")[1]                    
+                    status_info = ruleinfostrip.split(" ")[1]  
+                    rule_no = ruleinfostrip.split(" ")[0]                  
 #                    print("status_info", status_info)
                     if status_info == "X":
                         firewall_status = "disabled"
@@ -1979,7 +1981,8 @@ def firewalldetails(data):
                             "description":description,
                             "firewall_status":firewall_status,
                             "in_interface":in_interface,
-                            "out_interface":out_interface
+                            "out_interface":out_interface,
+                            "rule_no":rule_no
                             })         
     except Exception as e:
         print(e)
@@ -2075,14 +2078,16 @@ def firewallnatdetails(data):
             connection_state = ""
             tls_host = ""  
             in_interface = ""
-            out_interface = ""        
+            out_interface = ""  
+            rule_no = ""      
             for ruleinfo in rule:
                 ruleinfostrip = ruleinfo.strip()
                 # Clean up extra spaces or non-visible characters using regex
                 ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
                 if " ;;; " in ruleinfostrip:
                     description = ruleinfostrip.split(" ;;; ")[1]                  
-                    status_info = ruleinfostrip.split(" ")[1]                    
+                    status_info = ruleinfostrip.split(" ")[1] 
+                    rule_no = ruleinfostrip.split(" ")[0]                   
 #                    print("status_info", status_info)
                     if status_info == "X":
                         firewall_status = "disabled"
@@ -2140,7 +2145,8 @@ def firewallnatdetails(data):
                             "description":description,
                             "firewall_status":firewall_status,
                             "in_interface":in_interface,
-                            "out_interface":out_interface
+                            "out_interface":out_interface,
+                            "rule_no":rule_no
                             })         
     except Exception as e:
         print(e)
@@ -2155,6 +2161,128 @@ def firewallnatdetails(data):
             )
     return collect
 
+def blockedappdetails(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_app_details",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting firewall details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_app_details",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []          
+        firewall_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for finfo in firewall_info:
+            if finfo.strip():
+                rules.append(finfo)
+            else:
+                rules_info.append(rules)
+                rules = []        
+        for rule in rules_info: 
+            name = ""
+            regexp = ""
+            address = ""            
+            description = ""            
+            rule_no = ""      
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1] 
+                    rule_no = ruleinfostrip.split(" ")[0]                
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        firewall_status = "disabled"                    
+                    elif status_info == "D":
+                        firewall_status= "Dynamic" 
+                    else: 
+                        firewall_status= "Enabled" 
+                #if "defconf" in intinfostrip:
+                #    status_info = intinfostrip.split(" ")[1]
+                #    print("status_info", status_info)
+                #    if status_info == "R":
+                #        intfc_status = "up"
+                #    else:
+                #        intfc_status = "down"
+
+                if "name=" in ruleinfostrip:
+                    name = ruleinfostrip.split("name=")[1].split('"')[1]                    
+                if "regexp=" in ruleinfostrip:
+                    regexp = ruleinfostrip.split("regexp=")[1].split('"')[1]
+                if "address=" in ruleinfostrip:
+                    address = ruleinfostrip.split("address=")[1].split(" ")[0]
+                                    
+            collect.append({"name":name ,
+                            "regexp": regexp,
+                            "address":address,
+                            "rule_no":rule_no,                            
+                            "description":description,
+                            "firewall_status":firewall_status                            
+                            })         
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_app_details",
+                    "exception": str(e)
+                }
+            )
+    return collect
 
 
 

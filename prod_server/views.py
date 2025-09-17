@@ -2502,6 +2502,80 @@ def get_firewall_nat_details_spoke(request):
                     )        
     return JsonResponse(firewall_details, safe=False)
 
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_blocked_app_details_spoke(request):
+    try:
+        data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "get_blocked_app_details" }
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"blocked_app_branch_{branch_id}"
+        app_details = cache.get(cache_key)
+        if app_details:
+            return JsonResponse(app_details, safe=False)
+        app_details = []
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )      
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            try:
+                response = requests.get(url + "get_blocked_app_details")                                
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    app_details = json.loads(get_response)
+                    #print(response)      
+                else:
+                    app_details =[]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")  
+                logger.error(f"Connection timeout ",
+                     extra={
+                                "device_type": "ReachlinkSpoke",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_blocked_app_info",
+                                "exception": str(e)
+                            }
+                    )     
+                app_details =[]         
+        elif "microtek" in data["uuid"]:           
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            app_details = microtek_configure.blockedappdetails(data)                 
+            #return JsonResponse(interface_details,safe=False) 
+        elif "cisco" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = router_configure.get_interface_cisco(data)
+            app_details = []
+        elif "robustel" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = robustel_configure.get_interface_robustel(data)
+            app_details = []
+        # Store in cache for 60 seconds
+        cache.set(cache_key, app_details, timeout=60)
+    except Exception as e:
+        logger.error(f"{str(e)} ",
+                     extra={
+                                "device_type": "",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_blocked_app_info",
+                                "exception": str(e)
+                            }
+                    )        
+    return JsonResponse(app_details, safe=False)
+
 ##############Inactive branch##############
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
