@@ -783,11 +783,12 @@ def interfaceconfig(data):
                     break  
             firewall_info = output.split("\n")[1:-1]
             for old_rule in firewall_info:
-                if "Drop DNS not to MikroTik" in old_rule:
+                if "Drop TCP DNS not to MikroTik" in old_rule:
                     old_rule = old_rule.strip()
                     old_rule = re.sub(r'\s+', ' ', old_rule)
                     rule_no = old_rule.split(" ")[0]
                     stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {rule_no}')
+                    break
 
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address=!{ip_addr} action=drop place-before=0 comment="Drop DNS not to MikroTik"')
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address=!{ip_addr} action=drop place-before=0 comment="Drop TCP DNS not to MikroTik"')
