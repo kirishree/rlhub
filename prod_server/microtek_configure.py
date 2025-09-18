@@ -2755,7 +2755,7 @@ def movefilterrule(data):
          
         #comment = data["comment"] 
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
-        if int(data["place_above"]) > 6:
+        if int(data["place_above"]) < 7:
             response = [{"message": f"Permission Denied to place above this rule: {data['place_above']}"}]            
         else:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["move_rule_no"]} {data["place_above"]}') 
