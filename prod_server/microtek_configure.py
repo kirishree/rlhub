@@ -2369,7 +2369,7 @@ def addapp(data):
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:               
-        
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns cache flush')
         response = [{"message": f"App {data['domains']} added successfully for blocking"}]
         logger.info(
             f"{response}",
