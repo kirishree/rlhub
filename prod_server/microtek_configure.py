@@ -1996,7 +1996,20 @@ def firewalldetails(data):
                 #        intfc_status = "down"
 
                 if "chain=" in ruleinfostrip:
-                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]                    
+                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]  
+                    if description == "":
+                        status_info = ruleinfostrip.split(" ")[1]  
+                        rule_no = ruleinfostrip.split(" ")[0]                  
+#                       print("status_info", status_info)
+                        if status_info == "X":
+                            firewall_status = "disabled"
+                        elif status_info == "I":
+                            firewall_status= "Invalid" 
+                        elif status_info == "D":
+                            firewall_status= "Dynamic" 
+                        else: 
+                            firewall_status= "Enabled" 
+
                 if "action=" in ruleinfostrip:
                     action = ruleinfostrip.split("action=")[1].split(" ")[0]
                 if "protocol=" in ruleinfostrip:
@@ -2160,7 +2173,19 @@ def firewallnatdetails(data):
                 #        intfc_status = "down"
 
                 if "chain=" in ruleinfostrip:
-                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]                    
+                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]   
+                    if description == "":
+                        status_info = ruleinfostrip.split(" ")[1]  
+                        rule_no = ruleinfostrip.split(" ")[0]                  
+#                       print("status_info", status_info)
+                        if status_info == "X":
+                            firewall_status = "disabled"
+                        elif status_info == "I":
+                            firewall_status= "Invalid" 
+                        elif status_info == "D":
+                            firewall_status= "Dynamic" 
+                        else: 
+                            firewall_status= "Enabled"                  
                 if "action=" in ruleinfostrip:
                     action = ruleinfostrip.split("action=")[1].split(" ")[0]
                 if "protocol=" in ruleinfostrip:
