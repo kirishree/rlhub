@@ -2325,7 +2325,17 @@ def blockedappdetails(data):
                             "rule_no":rule_no,                            
                             "description":description,
                             "firewall_status":firewall_status                            
-                            })         
+                            }) 
+
+        unique = {}
+        for item in collect:
+            domain = item["domain"]
+            # keep only the first occurrence of each domain
+            if domain not in unique:
+                unique[domain] = item
+
+        # Replace collect with deduplicated list
+        collect = list(unique.values())        
     except Exception as e:
         print(e)
         logger.error(
