@@ -2726,3 +2726,65 @@ def delnatrule(data):
         # Close the SSH connection
         ssh_client.close()        
         return response
+    
+def movefilterrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        comment = data["comment"] 
+        if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+            response = [{"message": f"Permission Denied to place above this rule: {comment}"}]            
+        else:
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["rule_no"]} [find comment="{comment}"]')     
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule moved."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when move filter rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while moving rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
