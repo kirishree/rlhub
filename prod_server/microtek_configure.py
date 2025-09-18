@@ -2441,9 +2441,9 @@ def addfirewallrule(data):
             dst_addr = rule["dst_address"]
             desc = rule["description"]
             if rule["protocol"] == "any" or rule["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
             else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
             print("DHCP-Server Remove STDOUT:", stdout.read().decode())
             print("DHCP-Server Remove STDERR:", stderr.read().decode())  
             # Read the actual output and errors
