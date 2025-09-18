@@ -2560,7 +2560,7 @@ def delapprule(data):
             extra={
                 "device_type": "Microtek",
                 "device_ip": router_ip,
-                "be_api_endpoint": "add_firewall_nat_rule",
+                "be_api_endpoint": "remove_app_blocking",
                 "exception": str(e)
             }
             )
@@ -2596,6 +2596,132 @@ def delapprule(data):
             }
             )
         response = [{"message":"Error while removing app from blocking. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def delfilterrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:  
+            comment = rule["comment"] 
+            if "enable-ssh" in rule["comment"].lower() or "enable-snmpaccess" in rule["comment"].lower() or "enable-winboxaccess" in rule["comment"].lower():
+                response = [{"message": f"Permission Denied to remove this rule: {comment}"}]
+                break
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove [find comment="{comment}"]')     
+                print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+                print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+                # Read the actual output and errors
+                #output = stdout.read().decode()
+                #if output:                      
+                response = [{"message": f"{data['rules']} removed."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "filter_rule_del",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when removing rule from Firewall Filter",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "filter_rule_del",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while removing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def delnatrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:  
+            comment = rule["comment"] 
+            if "defconf: masquerade" in comment.lower():
+                response = [{"message": f"Permission Denied to remove this rule"}]
+                break
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove [find comment="{comment}"]')     
+                print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+                print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+                # Read the actual output and errors
+                #output = stdout.read().decode()
+                #if output:                      
+                response = [{"message": f"{data['rules']} removed."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_nat_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when removing rule from Firewall NAT",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while removing rule. Pl try again!"}] 
     finally:
         # Close the SSH connection
         ssh_client.close()        

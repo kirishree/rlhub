@@ -24,7 +24,16 @@ from reach.views import create_vlan_interface_hub, create_sub_interface_hub, cre
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
 from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
 from reach.microtik_views import add_microtik_hub
-from reach.views import get_m2mspoke_config, get_firewall_filter_details_spoke, get_firewall_nat_details_spoke, get_blocked_app_details_spoke, add_app_spoke, add_firewall_filter_spoke, add_firewall_nat_spoke, del_app_spoke
+from reach.views import (   get_m2mspoke_config, 
+                            get_firewall_filter_details_spoke, 
+                            get_firewall_nat_details_spoke,
+                            get_blocked_app_details_spoke, 
+                            add_app_spoke, 
+                            add_firewall_filter_spoke, 
+                            add_firewall_nat_spoke, 
+                            del_app_spoke,
+                            del_nat_rule_spoke,
+                            del_filter_rule_spoke)
 urlpatterns = [  
     path('beapi/get_m2mspoke_config', get_m2mspoke_config, name='get_m2mspoke_config'),
     path('beapi/config_microtik_hub', add_microtik_hub, name='add_microtik_hub'),
@@ -56,6 +65,8 @@ urlpatterns = [
     path('beapi/firewall/add_firewall_rule', add_firewall_filter_spoke),
     path('beapi/firewall/add_nat_rule', add_firewall_nat_spoke),
     path('beapi/firewall/del_app', del_app_spoke),
+    path('beapi/firewall/del_filter_rule', del_filter_rule_spoke),
+    path('beapi/firewall/del_nat_rule', del_nat_rule_spoke),
 
     path('beapi/vlan_interface_delete_spoke', vlan_interface_delete_spoke, name='vlan_interface_delete_spoke'),
     path('beapi/add_route_spoke', add_route_spoke, name='add_route_spoke'),
