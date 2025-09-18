@@ -2366,6 +2366,10 @@ def addapp(data):
         # Execute the ping command               
         for domain in data["domains"]:            
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=127.0.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=AAAA address=127.0.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=CNAME cname=127.0.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=FWD forward-to=127.0.0.1')
+            
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:               
