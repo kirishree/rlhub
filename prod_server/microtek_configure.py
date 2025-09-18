@@ -2753,11 +2753,13 @@ def movefilterrule(data):
             )
         # Execute the ping command               
          
-        comment = data["comment"] 
-        if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
-            response = [{"message": f"Permission Denied to place above this rule: {comment}"}]            
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["place_above"]) > 6:
+            response = [{"message": f"Permission Denied to place above this rule: {data['place_above']}"}]            
         else:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["rule_no"]} [find comment="{comment}"]')     
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["move_rule_no"]} {data["place_above"]}') 
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["rule_no"]} [find comment="{comment}"]')     
             print("DHCP-Server Remove STDOUT:", stdout.read().decode())
             print("DHCP-Server Remove STDERR:", stderr.read().decode())  
             # Read the actual output and errors
