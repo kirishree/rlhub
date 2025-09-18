@@ -2410,7 +2410,6 @@ def addapp(data):
         ssh_client.close()        
         return response
 
-
 def addfirewallrule(data):   
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -2471,6 +2470,132 @@ def addfirewallrule(data):
             }
             )
         response = [{"message":"Error while adding filter rule in firewall. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def addfirewallnatrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:   
+            src_addr = rule["src_address"]
+            dst_addr = rule["dst_address"]
+            desc = rule["description"]
+            if rule["protocol"] == "any" or rule["protocol"] == "all":    
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:               
+        
+        response = [{"message": f"NAT Rule added successfully"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_nat_add",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding NAT Rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_nat_add",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding nat rule in firewall. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def delapprule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:  
+            comment = rule["comment"] 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static remove [find comment="{comment}"]')     
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output: 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns cache flush')              
+        
+        response = [{"message": f"{data['rules']} App removed from blocking"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "remove_app_blocking",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when removing app from blocking",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "remove_app_blocking",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while removing app from blocking. Pl try again!"}] 
     finally:
         # Close the SSH connection
         ssh_client.close()        
