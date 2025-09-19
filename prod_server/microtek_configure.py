@@ -40,7 +40,9 @@ def pingspoke(data):
             line = stdout.readline()
             if not line:  # No more output
                 break            
-            out = line.strip()            
+            out = line.strip()    
+            if "127.0.0.1" in out:
+                break        
             if "sent=" in out:
                 final_output = out
                 break
