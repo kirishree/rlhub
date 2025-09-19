@@ -42,6 +42,7 @@ def pingspoke(data):
                 break            
             out = line.strip()    
             if "127.0.0.1" in out:
+                final_output = "packet-loss=100%"
                 break        
             if "sent=" in out:
                 final_output = out
