@@ -2920,8 +2920,8 @@ def editnatrule(data):
         if int(data["rule_no"]) < 7:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
         else:
-            src_addr = data["src-address"]
-            dst_addr = data["dst-address"]
+            src_addr = data["src_address"]
+            dst_addr = data["dst_ddress"]
             desc = data["description"]
             if data["protocol"] == "any" or data["protocol"] == "all":    
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
