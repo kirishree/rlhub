@@ -2859,7 +2859,7 @@ def editfilterrule(data):
                 disabled="yes" 
             else:
                 disabled = "no"
-            cmd_parts = [f'/ip firewall filter set chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+            cmd_parts = [f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
@@ -2949,7 +2949,7 @@ def editnatrule(data):
             if data["protocol"] == "any" or data["protocol"] == "all":    
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}" disabled={disabled}')     
             else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
             
             print("NAT Rule Edit:", stdout.read().decode())
             print("NAT Rule Edit", stderr.read().decode())  
