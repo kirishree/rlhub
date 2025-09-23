@@ -2854,6 +2854,7 @@ def editfilterrule(data):
             src_addr = data["src_address"]
             dst_addr = data["dst_address"]
             desc = data["description"]
+            print(data)
             if "disable" in data["status"].lower():
                 disabled="yes" 
             else:
@@ -2928,6 +2929,7 @@ def editnatrule(data):
             src_addr = data["src_address"]
             dst_addr = data["dst_address"]
             desc = data["description"]
+            print(data)
             if "disable" in data["status"].lower():
                 disabled="yes" 
             else:
