@@ -2922,7 +2922,7 @@ def editnatrule(data):
          
         #comment = data["comment"] 
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
-        if int(data["rule_no"]) < 2:
+        if int(data["rule_no"]) < 1:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
         else:
             src_addr = data["src_address"]
