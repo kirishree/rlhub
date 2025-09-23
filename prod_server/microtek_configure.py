@@ -2854,10 +2854,14 @@ def editfilterrule(data):
             src_addr = data["src_address"]
             dst_addr = data["dst_address"]
             desc = data["description"]
-            if data["protocol"] == "any" or data["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            if "disable" in data["status"].lower():
+                disabled="yes" 
             else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}"')
+                disabled = "no"
+            if data["protocol"] == "any" or data["protocol"] == "all":    
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}" disabled={disabled}')     
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
             
             print("DHCP-Server Remove STDOUT:", stdout.read().decode())
             print("DHCP-Server Remove STDERR:", stderr.read().decode())  
@@ -2918,16 +2922,20 @@ def editnatrule(data):
          
         #comment = data["comment"] 
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
-        if int(data["rule_no"]) < 7:
+        if int(data["rule_no"]) < 2:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
         else:
             src_addr = data["src_address"]
             dst_addr = data["dst_ddress"]
             desc = data["description"]
-            if data["protocol"] == "any" or data["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            if "disable" in data["status"].lower():
+                disabled="yes" 
             else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}"')
+                disabled = "no"
+            if data["protocol"] == "any" or data["protocol"] == "all":    
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}" disabled={disabled}')     
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
             
             print("DHCP-Server Remove STDOUT:", stdout.read().decode())
             print("DHCP-Server Remove STDERR:", stderr.read().decode())  
