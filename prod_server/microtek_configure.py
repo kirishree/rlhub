@@ -2879,8 +2879,8 @@ def editfilterrule(data):
             #cmd_parts.append(f'place-before={data["rule_no"]}')
             cmd = " ".join(cmd_parts)           
             stdin, stdout, stderr = ssh_client.exec_command(cmd)    
-            print("stderr", stderr.read().decode())
-            print("add stdout", stdout.read().decode())   
+            #print("stderr", stderr.read().decode())
+            #print("add stdout", stdout.read().decode())   
             time.sleep(5) 
             firewallinfo = firewalldetails(data)
             rule_no = []
@@ -2888,12 +2888,12 @@ def editfilterrule(data):
                 if fw["description"] == desc:
                     rule_no.append(fw["rule_no"])
             last_updated_rule_no = max(rule_no)   
-            print(last_updated_rule_no)
-            print(data["rule_no"])           
+            #print(last_updated_rule_no)
+            #print(data["rule_no"])           
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {last_updated_rule_no} {data["rule_no"]}')
             # Read the actual output and errors
-            print("stderr--move", stderr.read().decode())
-            print("stdout--move", stdout.read().decode())
+            #print("stderr--move", stderr.read().decode())
+            #print("stdout--move", stdout.read().decode())
             #output = stdout.read().decode()
             #if output:  
             #    print("stdout", output)                    
@@ -2964,7 +2964,7 @@ def editnatrule(data):
                 disabled = "no"
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove {data["rule_no"]}') 
             
-            cmd_parts = [f'/ip firewall nat add place-before={data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+            cmd_parts = [f'/ip firewall nat add chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
@@ -2979,7 +2979,14 @@ def editnatrule(data):
 
             cmd = " ".join(cmd_parts)            
             stdin, stdout, stderr = ssh_client.exec_command(cmd) 
-
+            time.sleep(5) 
+            firewallinfo = firewallnatdetails(data)
+            rule_no = []
+            for fw in firewallinfo:
+                if fw["description"] == desc:
+                    rule_no.append(fw["rule_no"])
+            last_updated_rule_no = max(rule_no)
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat move {last_updated_rule_no} {data["rule_no"]}')   
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:                      
