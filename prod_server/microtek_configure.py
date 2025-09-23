@@ -1961,17 +1961,17 @@ def firewalldetails(data):
             chain = ""
             action = ""
             protocol = ""
-            src_address = ""
-            dst_address = ""
-            src_port = ""
-            dst_port = ""
+            src_address = "any"
+            dst_address = "any"
+            src_port = "any"
+            dst_port = "any"
             description = ""
-            in_interface_list = ""
-            out_interface_list = ""
+            in_interface_list = "any"
+            out_interface_list = "any"
             connection_state = ""
             tls_host = ""  
-            in_interface = ""
-            out_interface = "" 
+            in_interface = "any"
+            out_interface = "any" 
             rule_no = ""       
             for ruleinfo in rule:
                 ruleinfostrip = ruleinfo.strip()
@@ -2138,17 +2138,17 @@ def firewallnatdetails(data):
             chain = ""
             action = ""
             protocol = ""
-            src_address = ""
-            dst_address = ""
-            src_port = ""
-            dst_port = ""
+            src_address = "any"
+            dst_address = "any"
+            src_port = "any"
+            dst_port = "any"
             description = ""
-            in_interface_list = ""
-            out_interface_list = ""
+            in_interface_list = "any"
+            out_interface_list = "any"
             connection_state = ""
             tls_host = ""  
-            in_interface = ""
-            out_interface = ""  
+            in_interface = "any"
+            out_interface = "any"  
             rule_no = ""      
             for ruleinfo in rule:
                 ruleinfostrip = ruleinfo.strip()
@@ -2814,6 +2814,146 @@ def movefilterrule(data):
             }
             )
         response = [{"message":"Error while moving rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def editfilterrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["rule_no"]) < 7:
+            response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+        else:
+            src_addr = data["src-address"]
+            dst_addr = data["dst-address"]
+            desc = data["description"]
+            if data["protocol"] == "any" or data["protocol"] == "all":    
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}"')
+            
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule edited."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when edit filter rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_filter_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while editing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def editnatrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["rule_no"]) < 7:
+            response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+        else:
+            src_addr = data["src-address"]
+            dst_addr = data["dst-address"]
+            desc = data["description"]
+            if data["protocol"] == "any" or data["protocol"] == "all":    
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}"')
+            
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule edited."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_nat_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when edit nat rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_nat_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while editing nat rule. Pl try again!"}] 
     finally:
         # Close the SSH connection
         ssh_client.close()        
