@@ -2862,10 +2862,12 @@ def editfilterrule(data):
             if data["protocol"] == "any" or data["protocol"] == "all":    
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}" disabled={disabled}')     
             else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
+                cmd = f'/ip firewall filter set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}'
+                print("RouterOS cmd:", cmd)
+                stdin, stdout, stderr = ssh_client.exec_command(cmd)
             
-            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            print("Filter Rule Edit STDOUT:", stdout.read().decode())
+            print("Filter Rule Edit STDERR:", stderr.read().decode())  
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:                      
@@ -2939,8 +2941,8 @@ def editnatrule(data):
             else:
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
             
-            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            print("NAT Rule Edit:", stdout.read().decode())
+            print("NAT Rule Edit", stderr.read().decode())  
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:                      
