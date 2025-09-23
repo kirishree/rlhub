@@ -41,7 +41,7 @@ def pingspoke(data):
             if not line:  # No more output
                 break            
             out = line.strip()    
-            if "127.0.0.1" in out:
+            if "10.8.0.1" in out:
                 final_output = "packet-loss=100%"
                 break        
             if "sent=" in out:
@@ -2403,10 +2403,10 @@ def addapp(data):
             )
         # Execute the ping command               
         for domain in data["domains"]:            
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=127.0.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=10.8.0.1')
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=AAAA address=::1')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=CNAME cname=127.0.0.1')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=FWD forward-to=127.0.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=CNAME cname=10.8.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=FWD forward-to=10.8.0.1')
             
             # Read the actual output and errors
             #output = stdout.read().decode()
