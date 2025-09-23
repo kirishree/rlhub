@@ -2859,13 +2859,23 @@ def editfilterrule(data):
                 disabled="yes" 
             else:
                 disabled = "no"
-            if data["protocol"] == "any" or data["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}" disabled={disabled}')     
-            else:
-                cmd = f'/ip firewall filter set chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}'
-                print("RouterOS cmd:", cmd)
-                stdin, stdout, stderr = ssh_client.exec_command(cmd)
-            
+            cmd_parts = [f'/ip firewall filter set chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            #if data.get("protocol"):
+            #    cmd_parts.append(f'protocol={data["protocol"]}')
+            cmd = " ".join(cmd_parts)
+            print("os commands", cmd)
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)       
             print("Filter Rule Edit STDOUT:", stdout.read().decode())
             print("Filter Rule Edit STDERR:", stderr.read().decode())  
             # Read the actual output and errors
