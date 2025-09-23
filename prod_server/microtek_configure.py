@@ -2862,7 +2862,8 @@ def editfilterrule(data):
             else:
                 disabled = "no"
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["rule_no"]}') 
-            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+            time.sleep(2)
+            cmd_parts = [f'/ip firewall filter add place-before={data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
@@ -2878,8 +2879,9 @@ def editfilterrule(data):
             cmd = " ".join(cmd_parts)
            
             stdin, stdout, stderr = ssh_client.exec_command(cmd)       
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move [find comment="{desc}"] {data["rule_no"]}')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move [find comment="{desc}"] {data["rule_no"]}')
             # Read the actual output and errors
+            print("stderr", stderr.read().decode())
             output = stdout.read().decode()
             if output:  
                 print("stdout", output)                    
