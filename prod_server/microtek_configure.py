@@ -2822,7 +2822,7 @@ def movefilterrule(data):
         # Close the SSH connection
         ssh_client.close()        
         return response
-    
+
 def editfilterrule(data):   
     # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -2853,6 +2853,8 @@ def editfilterrule(data):
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
         if int(data["rule_no"]) < 7:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+            ssh_client.close()
+            return response
         else:
             src_addr = data["src_address"]
             dst_addr = data["dst_address"]
@@ -2879,8 +2881,16 @@ def editfilterrule(data):
             stdin, stdout, stderr = ssh_client.exec_command(cmd)    
             print("stderr", stderr.read().decode())
             print("add stdout", stdout.read().decode())   
-            time.sleep(20)            
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move [find comment="{desc}"] {data["rule_no"]}')
+            time.sleep(5) 
+            firewallinfo = firewalldetails(data)
+            rule_no = []
+            for fw in firewallinfo:
+                if fw["description"] == desc:
+                    rule_no.append(fw["rule_no"])
+            last_updated_rule_no = max(rule_no)   
+            print(last_updated_rule_no)
+            print(data["rule_no"])           
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {last_updated_rule_no} {data["rule_no"]}')
             # Read the actual output and errors
             print("stderr--move", stderr.read().decode())
             print("stdout--move", stdout.read().decode())
