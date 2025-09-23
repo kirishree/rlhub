@@ -2861,7 +2861,8 @@ def editfilterrule(data):
                 disabled="yes" 
             else:
                 disabled = "no"
-            cmd_parts = [f'/ip firewall filter set {data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["rule_no"]}') 
+            cmd_parts = [f'/ip firewall filter add place-before={data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
@@ -2946,7 +2947,9 @@ def editnatrule(data):
                 disabled="yes" 
             else:
                 disabled = "no"
-            cmd_parts = [f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove {data["rule_no"]}') 
+            
+            cmd_parts = [f'/ip firewall nat add place-before={data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
@@ -2958,8 +2961,10 @@ def editnatrule(data):
                     cmd_parts.append(f'src-port={data["src_port"]}')
                 if data.get("dst_port"):
                     cmd_parts.append(f'dst-port={data["dst_port"]}')            
+
             cmd = " ".join(cmd_parts)            
-            stdin, stdout, stderr = ssh_client.exec_command(cmd)      
+            stdin, stdout, stderr = ssh_client.exec_command(cmd) 
+
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:                      
