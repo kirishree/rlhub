@@ -2483,17 +2483,6 @@ def addfirewallrule(data):
             
             cmd = " ".join(cmd_parts)           
             stdin, stdout, stderr = ssh_client.exec_command(cmd)   
-            
-            #if rule["protocol"] == "any" or rule["protocol"] == "all":    
-            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
-            #else:
-            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
-            #print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            #print("DHCP-Server Remove STDERR:", stderr.read().decode())  
-            # Read the actual output and errors
-            #output = stdout.read().decode()
-            #if output:               
-        
         response = [{"message": f"Firewall Rule added successfully"}]
         logger.info(
             f"{response}",
@@ -2563,18 +2552,7 @@ def addfirewallnatrule(data):
                     cmd_parts.append(f'dst-port={rule["dst_port"]}')
             
             cmd = " ".join(cmd_parts)           
-            stdin, stdout, stderr = ssh_client.exec_command(cmd)   
-
-            #if rule["protocol"] == "any" or rule["protocol"] == "all":    
-            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
-            #else:
-            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
-            #print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            #print("DHCP-Server Remove STDERR:", stderr.read().decode())  
-            # Read the actual output and errors
-            #output = stdout.read().decode()
-            #if output:               
-        
+            stdin, stdout, stderr = ssh_client.exec_command(cmd) 
         response = [{"message": f"NAT Rule added successfully"}]
         logger.info(
             f"{response}",
@@ -2694,11 +2672,7 @@ def delfilterrule(data):
                 break
             else:
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove [find comment="{comment}"]')     
-                print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-                print("DHCP-Server Remove STDERR:", stderr.read().decode())  
-                # Read the actual output and errors
-                #output = stdout.read().decode()
-                #if output:                      
+
                 response = [{"message": f"{data['rules']} removed."}]
         logger.info(
             f"{response}",
@@ -2757,8 +2731,6 @@ def delnatrule(data):
                 break
             else:
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove [find comment="{comment}"]')     
-                print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-                print("DHCP-Server Remove STDERR:", stderr.read().decode())  
                 # Read the actual output and errors
                 #output = stdout.read().decode()
                 #if output:                      
@@ -2812,8 +2784,7 @@ def movefilterrule(data):
                 "exception": str(e)
             }
             )
-        # Execute the ping command               
-         
+        # Execute the ping command             
         #comment = data["comment"] 
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
         if int(data["place_above"]) < 7:

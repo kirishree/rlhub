@@ -2644,7 +2644,6 @@ def add_app_spoke(request):
 def add_firewall_filter_spoke(request):
     try:
         data = json.loads(request.body)
-        print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2707,7 +2706,6 @@ def add_firewall_filter_spoke(request):
 def add_firewall_nat_spoke(request):
     try:
         data = json.loads(request.body)
-        #print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2770,7 +2768,6 @@ def add_firewall_nat_spoke(request):
 def del_app_spoke(request):
     try:
         data = json.loads(request.body)
-        #print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2833,7 +2830,6 @@ def del_app_spoke(request):
 def del_filter_rule_spoke(request):
     try:
         data = json.loads(request.body)
-        #print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2896,7 +2892,6 @@ def del_filter_rule_spoke(request):
 def move_filter_rule_spoke(request):
     try:
         data = json.loads(request.body)
-        #print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -2959,7 +2954,6 @@ def move_filter_rule_spoke(request):
 def del_nat_rule_spoke(request):
     try:
         data = json.loads(request.body)
-        #print(data)
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
@@ -3021,8 +3015,7 @@ def del_nat_rule_spoke(request):
 @permission_classes([IsAuthenticated])
 def edit_filter_rule_spoke(request):
     try:
-        data = json.loads(request.body)
-        #print(data)
+        data = json.loads(request.body)        
         # Capture the public IP from the request headers
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
