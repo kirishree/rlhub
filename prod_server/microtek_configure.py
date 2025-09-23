@@ -2468,18 +2468,18 @@ def addfirewallrule(data):
             src_addr = rule["src_address"]
             dst_addr = rule["dst_address"]
             desc = rule["description"]
-            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} comment="{desc}"']
+            cmd_parts = [f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} comment="{desc}"']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
             if dst_addr:
                 cmd_parts.append(f'dst-address={dst_addr}')
-            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
-                cmd_parts.append(f'protocol={data["protocol"]}')
-                if data.get("src_port"):
-                    cmd_parts.append(f'src-port={data["src_port"]}')
-                if data.get("dst_port"):
-                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            if rule.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={rule["protocol"]}')
+                if rule.get("src_port"):
+                    cmd_parts.append(f'src-port={rule["src_port"]}')
+                if rule.get("dst_port"):
+                    cmd_parts.append(f'dst-port={rule["dst_port"]}')
             
             cmd = " ".join(cmd_parts)           
             stdin, stdout, stderr = ssh_client.exec_command(cmd)   
@@ -2549,18 +2549,18 @@ def addfirewallnatrule(data):
             src_addr = rule["src_address"]
             dst_addr = rule["dst_address"]
             desc = rule["description"]
-            cmd_parts = [f'/ip firewall nat add chain={data["chain"]} action={data["action"]} comment="{desc}"']
+            cmd_parts = [f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} comment="{desc}"']
 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
             if dst_addr:
                 cmd_parts.append(f'dst-address={dst_addr}')
-            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
-                cmd_parts.append(f'protocol={data["protocol"]}')
-                if data.get("src_port"):
-                    cmd_parts.append(f'src-port={data["src_port"]}')
-                if data.get("dst_port"):
-                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            if rule.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={rule["protocol"]}')
+                if rule.get("src_port"):
+                    cmd_parts.append(f'src-port={rule["src_port"]}')
+                if rule.get("dst_port"):
+                    cmd_parts.append(f'dst-port={rule["dst_port"]}')
             
             cmd = " ".join(cmd_parts)           
             stdin, stdout, stderr = ssh_client.exec_command(cmd)   
