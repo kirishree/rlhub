@@ -44,7 +44,10 @@ def pingspoke(data):
             if data["subnet"] != "10.8.0.1":
                 if "10.8.0.1" in out or "127.0.0.1" in out:
                     final_output = "packet-loss=100%"
-                    break        
+                    break  
+            if "while resolving ip-address: name does not exist" in out or "invalid value" in out:
+                final_output = "packet-loss=100%"
+                break  
             if "sent=" in out:
                 final_output = out
                 break
@@ -2404,11 +2407,11 @@ def addapp(data):
             )
         # Execute the ping command               
         for domain in data["domains"]:            
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=10.8.0.1')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=AAAA address=::1')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=CNAME cname=10.8.0.1')
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=FWD forward-to=10.8.0.1')
-            
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=10.8.0.1')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=AAAA address=::1')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=CNAME cname=10.8.0.1')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=FWD forward-to=10.8.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=NXDOMAIN')
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:               
