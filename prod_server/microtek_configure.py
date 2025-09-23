@@ -2468,12 +2468,28 @@ def addfirewallrule(data):
             src_addr = rule["src_address"]
             dst_addr = rule["dst_address"]
             desc = rule["description"]
-            if rule["protocol"] == "any" or rule["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
-            else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
-            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} comment="{desc}"']
+
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)   
+            
+            #if rule["protocol"] == "any" or rule["protocol"] == "all":    
+            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            #else:
+            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
+            #print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            #print("DHCP-Server Remove STDERR:", stderr.read().decode())  
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:               
@@ -2533,12 +2549,28 @@ def addfirewallnatrule(data):
             src_addr = rule["src_address"]
             dst_addr = rule["dst_address"]
             desc = rule["description"]
-            if rule["protocol"] == "any" or rule["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
-            else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
-            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
-            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            cmd_parts = [f'/ip firewall nat add chain={data["chain"]} action={data["action"]} comment="{desc}"']
+
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)   
+
+            #if rule["protocol"] == "any" or rule["protocol"] == "all":    
+            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}"')     
+            #else:
+            #    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={rule["src_port"]} dst-port={rule["dst_port"]} protocol={rule["protocol"]} comment="{desc}"')
+            #print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            #print("DHCP-Server Remove STDERR:", stderr.read().decode())  
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:               
@@ -2853,8 +2885,7 @@ def editfilterrule(data):
         else:
             src_addr = data["src_address"]
             dst_addr = data["dst_address"]
-            desc = data["description"]
-            print(data)
+            desc = data["description"]            
             if "disable" in data["status"].lower():
                 disabled="yes" 
             else:
@@ -2871,13 +2902,11 @@ def editfilterrule(data):
                     cmd_parts.append(f'src-port={data["src_port"]}')
                 if data.get("dst_port"):
                     cmd_parts.append(f'dst-port={data["dst_port"]}')
-            #if data.get("protocol"):
-            #    cmd_parts.append(f'protocol={data["protocol"]}')
+            
             cmd = " ".join(cmd_parts)
-            print("os commands", cmd)
+           
             stdin, stdout, stderr = ssh_client.exec_command(cmd)       
-            print("Filter Rule Edit STDOUT:", stdout.read().decode())
-            print("Filter Rule Edit STDERR:", stderr.read().decode())  
+             
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:                      
@@ -2946,13 +2975,20 @@ def editnatrule(data):
                 disabled="yes" 
             else:
                 disabled = "no"
-            if data["protocol"] == "any" or data["protocol"] == "all":    
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" comment="{desc}" disabled={disabled}')     
-            else:
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} src-address="{src_addr}" dst-address="{dst_addr}" src-port={data["src_port"]} dst-port={data["dst_port"]} protocol={data["protocol"]} comment="{desc}" disabled={disabled}')
-            
-            print("NAT Rule Edit:", stdout.read().decode())
-            print("NAT Rule Edit", stderr.read().decode())  
+            cmd_parts = [f'/ip firewall nat set {data["rule_no"]} chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
+
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')            
+            cmd = " ".join(cmd_parts)            
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)      
             # Read the actual output and errors
             #output = stdout.read().decode()
             #if output:                      
