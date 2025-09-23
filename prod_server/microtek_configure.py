@@ -2926,7 +2926,7 @@ def editnatrule(data):
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
         else:
             src_addr = data["src_address"]
-            dst_addr = data["dst_ddress"]
+            dst_addr = data["dst_address"]
             desc = data["description"]
             if "disable" in data["status"].lower():
                 disabled="yes" 
