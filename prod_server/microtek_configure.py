@@ -41,9 +41,10 @@ def pingspoke(data):
             if not line:  # No more output
                 break            
             out = line.strip()    
-            if "10.8.0.1" in out:
-                final_output = "packet-loss=100%"
-                break        
+            if data["subnet"] != "10.8.0.1":
+                if "10.8.0.1" in out or "127.0.0.1" in out:
+                    final_output = "packet-loss=100%"
+                    break        
             if "sent=" in out:
                 final_output = out
                 break
