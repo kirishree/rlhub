@@ -517,7 +517,8 @@ def add_cisco_device(request: HttpRequest):
             response1['X-Message'] = json.dumps(json_response)
             response1["Access-Control-Expose-Headers"] = "X-Message"
             return response1    
-        if "microtik" in data["device"].lower():  
+        if "microtik" in data["device"].lower(): 
+            data["dialer_ip"]  = hub_ip
             if  data.get("dialer_ip", "") != hub_ip:
                 microtik_hub_info = coll_hub_info.find_one({"hub_ip":data.get("dialer_ip", "")})
                 if microtik_hub_info:
