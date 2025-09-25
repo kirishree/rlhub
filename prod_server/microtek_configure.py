@@ -2468,11 +2468,12 @@ def addfirewallrule(data):
             )
         # Execute the ping command               
         for rule in data["rules"]:   
-            src_addr = rule["src_address"]
-            dst_addr = rule["dst_address"]
-            desc = rule["description"]
-            cmd_parts = [f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]} comment="{desc}"']
-
+            src_addr = rule.get("src_address")
+            dst_addr = rule.get("dst_address")
+            desc = rule.get("description")
+            cmd_parts = [f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')   
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
             if dst_addr:
@@ -2538,11 +2539,12 @@ def addfirewallnatrule(data):
             )
         # Execute the ping command               
         for rule in data["rules"]:   
-            src_addr = rule["src_address"]
-            dst_addr = rule["dst_address"]
-            desc = rule["description"]
-            cmd_parts = [f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]} comment="{desc}"']
-
+            src_addr = rule.get("src_address")
+            dst_addr = rule.get("dst_address")
+            desc = rule.get("description")
+            cmd_parts = [f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')               
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
             if dst_addr:
@@ -2859,16 +2861,17 @@ def editfilterrule(data):
             ssh_client.close()
             return response
         else:
-            src_addr = data["src_address"]
-            dst_addr = data["dst_address"]
-            desc = data["description"]            
+            src_addr = data.get("src_address")
+            dst_addr = data.get("dst_address")
+            desc = data.get("description")             
             if "disable" in data["status"].lower():
                 disabled="yes" 
             else:
                 disabled = "no"
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["rule_no"]}') 
-            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
-
+            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} disabled={disabled}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')    
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
             if dst_addr:
@@ -2957,18 +2960,19 @@ def editnatrule(data):
         if int(data["rule_no"]) < 1:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
         else:
-            src_addr = data["src_address"]
-            dst_addr = data["dst_address"]
-            desc = data["description"]
+            src_addr = data.get("src_address")
+            dst_addr = data.get("dst_address")
+            desc = data.get("description")  
             print(data)
             if "disable" in data["status"].lower():
                 disabled="yes" 
             else:
                 disabled = "no"
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove {data["rule_no"]}') 
-            
-            cmd_parts = [f'/ip firewall nat add chain={data["chain"]} action={data["action"]} comment="{desc}" disabled={disabled}']
-
+                        
+            cmd_parts = [f'/ip firewall nat add chain={data["chain"]} action={data["action"]} disabled={disabled}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"') 
             if src_addr:
                 cmd_parts.append(f'src-address={src_addr}')
             if dst_addr:
