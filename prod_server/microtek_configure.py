@@ -2850,7 +2850,8 @@ def movefilterrule(data):
             time.sleep(5)
             rule_no_added = str(len(firewallinfo) - 1)
             place_above = str(int(data["place_above"]) - 1)
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {rule_no_added}  {place_above}')   
+            place_above_comment = above_rule_info["description"]
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {rule_no_added}  [find comment="{place_above_comment}"]')   
             print("DHCP-Server move STDOUT:", stdout.read().decode())
             print("DHCP-Server move STDERR:", stderr.read().decode())  
             # Read the actual output and errors
