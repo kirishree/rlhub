@@ -2849,7 +2849,7 @@ def movefilterrule(data):
             print("DHCP-Server move STDERR:", stderr.read().decode())
             time.sleep(5)
             rule_no_added = str(len(firewallinfo) - 1)
-            place_above = str(int(data["place_above"]) - 1)
+            place_above = str(int(data["place_above"]))
             place_above_comment = above_rule_info["description"]
             cmd = f'/ip firewall filter move {rule_no_added} [find comment="{place_above_comment}"]'
             print(cmd)
