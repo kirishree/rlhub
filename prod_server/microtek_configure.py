@@ -2811,9 +2811,9 @@ def movefilterrule(data):
             if not firewallinfo:
                 firewallinfo = firewalldetails(data)
             above_rule_info = firewallinfo[int(data["place_above"]) + 1]
-            rule_info = firewallinfo[int(data["rule_no"]) + 1]
+            rule_info = firewallinfo[int(data["move_rule_no"]) + 1]
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["move_rule_no"]}') 
-            cmd_parts = [f'/ip firewall filter add chain={rule_info["chain"]} action={rule_info["action"]} disabled={disabled}']
+            cmd_parts = [f'/ip firewall filter add chain={rule_info["chain"]} action={rule_info["action"]} disabled={rule_info["firewall_status"]}']
             desc = rule_info.get("description")
             src_addr = rule_info.get("src_address")
             dst_addr = rule_info.get("dst_address")            
