@@ -4,6 +4,7 @@ import ipaddress
 import re
 import logging
 from decouple import config
+from django.core.cache import cache
 openvpn_network = config('OPENVPN_NETWORK')
 logger = logging.getLogger('reachlink')
 def pingspoke(data):   
@@ -2794,9 +2795,55 @@ def movefilterrule(data):
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
         if int(data["place_above"]) < 7:
             response = [{"message": f"Permission Denied to place above this rule: {data['place_above']}"}]            
-        else:
+        elif int(data["move_rule_no"]) > int(data["place_above"]):
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["move_rule_no"]} {data["place_above"]}') 
             #stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["rule_no"]} [find comment="{comment}"]')     
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule moved."}]
+        else:
+            branch_id = data["tunnel_ip"].split("/")[0] 
+            cache_key = f"firewall_branch_{branch_id}"   
+            firewallinfo = cache.get(cache_key)
+            if not firewallinfo:
+                firewallinfo = firewalldetails(data)
+            above_rule_info = firewallinfo[int(data["place_above"]) + 1]
+            rule_info = firewallinfo[int(data["rule_no"]) + 1]
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["move_rule_no"]}') 
+            cmd_parts = [f'/ip firewall filter add chain={rule_info["chain"]} action={rule_info["action"]} disabled={disabled}']
+            desc = rule_info.get("description")
+            src_addr = rule_info.get("src_address")
+            dst_addr = rule_info.get("dst_address")            
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')    
+            if src_addr != "any":                
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr != "any":
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if rule_info.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={rule_info["protocol"]}')
+                if rule_info.get("src_port"):
+                    cmd_parts.append(f'src-port={rule_info["src_port"]}')
+                if rule_info.get("dst_port"):
+                    cmd_parts.append(f'dst-port={rule_info["dst_port"]}')
+            if rule_info.get("in_interface_list") != "any":
+                cmd_parts.append(f'in-interface-list={rule_info.get("in_interface_list")}')
+            if rule_info.get("out_interface_list") != "any":
+                cmd_parts.append(f'out-interface-list={rule_info.get("out_interface_list")}') 
+            if rule_info.get("in_interface") != "any":
+                cmd_parts.append(f'in-interface={rule_info.get("in_interface")}') 
+            if rule_info.get("out_interface") != "any":
+                cmd_parts.append(f'out-interface={rule_info.get("out_interface")}') 
+            #cmd_parts.append(f'place-before={data["rule_no"]}')
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)  
+            time.sleep(5)
+            rule_no_added = len(firewallinfo) - 1 
+            place_above = int(data["place_above"]) - 1
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {rule_no_added}  {place_above}')   
             print("DHCP-Server Remove STDOUT:", stdout.read().decode())
             print("DHCP-Server Remove STDERR:", stderr.read().decode())  
             # Read the actual output and errors
@@ -2872,9 +2919,9 @@ def editfilterrule(data):
             cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} disabled={disabled}']
             if desc:
                 cmd_parts.append(f'comment="{desc}"')    
-            if src_addr:
+            if src_addr and "." in src_addr:                
                 cmd_parts.append(f'src-address={src_addr}')
-            if dst_addr:
+            if dst_addr and "." in dst_addr:
                 cmd_parts.append(f'dst-address={dst_addr}')
             if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
                 cmd_parts.append(f'protocol={data["protocol"]}')
@@ -3022,3 +3069,104 @@ def editnatrule(data):
         # Close the SSH connection
         ssh_client.close()        
         return response
+
+def ShiftFilterRuledown(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["rule_no"]) < 7:
+            response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+            ssh_client.close()
+            return response
+        else:
+            src_addr = data.get("src_address")
+            dst_addr = data.get("dst_address")
+            desc = data.get("description")             
+            if "disable" in data["status"].lower():
+                disabled="yes" 
+            else:
+                disabled = "no"
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["rule_no"]}') 
+            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} disabled={disabled}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')    
+            if src_addr and "." in src_addr:                
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr and "." in dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            #cmd_parts.append(f'place-before={data["rule_no"]}')
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)    
+            #print("stderr", stderr.read().decode())
+            #print("add stdout", stdout.read().decode())   
+            time.sleep(5) 
+            firewallinfo = firewalldetails(data)
+            rule_no = []
+            for fw in firewallinfo:
+                if fw["description"] == desc:
+                    rule_no.append(fw["rule_no"])
+            last_updated_rule_no = max(rule_no) 
+                  
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {last_updated_rule_no} {data["rule_no"]}')
+            # Read the actual output and errors
+            #print("stderr--move", stderr.read().decode())
+            #print("stdout--move", stdout.read().decode())
+            #output = stdout.read().decode()
+            #if output:  
+            #    print("stdout", output)                    
+            response = [{"message": f"Rule edited."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when edit filter rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_filter_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while editing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    

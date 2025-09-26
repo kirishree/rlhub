@@ -2898,9 +2898,7 @@ def move_filter_rule_spoke(request):
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "move_filter_rule_spoke" }                    
                     )
-        branch_id = data["tunnel_ip"].split("/")[0] 
-        cache_key = f"firewall_branch_{branch_id}"               
-        cache.delete(cache_key)
+        branch_id = data["tunnel_ip"].split("/")[0]         
         if ".net" in data.get("uuid", ""):       
             cache1_key = f"branch_details_{data['uuid']}"
             router_info = cache.get_or_set(
@@ -2928,7 +2926,9 @@ def move_filter_rule_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            response = microtek_configure.movefilterrule(data)                 
+            response = microtek_configure.movefilterrule(data)    
+            cache_key = f"firewall_branch_{branch_id}"               
+            cache.delete(cache_key)             
             return JsonResponse(response, safe=False) 
         elif "cisco" in data["uuid"]:            
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
