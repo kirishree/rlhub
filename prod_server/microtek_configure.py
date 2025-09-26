@@ -2810,8 +2810,8 @@ def movefilterrule(data):
             firewallinfo = cache.get(cache_key)
             if not firewallinfo:
                 firewallinfo = firewalldetails(data)
-            above_rule_info = firewallinfo[int(data["place_above"]) + 1]
-            rule_info = firewallinfo[int(data["move_rule_no"]) + 1]
+            above_rule_info = firewallinfo[int(data["place_above"])]
+            rule_info = firewallinfo[int(data["move_rule_no"])]
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["move_rule_no"]}') 
             cmd_parts = [f'/ip firewall filter add chain={rule_info["chain"]} action={rule_info["action"]} disabled={rule_info["firewall_status"]}']
             desc = rule_info.get("description")
@@ -2838,10 +2838,11 @@ def movefilterrule(data):
             if rule_info.get("out_interface") != "any":
                 cmd_parts.append(f'out-interface={rule_info.get("out_interface")}') 
             #cmd_parts.append(f'place-before={data["rule_no"]}')
-            cmd = " ".join(cmd_parts)           
+            cmd = " ".join(cmd_parts) 
+            print("add rule", cmd)          
             stdin, stdout, stderr = ssh_client.exec_command(cmd)  
             time.sleep(5)
-            rule_no_added = len(firewallinfo) - 1 
+            rule_no_added = len(firewallinfo)
             place_above = int(data["place_above"]) - 1
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {rule_no_added}  {place_above}')   
             print("DHCP-Server Remove STDOUT:", stdout.read().decode())
