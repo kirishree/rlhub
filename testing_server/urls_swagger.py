@@ -45,7 +45,8 @@ from reach.views import (   get_m2mspoke_config,
                             edit_filter_rule_spoke,
                             edit_nat_rule_spoke,
                             get_ratelimit_info,
-                            add_ratelimit
+                            add_ratelimit,
+                            del_ratelimit
                             )
 schema_view = get_schema_view(
    openapi.Info(
@@ -122,6 +123,7 @@ urlpatterns = [
     path('beapi/firewall/edit_nat_rule', edit_nat_rule_spoke),
     path('beapi/firewall/ratelimit_info', get_ratelimit_info),
     path('beapi/firewall/add_ratelimit', add_ratelimit),
+    path('beapi/firewall/del_ratelimit', del_ratelimit),
 
     path('beapi/get_m2mspoke_config', get_m2mspoke_config, name='get_m2mspoke_config'),
     path('beapi/config_microtik_hub', add_microtik_hub, name='add_microtik_hub'),
