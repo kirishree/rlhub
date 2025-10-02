@@ -3495,13 +3495,73 @@ def add_rate_limit(data):
                         break
                 if lan_ntwk:
                     max_limit = f'{limit["max_upload_limit"]}M/{limit["max_download_limit"]}M'
-                    stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple add name={limit["name"]} comment={limit["description"]} target={limit["target_address"]} max-limit={max_limit}')
+                    print(max_limit)
+                    name = f"{limit["target_address"]}_{max_limit}"
+                    print(name)
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple add name={name} comment={limit["description"]} target={limit["target_address"]} max-limit={max_limit}')
                     print("stdout", stdout.read().decode())
                     print("stderr", stderr.read().decode())
                     response = [{"message": "Rate limit applied successfully"}]
                 else:
                     response = [{"message": "Error: Target Address should be in LAN Network"}]
                     break
+        except Exception as e:
+            logger.error(
+                f"Error while applying ratelimit",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]         
+        # Close the SSH connection
+        ssh_client.close()         
+    except Exception as e:
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+    return response           
+
+def del_rate_limit(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:                       
+            stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple remove {data["rule_no"]}')
+            print("stdout", stdout.read().decode())
+            print("stderr", stderr.read().decode())
+            response = [{"message": f"{data['name']} applied successfully"}]
+                
         except Exception as e:
             logger.error(
                 f"Error while applying ratelimit details",
