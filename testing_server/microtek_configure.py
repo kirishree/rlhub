@@ -3181,3 +3181,133 @@ def ShiftFilterRuledown(data):
         ssh_client.close()        
         return response
     
+def get_rate_limit_info(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_ratelimit_info",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []          
+        ratelimit_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for rateinfo in ratelimit_info:
+            if rateinfo.strip():
+                rules.append(rateinfo)
+            else:
+                rules_info.append(rules)
+                rules = []        
+        for rule in rules_info:
+            description = ""
+            ratelimit_status = ""
+            rule_no = ""
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1] 
+                    rule_no = ruleinfostrip.split(" ")[0]                   
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        ratelimit_status = "disabled"
+                    elif status_info == "I":
+                        ratelimit_status = "Invalid" 
+                    elif status_info == "D":
+                        ratelimit_status = "Dynamic" 
+                    else: 
+                        ratelimit_status = "Enabled"               
+
+                if "name=" in ruleinfostrip:
+                    name = ruleinfostrip.split("name=")[1].split(" ")[0]   
+                    if description == "":
+                        status_info = ruleinfostrip.split(" ")[1]  
+                        rule_no = ruleinfostrip.split(" ")[0]                  
+#                       print("status_info", status_info)
+                        if status_info == "X":
+                            ratelimit_status = "disabled"
+                        elif status_info == "I":
+                            ratelimit_status = "Invalid" 
+                        elif status_info == "D":
+                            ratelimit_status = "Dynamic" 
+                        else: 
+                            ratelimit_status = "Enabled"                  
+                if "target=" in ruleinfostrip:
+                    target_address = ruleinfostrip.split("target=")[1].split(" ")[0]
+                if "max-limit=" in ruleinfostrip:
+                    max_limit = ruleinfostrip.split("max-limit=")[1].split(" ")[0]
+                    upload_limit = max_limit.split("/")[0]
+                    download_limit = max_limit.split("/")[1]
+                                
+            collect.append({"name":name, 
+                            "rule_no":rule_no,                                                    
+                            "description":description,
+                            "firewall_status":ratelimit_status,                           
+                            "target_address": target_address,
+                            "upload_limit":upload_limit,
+                            "download_limit":download_limit,   
+                            })         
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+    return collect
