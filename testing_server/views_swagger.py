@@ -449,6 +449,513 @@ def add_cisco_device(request: HttpRequest):
         public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
         logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
                     extra={ "be_api_endpoint": "configure_spoke" }
+                    )    
+        org_status = False
+        if "organization_id" in data:
+            org_info = coll_registered_organization.find_one({"organization_id": data["organization_id"]})
+            if org_info:
+                orgname = org_info["organization_name"]
+                data["username"] = org_info["regusers"][0]["username"]  
+                org_status = True          
+        if not org_status:               
+                logger.error(
+                            f"Error: Configure spoke: Error in getting organization name ",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
+                json_response = [{"message": f"Error:Error in getting organization name"}]
+                response = HttpResponse(content_type='application/zip')
+                response['X-Message'] = json.dumps(json_response)
+                response["Access-Control-Expose-Headers"] = "X-Message"
+                return response
+        if data["device"].lower() == "robustel":        
+            data["uuid"] = data['branch_location'] + f"_{orgname}_robustel.net"      
+            try:
+                response, newuser = onboarding.check_user(data, newuser) 
+                if "spokedevice_name" in response[0]:
+                    client_name = response[0]["spokedevice_name"]
+                    # Path configuration
+                    output_file = os.path.expanduser(f"~/{client_name}.ovpn")
+                    if not os.path.exists(output_file):                    
+                        if not(new_client(client_name)):                        
+                            logger.error(
+                                f"Error: Configure Robustel Spoke: Issue with client certificate generation",
+                                extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                                }
+                            ) 
+                            response = [{"message": "Internal Server Error", "expiry_date": dummy_expiry_date}]
+                            response1 = HttpResponse(content_type='text/plain')
+                            response1['X-Message'] = json.dumps(response)
+                            response1["Access-Control-Expose-Headers"] = "X-Message"
+                            return response1                
+                    base_path = "/etc/openvpn/server"
+                    ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
+                    client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
+                    client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")                
+                    with open(ca_cert_file, "r") as f:
+                        cacrt = f.read()
+                        f.close()
+                    with open(client_cert_file, "r")as f:
+                        clientcrt = f.read()
+                        f.close()
+                    with open(client_key_file, "r") as f:
+                        clientkey = f.read()
+                        f.close()
+                    with open(robustel_exe_path, "rb") as f:
+                        robustelexe = f.read()
+                        f.close()
+                    files_to_send = {
+                            "ca.crt": cacrt,
+                            "client.crt": clientcrt,
+                            "client.key": clientkey,
+                            "reachlink_robustel_config.exe": robustelexe  # Keep binary
+                    }
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    logger.info(
+                            f"New Robustel client: {client_name} added",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
+                    json_response = [{"message": response[0]["message"]}]
+                    response1 = HttpResponse(buffer, content_type='application/zip')
+                    response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    os.system("systemctl restart reachlink_test") 
+                    return response1   
+                else:                
+                    logger.error(
+                            f"Error: Configure Robustel Spoke:{response[0]['message']}",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
+                    json_response = [{"message": f"Error:{response[0]['message']}"}]
+            except Exception as e:            
+                logger.error(
+                            f"Error: Configure Robustel Spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        ) 
+            json_response = [{"message": f"Error:{response[0]['message']}"}]
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(json_response)
+            response1["Access-Control-Expose-Headers"] = "X-Message"
+            return response1    
+        if "microtik" in data["device"].lower(): 
+            data["dialer_ip"]  = hub_ip
+            if  data.get("dialer_ip", "") != hub_ip:
+                microtik_hub_info = coll_hub_info.find_one({"hub_ip":data.get("dialer_ip", "")})
+                if microtik_hub_info:
+                    data['router_username'] = microtik_hub_info['router_username'] 
+                    data["router_password"] = microtik_hub_info['router_password']  
+                else:
+                    logger.error(
+                                    f"HUB is not Registered yet!",
+                                    extra={
+                                        "device_type": "ReachlinkServer",
+                                        "device_ip": hub_ip,
+                                        "be_api_endpoint": "configure Microtik spoke",
+                                        "exception": ""
+                                    }
+                                )     
+                    json_response = [{"message": f"HUB is not registered Yet!"}]
+                    response1 = HttpResponse(content_type='text/plain')
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    return response1  
+                data["uuid"] = data['branch_location'] + f"_{orgname}_m2m.net"
+                response, newuser = onboarding.check_user(data, newuser)  
+                print(response, newuser)
+                if "spokedevice_name" in response[0]:
+                    client_name = response[0]["spokedevice_name"]
+                    data['client_name'] = client_name
+                    # Path configuration
+                    output_file = os.path.expanduser(f"/etc/reach/{client_name}.ovpn")
+                    if not os.path.exists(output_file): 
+                        client_status = microtek_hub.microtik_client_generation(data)  
+                        if not client_status:
+                            logger.error(
+                                    f"Error in Client file generation(M2M)",
+                                    extra={
+                                        "device_type": "ReachlinkServer",
+                                        "device_ip": hub_ip,
+                                        "be_api_endpoint": "configure Microtik spoke",
+                                        "exception": ""
+                                    }
+                            )     
+                            json_response = [{"message": f"Error while configuring, pl try again!"}]
+                            response1 = HttpResponse(content_type='text/plain')
+                            response1['X-Message'] = json.dumps(json_response)
+                            response1["Access-Control-Expose-Headers"] = "X-Message"
+                            return response1 
+                    
+                    with open(f"/etc/reach/{client_name}.ovpn", "r") as f:
+                        ovpnfile = f.read()
+                        f.close()                
+                    with open(m2m_exe_path, "rb") as f:
+                        microtekexe = f.read()
+                        f.close()
+                    files_to_send = {                    
+                        f"{client_name}.ovpn": ovpnfile,
+                        "reachlink_microtek_config.exe": microtekexe  # Keep binary
+                    }
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    json_response = [{"message": response[0]["message"]}]
+                    logger.info(
+                                        f"New Microtek {client_name} added",
+                                        extra={
+                                            "device_type": "ReachlinkServer",
+                                            "device_ip": hub_ip,
+                                            "be_api_endpoint": "configure spoke",
+                                            "exception": ""
+                                        }
+                    ) 
+                    response1 = HttpResponse(buffer, content_type='application/zip')
+                    response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    os.system(f"python3 {reachlink_zabbix_path}")
+                    os.system("systemctl restart reachlink_test")  
+                    return response1                            
+                else:
+                    logger.error(
+                                    f'Error {response}(M2M)',
+                                    extra={
+                                        "device_type": "ReachlinkServer",
+                                        "device_ip": hub_ip,
+                                        "be_api_endpoint": "configure Microtik spoke",
+                                        "exception": ""
+                                    }
+                                )     
+                    json_response = [{"message": f"Error while configuring, pl try again!"}]
+                    response1 = HttpResponse(content_type='text/plain')
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    return response1                         
+            #ReachLink Client
+            data["uuid"] = data['branch_location'] + f"_{orgname}_microtek.net"     
+            try:
+                response, newuser = onboarding.check_user(data, newuser)  
+                if "spokedevice_name" in response[0]:
+                    client_name = response[0]["spokedevice_name"]
+                    # Path configuration
+                    output_file = os.path.expanduser(f"/root/{client_name}.ovpn")
+                    if not os.path.exists(output_file):                        
+                        new_client(client_name)    
+                    else:
+                        print("Client already available")                
+                    base_path = "/etc/openvpn/server"
+                    ca_cert_file = os.path.join(base_path, "easy-rsa/pki/ca.crt")
+                    client_cert_file = os.path.join(base_path, f"easy-rsa/pki/issued/{client_name}.crt")
+                    client_key_file = os.path.join(base_path, f"easy-rsa/pki/private/{client_name}.key")
+                    with open(output_file, "r") as f:
+                        ovpnfile = f.read()
+                        f.close()                
+                    with open(microtik_exe_path, "rb") as f:
+                        microtekexe = f.read()
+                        f.close()
+                    files_to_send = {                    
+                        f"{client_name}.ovpn": ovpnfile,
+                        "reachlink_microtek_config.exe": microtekexe  # Keep binary
+                    }
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    # Create a ZIP archive
+                    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for filename, content in files_to_send.items():
+                            zip_file.writestr(filename, content)
+                    # Prepare the response
+                    buffer.seek(0)
+                    json_response = [{"message": response[0]["message"]}]
+                    logger.info(
+                            f"New Microtek {client_name} added",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        ) 
+                    response1 = HttpResponse(buffer, content_type='application/zip')
+                    response1['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response1['X-Message'] = json.dumps(json_response)
+                    response1["Access-Control-Expose-Headers"] = "X-Message"
+                    os.system(f"python3 {reachlink_zabbix_path}")
+                    os.system("systemctl restart reachlink_test")  
+                    return response1 
+                else:                
+                    logger.error(
+                            f"Error: Configure Microtek Spoke:{response[0]['message']}",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )              
+                    json_response = [{"message": f"Error:{response[0]['message']}"}]
+            except Exception as e:            
+                logger.error(
+                            f"Error: Configure Microtek Spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        )     
+                json_response = [{"message": f"Error while configuring, pl try again!"}]
+            response1 = HttpResponse(content_type='text/plain')
+            response1['X-Message'] = json.dumps(json_response)
+            response1["Access-Control-Expose-Headers"] = "X-Message"
+            return response1
+        if data["device"].lower() == "cisco":     
+            if  data.get("dialer_ip", "") != hub_ip:
+                check_hub_configured = coll_hub_info.find_one({"hub_wan_ip_only": data.get("dialer_ip", "")})
+                if not check_hub_configured:
+                    json_response = [{"message": f"Error:Hub not configured yet. Pl configure HUB first."}]
+                    response = HttpResponse(content_type='application/zip')
+                    response['X-Message'] = json.dumps(json_response)
+                    response["Access-Control-Expose-Headers"] = "X-Message"
+                    return response
+                data["uuid"] = data['branch_location'] + f"_{orgname}_ciscodevice.net"
+            else:
+                data["uuid"] = data['branch_location'] + f"_{orgname}_cisco_ubuntu.net"
+            data["username"] = "none"
+            data["password"] = "none" 
+            try:
+                response, newuser = onboarding.check_user(data, newuser)                            
+                if response[0]["message"] == "Successfully Registered" or response[0]["message"] == "This Cisco Spoke is already Registered":
+                    devicename = response[0]["spokedevice_name"]
+                    devicedialerinfo = coll_dialer_ip.find_one({"dialerusername":devicename})
+                    dialer_ip = data.get("dialer_ip", "")
+                    if not devicedialerinfo: #New device
+                        routerpassword = hub_config.generate_router_password_cisco()
+                        routerusername = devicename.lower()
+                        if data.get("dialer_ip", "") != hub_ip:
+                            newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                        else:
+                            newdialerinfo = ubuntu_info.get_dialer_ip(devicename)
+                    else:
+                        routerpassword = devicedialerinfo["router_password"]
+                        routerusername = devicedialerinfo["router_username"]
+                        if devicedialerinfo["dialer_hub_ip"] == dialer_ip: #same hub
+                            newdialerinfo= {"dialerip": devicedialerinfo["dialerip"],
+                                        "dialerpassword": devicedialerinfo["dialerpassword"],
+                                        "dialerusername": devicedialerinfo["dialerusername"],
+                                        "hub_dialer_network":devicedialerinfo["hub_dialer_network"],
+                                        "hub_dialer_netmask":devicedialerinfo["hub_dialer_netmask"]}
+                        else:
+                            if data.get("dialer_ip", "") != hub_ip:
+                                newdialerinfo = hub_config.get_dialer_ip_fromciscohub(devicename, dialer_ip )
+                            else:
+                                newdialerinfo = ubuntu_info.get_dialer_ip(devicename)                 
+                    if newdialerinfo:
+                        newdialerinfo["router_username"] = routerusername
+                        newdialerinfo["router_password"] = routerpassword
+                        newdialerinfo["spokedevice_name"] = devicename
+                        newdialerinfo["uuid"] = data["uuid"]
+                        newdialerinfo["hub_dialer_wildcardmask"] = ".".join(str(255 - int(octet)) for octet in newdialerinfo["hub_dialer_netmask"].split("."))
+                        newdialerinfo["router_wan_ip_only"] = data["router_wan_ip"].split("/")[0]
+                        subnet = ipaddress.IPv4Network(data["router_wan_ip"], strict=False)  # Allow non-network addresses
+                        newdialerinfo["router_wan_ip_netmask"] = str(subnet.netmask) 
+                        coll_dialer_ip.update_one({"uuid": data["uuid"]}, #filter
+                                                  {"$set":{"uuid": data["uuid"],
+                                                            "router_username": routerusername,
+                                                            "router_password": newdialerinfo["router_password"],
+                                                            "spokedevice_name": devicename,
+                                                            "dialerip":newdialerinfo["dialerip"],
+                                                            "dialerpassword": newdialerinfo["dialerpassword"],
+                                                            "dialerusername": devicename,
+                                                            "dialer_hub_ip":dialer_ip,
+                                                            "router_wan_ip_only": newdialerinfo["router_wan_ip_only"],
+                                                            "router_wan_ip_netmask": newdialerinfo["router_wan_ip_netmask"],
+                                                            "router_wan_ip_gateway": data["router_wan_gateway"],
+                                                            "hub_dialer_network": newdialerinfo["hub_dialer_network"],
+                                                            "hub_dialer_netmask":newdialerinfo["hub_dialer_netmask"],
+                                                            "hub_dialer_wildcardmask": newdialerinfo["hub_dialer_wildcardmask"],
+                                                            "branch_location": data["branch_location"]
+                                                            }
+                                                    }, #update
+                                                    upsert=True                  # this enables "insert if not found"
+                                                ) 
+                        organizationid = response[0]["organization_id"]
+                        regdevices = coll_registered_organization.find_one({"organization_id":organizationid}) 
+                        if data.get("dialer_ip", "") != hub_ip:
+                            for dev in regdevices["registered_devices"]:                    
+                                if "cisco_hub_info" in dev:
+                                    if data["dialer_ip"] == dev["cisco_hub_info"]["hub_wan_ip_only"]: 
+                                        for cispoke in  dev["cisco_spokes_info"]:                         
+                                            if data["uuid"] == cispoke["uuid"]:
+                                                cispoke["router_username"] = routerusername
+                                                cispoke["router_password"] = newdialerinfo["router_password"]
+                                                cispoke["spokedevice_name"] = devicename
+                                                cispoke["dialerip"] =  newdialerinfo["dialerip"]
+                                                cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                                cispoke["dialerusername"] = devicename
+                                                cispoke["dialer_hub_ip"] = dialer_ip
+                                                cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                                cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                                cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                                cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                                cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                                cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                                cispoke["branch_location"] = data["branch_location"]
+                        else:
+                            for dev in regdevices["registered_devices"]:                    
+                                if "reachlink_hub_info" in dev:
+                                    if data["dialer_ip"] == dev["reachlink_hub_info"]["hub_ip"]: 
+                                        for cispoke in  dev["cisco_spokes_info"]:                         
+                                            if data["uuid"] == cispoke["uuid"]:
+                                                cispoke["router_username"] = routerusername
+                                                cispoke["router_password"] = newdialerinfo["router_password"]
+                                                cispoke["spokedevice_name"] = devicename
+                                                cispoke["dialerip"] =  newdialerinfo["dialerip"]
+                                                cispoke["dialerpassword"] = newdialerinfo["dialerpassword"]
+                                                cispoke["dialerusername"] = devicename
+                                                cispoke["dialer_hub_ip"] = dialer_ip
+                                                cispoke["router_wan_ip_only"] = newdialerinfo["router_wan_ip_only"]
+                                                cispoke["router_wan_ip_netmask"] = data["router_wan_gateway"]
+                                                cispoke["router_wan_ip_gateway"] = data["router_wan_gateway"]                     
+                                                cispoke["hub_dialer_network"] = newdialerinfo["hub_dialer_network"]
+                                                cispoke["hub_dialer_netmask"] = newdialerinfo["hub_dialer_netmask"]
+                                                cispoke["hub_dialer_wildcardmask"] = newdialerinfo["hub_dialer_wildcardmask"]
+                                                cispoke["branch_location"] = data["branch_location"]
+                        query = {"organization_id": organizationid}
+                        update_data = {"$set": {
+                                        "registered_devices": regdevices["registered_devices"]                                                                           
+                                        }
+                                       }
+                        coll_registered_organization.update_many(query, update_data)                                          
+                        dialerinfo = coll_dialer_ip.find_one({"uuid": data["uuid"]}, {"_id":0})        
+                        coll_tunnel_ip.insert_one(dialerinfo)                    
+                    else:
+                        logger.error(
+                            f"Error:while generating dialerip for cisco",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )    
+                        json_response = [{"message": f"Error:while generating dialerip"}]
+                        response = HttpResponse(content_type='application/zip')
+                        response['X-Message'] = json.dumps(json_response)
+                        response["Access-Control-Expose-Headers"] = "X-Message"
+                        return response                  
+
+                    # Create a buffer for the ZIP file
+                    buffer = io.BytesIO()
+                    if data.get("dialer_ip", "") != hub_ip:
+                        # Create a ZIP archive
+                        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                            # Read the EXE file and add it to the ZIP
+                            with open("reachlink_config.exe", "rb") as f:
+                                zip_file.writestr("reachlink_config.exe", f.read())
+                        # Prepare the response
+                        buffer.seek(0)
+                    else:
+                        # Create a ZIP archive
+                        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                            # Read the EXE file and add it to the ZIP
+                            with open("reachlink_cisco_config.exe", "rb") as f:
+                                zip_file.writestr("reachlink_config.exe", f.read())
+                        # Prepare the response
+                        buffer.seek(0)
+                    json_response = [{"message": response[0]["message"]}]
+                    logger.info(
+                            f"response[0]['message']",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": ""
+                            }
+                        )  
+                    response = HttpResponse(buffer, content_type='application/zip')
+                    response['Content-Disposition'] = 'attachment; filename="reachlink_conf.zip"'
+                    response['X-Message'] = json.dumps(json_response)
+                    response["Access-Control-Expose-Headers"] = "X-Message"                        
+                    os.system(f"python3 {reachlink_zabbix_path}")
+                    os.system("systemctl restart reachlink_test")            
+                    return response
+                else:
+                    json_response = [{"message": f"Error:{response[0]['message']}"}]
+            except Exception as e:
+                logger.error(
+                            "Error: Configure cisco spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        )             
+                json_response = [{"message": f"Error:Internal Server Error, pl try again!"}]
+            response = HttpResponse(content_type='application/zip')
+            response['X-Message'] = json.dumps(json_response)
+            response["Access-Control-Expose-Headers"] = "X-Message"
+            return response
+    except Exception as e:
+        logger.error(
+                            "Error: Configure cisco spoke",
+                            extra={
+                                "device_type": "ReachlinkServer",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "configure spoke",
+                                "exception": str(e)
+                            }
+                        ) 
+        json_response = [{"message": f"Error while configuring spoke, pl try again!"}]
+        response = HttpResponse(content_type='application/zip')
+        response['X-Message'] = json.dumps(json_response)
+        response["Access-Control-Expose-Headers"] = "X-Message"
+        return response
+
+
+def add_cisco_deviceoldd(request: HttpRequest):
+    try:
+        data = json.loads(request.body)         
+        data['branch_location'] = data['branch_location'].lower()
+        global newuser    
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "configure_spoke" }
                     ) 
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
@@ -3766,3 +4273,833 @@ def logfile_content(request):
     logfile_content.reverse()
     return JsonResponse({'log': logfile_content})
 
+#Firewall for Microtek
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_firewall_filter_details_spoke(request):
+    try:
+        data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "get_firewall_details" }
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"firewall_branch_{branch_id}"
+        firewall_details = cache.get(cache_key)
+        if firewall_details:
+            return JsonResponse(firewall_details, safe=False)
+        firewall_details = []
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )      
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            try:
+                response = requests.get(url + "get_firewall_details")                                
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    firewall_details = json.loads(get_response)
+                    #print(response)      
+                else:
+                    firewall_details =[]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")  
+                logger.error(f"Connection timeout ",
+                     extra={
+                                "device_type": "ReachlinkSpoke",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_firewall_info",
+                                "exception": str(e)
+                            }
+                    )     
+                firewall_details =[]         
+        elif "microtek" in data["uuid"]:           
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            firewall_details = microtek_configure.firewalldetails(data)                 
+            #return JsonResponse(interface_details,safe=False) 
+        elif "cisco" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = router_configure.get_interface_cisco(data)
+            firewall_details = []
+        elif "robustel" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = robustel_configure.get_interface_robustel(data)
+            firewall_details = []
+        # Store in cache for 60 seconds
+        cache.set(cache_key, firewall_details, timeout=60)
+    except Exception as e:
+        logger.error(f"{str(e)} ",
+                     extra={
+                                "device_type": "",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_firewall_info",
+                                "exception": str(e)
+                            }
+                    )        
+    return JsonResponse(firewall_details, safe=False)
+
+
+#Firewall for Microtek
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_firewall_nat_details_spoke(request):
+    try:
+        data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "get_firewall_nat_details" }
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"firewall_nat_branch_{branch_id}"
+        firewall_details = cache.get(cache_key)
+        if firewall_details:
+            return JsonResponse(firewall_details, safe=False)
+        firewall_details = []
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )      
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            try:
+                response = requests.get(url + "get_firewall_nat_details")                                
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    firewall_details = json.loads(get_response)
+                    #print(response)      
+                else:
+                    firewall_details =[]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")  
+                logger.error(f"Connection timeout ",
+                     extra={
+                                "device_type": "ReachlinkSpoke",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_firewall_nat_info",
+                                "exception": str(e)
+                            }
+                    )     
+                firewall_details =[]         
+        elif "microtek" in data["uuid"]:           
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            firewall_details = microtek_configure.firewallnatdetails(data)                 
+            #return JsonResponse(interface_details,safe=False) 
+        elif "cisco" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = router_configure.get_interface_cisco(data)
+            firewall_details = []
+        elif "robustel" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = robustel_configure.get_interface_robustel(data)
+            firewall_details = []
+        # Store in cache for 60 seconds
+        cache.set(cache_key, firewall_details, timeout=60)
+    except Exception as e:
+        logger.error(f"{str(e)} ",
+                     extra={
+                                "device_type": "",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_firewall_nat_info",
+                                "exception": str(e)
+                            }
+                    )        
+    return JsonResponse(firewall_details, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_blocked_app_details_spoke(request):
+    try:
+        data = json.loads(request.body)
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "get_blocked_app_details" }
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0]
+        cache_key = f"blocked_app_branch_{branch_id}"
+        app_details = cache.get(cache_key)
+        if app_details:
+            return JsonResponse(app_details, safe=False)
+        app_details = []
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )      
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            try:
+                response = requests.get(url + "get_blocked_app_details")                                
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    app_details = json.loads(get_response)
+                    #print(response)      
+                else:
+                    app_details =[]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")  
+                logger.error(f"Connection timeout ",
+                     extra={
+                                "device_type": "ReachlinkSpoke",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_blocked_app_info",
+                                "exception": str(e)
+                            }
+                    )     
+                app_details =[]         
+        elif "microtek" in data["uuid"]:           
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            app_details = microtek_configure.blockedappdetails(data)                 
+            #return JsonResponse(interface_details,safe=False) 
+        elif "cisco" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = router_configure.get_interface_cisco(data)
+            app_details = []
+        elif "robustel" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #interface_details = robustel_configure.get_interface_robustel(data)
+            app_details = []
+        # Store in cache for 60 seconds
+        cache.set(cache_key, app_details, timeout=60)
+    except Exception as e:
+        logger.error(f"{str(e)} ",
+                     extra={
+                                "device_type": "",
+                                "device_ip": hub_ip,
+                                "be_api_endpoint": "get_blocked_app_info",
+                                "exception": str(e)
+                            }
+                    )        
+    return JsonResponse(app_details, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def add_app_spoke(request):
+    try:
+        data = json.loads(request.body)
+        print(data)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "add_app_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"blocked_app_branch_{branch_id}"        
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            app_details = microtek_configure.addapp(data)                 
+            return JsonResponse(app_details,safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Configure app Spoke:{e}")
+        response = [{"message": f"Error: while configuring interface"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def add_firewall_filter_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "add_firewall_filter_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_branch_{branch_id}"              
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.addfirewallrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Add Firewall Filter Rule in Spoke:{e}")
+        response = [{"message": f"Error: while adding filter rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def add_firewall_nat_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "add_firewall_nat_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_nat_branch_{branch_id}"            
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.addfirewallnatrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Add Firewall NAT Rule in Spoke:{e}")
+        response = [{"message": f"Error: while adding Filter NAT rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def del_app_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "del_app_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"blocked_app_branch_{branch_id}"              
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.delapprule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Remove App Rule in Spoke:{e}")
+        response = [{"message": f"Error: while removing App rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def del_filter_rule_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "del_filter_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_branch_{branch_id}"               
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.delfilterrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Remove Filter Rule Rule in Spoke:{e}")
+        response = [{"message": f"Error: while deleting filter rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def move_filter_rule_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "move_filter_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0]         
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.movefilterrule(data)    
+            cache_key = f"firewall_branch_{branch_id}"               
+            cache.delete(cache_key)             
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Move Filter Rule Rule in Spoke:{e}")
+        response = [{"message": f"Error: while moving filter rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def del_nat_rule_spoke(request):
+    try:
+        data = json.loads(request.body)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "del_nat_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_nat_branch_{branch_id}"            
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.delnatrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Remove NAT Rule in Spoke:{e}")
+        response = [{"message": f"Error: while deleting NAT rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def edit_filter_rule_spoke(request):
+    try:
+        data = json.loads(request.body)        
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "del_nat_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_branch_{branch_id}"         
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.editfilterrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Edit NAT Rle in Spoke:{e}")
+        response = [{"message": f"Error: while editting firewall rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def edit_nat_rule_spoke(request):
+    try:
+        data = json.loads(request.body)
+        #print(data)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "edit_nat_rule_spoke" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"firewall_nat_branch_{branch_id}"      
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.editnatrule(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Edit NAT Rule in Spoke:{e}")
+        response = [{"message": f"Error: while editing NAT rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_m2mspoke_config(request: HttpRequest):    
+    data = json.loads(request.body) 
+    public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+    logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "get_microtekspoke_config" }
+                    )
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Authorization header missing or malformed'}, safe=False)
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Verify and decode the token
+        decodedtoken = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])       
+
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({'message': 'Token has expired'}, safe=False)
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'message': 'Invalid token'}, safe=False)
+    orgname = decodedtoken.get("onboarding_org_name", False)
+    orgid = decodedtoken.get("onboarding_org_id", False)
+    if not orgname or not orgid:
+        logger.error(f"Error: Get Configure Microtek HUB: Error in getting organization name ")
+        json_response = {"message": f"Error:Error in getting organization name or id"}
+        return JsonResponse(json_response, safe=False)     
+    
+    data["uuid"] = data['branch_loc'] + f"_{orgname}_m2m.net"
+    data["orgid"] = orgid
+    data["orgname"] = orgname
+    response = onboarding.get_m2mspoke_config(data)
+    if "This Microtek Spoke is already Registered" in response[0]["message"]:           
+        spokedetails = {"spokedevice_name": response[0]["spokedevice_name"],
+                        "router_username": response[0]["router_username"],
+                        "router_password": response[0]["router_password"],
+                        "hub_ip":response[0]["hub_ip"],
+                        "message": response[0]["message"],
+                        "snmpcommunitystring": snmpcommunitystring
+                        }        
+        #setass_task.apply_async(args=[response, "microtek"], countdown=60)
+    else:
+        spokedetails= {"message": response[0]["message"]}    
+    return JsonResponse(spokedetails, safe=False)

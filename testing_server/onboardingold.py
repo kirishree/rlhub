@@ -27,7 +27,6 @@ hub_ip = config('HUB_IP')
 hub_host_id = config('HUB_HOSTID')
 hub_item_id_sent = config('HUB_ITEM_ID_SENT')
 hub_item_id_received = config('HUB_ITEM_ID_RECEIVED')
-
 def organization_name(data):
     try:
         if "access_token" not in data:
@@ -50,11 +49,9 @@ def organization_name(data):
                   }
         get_organization_name = requests.get(url+"org/", headers=headers)
         org_response = get_organization_name.json()
-        print(org_response)
         organization_name = org_response["data"]["company_name"].replace(" ", "")
         return organization_name, True
     except Exception as e:
-        print(e)
         logger.error(
                         f"Error in getting organization name",
                         extra={
@@ -100,17 +97,23 @@ def authenticate_user(data):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            get_organization_name = requests.get(url+"org/", headers=headers)
+            org_response = get_organization_name.json()                
+            organization_name = org_response["data"]["company_name"].replace(" ", "")
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()            
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
                     break
-            if subscription_status:
-                get_organization_name = requests.get(url+"org/", headers=headers)
-                org_response = get_organization_name.json()                
-                organization_name = org_response["data"]["company_name"].replace(" ", "")
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
+            if subscription_status: 
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -268,7 +271,6 @@ def get_tunnel_ip(data, spokedevice_name):
     return tunnel_ip          
 
 def check_user(data, newuser):
-    print(data)
     current_datetime = datetime.now() 
     try:  
         if "organization_id" not in data:      
@@ -283,47 +285,8 @@ def check_user(data, newuser):
                 if details["remaining_users"] > 0 and current_datetime < details["subscription_to"]:
                     registered_devices_info = details["registered_devices"]
                     expiry_date_original = str(details["subscription_to"]).split(" ")[0]                    
-                    for device in registered_devices_info:   
-                        if "microtikhub" in data["uuid"]:                            
-                            if "microtik_hub_info" in device:
-                                if data["uuid"] == device["microtik_hub_info"]["uuid"]:
-                                    response =[{ "message": 'This Microtik HUB is already Registered',
-                                                "expiry_date": expiry_date_original, 
-                                                "spokedevice_name":device["microtik_hub_info"]["spokedevice_name"],
-                                                "organization_id":organization_id
-                                                }]
-                                    logger.info(
-                                                f"This Microtik HUB is already Registered",
-                                                extra={
-                                                        "device_type": "Microtik",
-                                                        "device_ip": device["microtik_hub_info"]["hub_ip"],
-                                                        "be_api_endpoint": "add_microtik_hub",
-                                                        "exception": ""
-                                                    }
-                                    )
-                                    return response, newuser   
-                        elif "m2m.net" in data["uuid"]:
-                            print(data)
-                            if "microtik_hub_info" in device:
-                                if data["dialer_ip"] == device["microtik_hub_info"]["hub_ip"].split("/")[0]:
-                                    for m2mspoke in device["microtik_spokes_info"]:
-                                        if data["uuid"] == m2mspoke["uuid"]:
-                                            response =[{ "message": 'This Microtik Spoke is already Registered',
-                                                "expiry_date": expiry_date_original, 
-                                                "spokedevice_name":m2mspoke["spokedevice_name"],
-                                                "organization_id":organization_id
-                                                }]
-                                            logger.info(
-                                                f"This Microtik Spoke is already Registered",
-                                                extra={
-                                                        "device_type": "MicrotikSpoke",
-                                                        "device_ip": "",
-                                                        "be_api_endpoint": "add_microtik_device",
-                                                        "exception": ""
-                                                    }
-                                            )
-                                            return response, newuser                  
-                        elif "ciscohub" in data["uuid"]:                            
+                    for device in registered_devices_info:                        
+                        if "ciscohub" in data["uuid"]:                            
                             if "cisco_hub_info" in device:
                                 if data["uuid"] == device["cisco_hub_info"]["uuid"]:
                                     response =[{ "message": 'This Cisco HUB is already Registered',
@@ -445,26 +408,7 @@ def check_user(data, newuser):
                     #length = len(registered_devices_info)+1
                     #spokedevice_name =  generate_device_name(length, details)
                     gretunnel_ip =  "None"
-                    if "microtikhub" in data["uuid"]:
-                        no_of_hubs = 1
-                        for dev in registered_devices_info:
-                            print("dev", dev)
-                            if "microtik_hub_info" in dev:
-                                no_of_hubs = no_of_hubs + 1
-                        print("number of hubs", no_of_hubs)
-                        spokedevice_name =  "microtikhub"+ str(no_of_hubs)+"-"+details["organization_name"]
-                        print("spokedevice_name", spokedevice_name)                
-                        new_hub_info = {"microtik_hub_info": {
-                                                "uuid": data["uuid"],
-                                                "spokedevice_name":  spokedevice_name,                                
-                                                "hub_ip": data.get("hub_ip", ""),
-                                                "branch_location": data.get("branch_location", "")
-                                                },
-                                            "microtik_spokes_info":[]
-                                            }
-                        registered_devices_info.append(new_hub_info) 
-
-                    elif "ciscohub" in data["uuid"]:
+                    if "ciscohub" in data["uuid"]:
                         no_of_hubs = 1
                         for dev in registered_devices_info:
                             print("dev", dev)
@@ -491,24 +435,7 @@ def check_user(data, newuser):
                                                       "branch_location":data["branch_location"],
                                                       "spokedevice_name":spokedevice_name
                                                       }
-                                    devinfo["cisco_spokes_info"].append(new_spoke_info)
-                    elif "m2m.net" in data["uuid"]:
-                        for devinfo in registered_devices_info:
-                            if "microtik_hub_info" in devinfo:
-                                if data["dialer_ip"] == devinfo["microtik_hub_info"]["hub_ip"].split("/")[0]:
-                                    routerpassword = hub_config.generate_router_password_cisco()
-                                    spokedevice_name =  "m2mspoke"+ str(len(devinfo["microtik_spokes_info"])+1)+"-"+details["organization_name"]
-                                    print("spokedevice", spokedevice_name)
-                                    new_spoke_info = {"uuid": data["uuid"],
-                                                      "branch_location":data["branch_location"],
-                                                      "spokedevice_name":spokedevice_name,
-                                                      "hub_ip": data.get("dialer_ip", ""),
-                                                      "tunnel_ip": "None",
-                                                      "public_ip": "None",
-                                                      "router_username":spokedevice_name.lower(),
-                                                      "router_password": routerpassword
-                                                      }
-                                    devinfo["microtik_spokes_info"].append(new_spoke_info)                                      
+                                    devinfo["cisco_spokes_info"].append(new_spoke_info)                                    
                     elif "robustel" in data["uuid"]:
                         for devinfo in registered_devices_info:
                             if "reachlink_hub_info" in devinfo:
@@ -734,7 +661,6 @@ def check_subscription_renewed(data, organization_id):
             for service in services_info:
                 if service["name"] == "link":
                     subscription_status = True
-                    break
             if subscription_status:
                 subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
                 subsjson_response = subscription_response.json()
@@ -790,15 +716,21 @@ def check_onboarding(username, password):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            current_datetime = datetime.now() 
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
                     break
-            if subscription_status:
-                current_datetime = datetime.now() 
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
+            if subscription_status:                
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -846,15 +778,21 @@ def check_login_onboarding(username, password):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            current_datetime = datetime.now() 
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
                     break
             if subscription_status:
-                current_datetime = datetime.now() 
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -932,14 +870,20 @@ def check_login_onboarding_new(username, password):
                 if service_response.status_code == 200:
                     servicejson_response = service_response.json()
                     services_info = servicejson_response["data"]["services"]
+                    #subscription_status = False
+                    #for service in services_info:
+                    #    if service["name"] == "link":
+                    #        subscription_status = True
+                    #if subscription_status:                
+                    subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+                    subsjson_response = subscription_response.json()
+                    services_info = subsjson_response["data"]["services"]
                     subscription_status = False
                     for service in services_info:
-                        if service["name"] == "link":
+                        if service["service_name"] == "link":
                             subscription_status = True
                             break
-                    if subscription_status:                
-                        subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                        subsjson_response = subscription_response.json()
+                    if subscription_status:
                         timestamp = int(subsjson_response["data"]["created_at"])
                         # Convert Unix timestamp to datetime
                         from_date = datetime.utcfromtimestamp(timestamp)
@@ -1007,14 +951,20 @@ def check_subscription_renewed_login(username, password, organization_id):
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]
+            #subscription_status = False
+            #for service in services_info:
+            #    if service["name"] == "link":
+            #        subscription_status = True
+            #if subscription_status:
+            subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
+            subsjson_response = subscription_response.json()
+            services_info = subsjson_response["data"]["services"]
             subscription_status = False
             for service in services_info:
-                if service["name"] == "link":
+                if service["service_name"] == "link":
                     subscription_status = True
                     break
             if subscription_status:
-                subscription_response = requests.get(url+"subscription_transactions/current", headers=headers)
-                subsjson_response = subscription_response.json()
                 timestamp = int(subsjson_response["data"]["created_at"])
                 # Convert Unix timestamp to datetime
                 from_date = datetime.utcfromtimestamp(timestamp)
@@ -1060,7 +1010,7 @@ def get_microtek_config(data):
                                                 "router_username": device["router_username"],
                                                 "router_password": device["router_password"]
                                                 }]                                   
-                                return response
+                                return response, 200
                         response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]
@@ -1069,53 +1019,19 @@ def get_microtek_config(data):
         logger.error(f"{response}",
                     extra={ "be_api_endpoint": "get_microtek_config",
                            "exception": ""}
-                    )       
+                    ) 
+        respstatus = 200      
     except Exception as e:
-        logger.error(f"Error in get Microtek spoke",
-                    extra={ "be_api_endpoint": "get_microtek_config",
-                           "exception": str(e)}
-                    )
-        response = [{"message": "Some internal error. Pl try again"}]
-    return response
-
-def get_m2mspoke_config(data):
-    current_datetime = datetime.now()
-    try:
-        details = coll_registered_organization.find_one({"organization_id":data["orgid"]})
-        if details:                                                   
-            if current_datetime < details["subscription_to"]:
-                registered_devices_info = details["registered_devices"]  
-                expiry_date_original = str(details["subscription_to"]).split(" ")[0]                 
-                for devices in registered_devices_info:
-                    if "microtik_spokes_info" in devices:
-                        for device in devices["microtik_spokes_info"]:
-                            if device['uuid'] == data["uuid"]:  
-                                response =[{ "message": 'This Microtek Spoke is already Registered',
-                                                "expiry_date": expiry_date_original, 
-                                                "spokedevice_name":device["spokedevice_name"],
-                                                "organization_id":data["orgid"],
-                                                "router_username": device["router_username"],
-                                                "router_password": device["router_password"],
-                                                "hub_ip": device["hub_ip"]
-
-                                                }]                                   
-                                return response
-                        response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
-            else:
-                response = [{"message": "Your subscription was expired. Kindly renew it"}]
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
         else:
-            response = [{"message": "This organization is not registered with ReachLink"}]  
-        logger.error(f"{response}",
-                    extra={ "be_api_endpoint": "get_microtek_config",
-                           "exception": ""}
-                    )       
-    except Exception as e:
+            respstatus = 500   
         logger.error(f"Error in get Microtek spoke",
                     extra={ "be_api_endpoint": "get_microtek_config",
                            "exception": str(e)}
                     )
         response = [{"message": "Some internal error. Pl try again"}]
-    return response
+    return response, respstatus
 
 def get_robustel_config(data):
     current_datetime = datetime.now()
@@ -1135,8 +1051,9 @@ def get_robustel_config(data):
                                                 "organization_id":data["orgid"],
                                                 "router_username": device["router_username"],
                                                 "router_password": device["router_password"]
-                                                }]                                   
-                                return response
+                                                }]   
+                                respstatus = 200                                
+                                return response, respstatus
                         response = [{"message": f"This Branch location ({data['branch_loc']}) was not configured in {data['orgname']} organization."}]
             else:
                 response = [{"message": "Your subscription was expired. Kindly renew it"}]
@@ -1145,11 +1062,16 @@ def get_robustel_config(data):
         logger.error(f"{response}",
                     extra={ "be_api_endpoint": "get_robustel_config",
                            "exception": ""}
-                    )       
+                    )  
+        respstatus = 200     
     except Exception as e:
+        if isinstance(e, (KeyError, ValueError)):            
+            respstatus=400
+        else:
+            respstatus = 500   
         logger.error(f"Error in get Microtek spoke",
                     extra={ "be_api_endpoint": "get_robustel_config",
                            "exception": str(e)}
                     )
         response = [{"message": "Some internal error. Pl try again"}]
-    return response
+    return response, respstatus

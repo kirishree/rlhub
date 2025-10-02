@@ -135,21 +135,6 @@ def main():
         json.dump(data, f, default=json_util.default, indent=4)
         f.close()
     while(1):
-        tunnel_info = []
-        with open(r'/etc/openvpn/server/openvpn-status.log','r') as f:
-            lines = f.readlines()
-            for row in  lines:     
-                data=row.split(",")
-                if data[0] == "CLIENT_LIST":
-                    date = data[7].split(" ")[0]
-                    time_now = data[7].split(" ")[1]
-                    collection = {  "tunnel_ip":data[3], 
-                                "public_ip":data[2].split(":")[0],
-                                "date": date,
-                                "time":time_now,
-                                "edgedevice_name":data[1]
-                            }
-                    tunnel_info.append(collection) 
         with open(regdevice_path, "r") as f:
             registered_organization = json.load(f)
             f.close()
@@ -224,16 +209,9 @@ def main():
                                                     "bits_sent": 0 })
                             no_midevice_inactive += 1
                             inactive_spokes.append(midevice["branch_location"])
-                        public_ip = midevice["public_ip"]
-                        #print("tunel_info",tunnel_info)
-                        #print("mi_tunnelip",midevice["tunnel_ip"])
-                        for tunnels in tunnel_info:
-                            if midevice["tunnel_ip"] == tunnels["tunnel_ip"]:
-                                public_ip = tunnels["public_ip"]
-                        #print("pub", public_ip)
                         microtek_info.append({  "uuid": midevice["uuid"],
                                                     "tunnel_ip": midevice["tunnel_ip"],
-                                                    "public_ip":public_ip,
+                                                    "public_ip":midevice["public_ip"],
                                                     "branch_location": midevice.get("branch_location", ""),
                                                     "subnet": midevice.get("subnet", []),
                                                     "vrf": midevice.get("vrf", ""),                                                
@@ -244,7 +222,7 @@ def main():
                                                   })
                         org_info["branch_info_only"].append({  "uuid": midevice["uuid"],
                                                     "tunnel_ip": midevice["tunnel_ip"],
-                                                    "public_ip":public_ip,
+                                                    "public_ip":midevice["public_ip"],
                                                     "branch_location": midevice.get("branch_location", ""),
                                                     "subnet": midevice.get("subnet", []),
                                                     "vrf": midevice.get("vrf", ""),                                                
@@ -607,134 +585,7 @@ def main():
                                          "uuid": device["cisco_hub_info"]["uuid"],
                                          "host_id": device.get("cisco_hub_info", {}).get("host_id", ""),
                                          "hub_dialer_ip_cidr": device["cisco_hub_info"]["hub_dialer_ip_cidr"]
-                                         })
-
-                if "microtik_hub_info" in device:
-                    org_info["no_of_hubs"] += 1 
-                    spoke_ip = device["microtik_hub_info"]["hub_ip"].split("/")[0]
-                    connectedStatus = check_tunnel_connection(spoke_ip)
-                    bandwidth_info_microtikhub = []
-                    if connectedStatus: 
-                        device["status"] = "active"
-                        hubstatus = "active"
-                        org_info["active_hubs"].append(device["microtik_hub_info"]["branch_location"])
-                        org_info["no_active_hubs"] += 1
-                        if "itemid_sent" in device["microtik_hub_info"]:
-                                bits_received = get_history(device["microtik_hub_info"]["itemid_received"])
-                                bits_sent = get_history(device["microtik_hub_info"]["itemid_sent"])
-                                bandwidth_info_microtikhub.append({"branch_location": device["microtik_hub_info"]["branch_location"],
-                                                   "bits_recieved": bits_received,
-                                                    "bits_sent": bits_sent })
-                        else:
-                            item_id = get_item_id(device["microtik_hub_info"].get("host_id", ""), f"Interface ether1: Bits")
-                            bits_received = 0
-                            bits_sent = 0                                
-                            for item in item_id:
-                                if "sent" in item["name"]:
-                                    device["microtik_hub_info"]["itemid_sent"] = item["itemid"]
-                                    bits_sent = get_history(device["microtik_hub_info"]["itemid_sent"])
-                                    reachlink_restart = True     
-                                if "received" in item["name"]:
-                                    device["microtik_hub_info"]["itemid_received"] = item["itemid"] 
-                                    bits_received = get_history(device["microtik_hub_info"]["itemid_received"])                                                                
-                                bandwidth_info_microtikhub.append({"branch_location": device["microtik_hub_info"]["branch_location"],
-                                                   "bits_recieved": bits_received,
-                                                    "bits_sent": bits_sent })
-                    else:
-                        device["status"] = "inactive"
-                        hubstatus ="inactive"
-                        org_info["inactive_hubs"].append(device["microtik_hub_info"]["branch_location"])
-                        org_info["no_inactive_hubs"] += 1
-                        bandwidth_info_microtikhub.append({"branch_location": device["microtik_hub_info"]["branch_location"],
-                                                   "bits_recieved": 0,
-                                                    "bits_sent": 0 })
-                    no_active_m2mspokes = 0
-                    no_inactive_m2mspokes =0
-                    active_m2mspokes = []
-                    inactive_m2mspokes = []
-                    bandwidth_info_m2m = []                   
-                    m2mspokes_info = []
-                    for m2mspoke in device["microtik_spokes_info"]:
-                        spoke_ip = m2mspoke["tunnel_ip"].split("/")[0]
-                        connectedStatus = check_tunnel_connection(spoke_ip)
-                        if connectedStatus: 
-                            m2mspoke["status"] = "active"
-                            active_m2mspokes.append(m2mspoke["branch_location"])
-                            no_active_m2mspokes += 1
-                            if "itemid_sent" in m2mspoke["branch_location"]:
-                                bits_received = get_history(m2mspoke["itemid_received"])
-                                bits_sent = get_history(m2mspoke["itemid_sent"])
-                                bandwidth_info_m2m.append({"branch_location": m2mspoke["branch_location"]["branch_location"],
-                                                   "bits_recieved": bits_received,
-                                                    "bits_sent": bits_sent })
-                            else:
-                                item_id = get_item_id(m2mspoke.get("host_id", ""), f"Interface ether1: Bits")
-                                bits_received = 0
-                                bits_sent = 0                                
-                                for item in item_id:
-                                    if "sent" in item["name"]:
-                                        m2mspoke["itemid_sent"] = item["itemid"] 
-                                        bits_sent = get_history(m2mspoke["itemid_sent"])
-                                        reachlink_restart = True 
-                                    if "received" in item["name"]:
-                                        m2mspoke["itemid_received"] = item["itemid"] 
-                                        bits_received = get_history(m2mspoke["itemid_received"])                                                                       
-                                bandwidth_info_m2m.append({"branch_location": m2mspoke["branch_location"],
-                                                   "bits_recieved": bits_received,
-                                                    "bits_sent": bits_sent })
-                        else:
-                            m2mspoke["status"] = "inactive"
-                            inactive_m2mspokes.append(m2mspoke["branch_location"])
-                            no_inactive_m2mspokes += 1
-                            bandwidth_info_m2m.append({"branch_location": m2mspoke["branch_location"],
-                                                   "bits_recieved": 0,
-                                                    "bits_sent": 0 })
-                        m2mspokes_info.append({  "uuid": m2mspoke["uuid"],
-                                                    "tunnel_ip": m2mspoke["tunnel_ip"],
-                                                    "public_ip":m2mspoke["public_ip"],
-                                                    "branch_location": m2mspoke.get("branch_location", ""),
-                                                    "subnet": m2mspoke.get("subnet", []),
-                                                    "vrf": m2mspoke.get("vrf", ""),                                                
-                                                    "hub_ip":m2mspoke.get("dialer_hub_ip", ""),
-                                                    "host_id": m2mspoke.get("host_id", ""),
-                                                    "status": m2mspoke.get("status", ""),
-                                                    "spokedevice_name": m2mspoke.get("spokedevice_name", "")
-                                                  })
-                        org_info["branch_info_only"].append({  "uuid": m2mspoke["uuid"],
-                                                    "tunnel_ip": m2mspoke["tunnel_ip"],
-                                                    "public_ip":m2mspoke["public_ip"],
-                                                    "branch_location": m2mspoke.get("branch_location", ""),
-                                                    "subnet": m2mspoke.get("subnet", []),
-                                                    "vrf": m2mspoke.get("vrf", ""),                                                
-                                                    "hub_ip":m2mspoke.get("dialer_hub_ip", ""),
-                                                    "host_id": m2mspoke.get("host_id", ""),
-                                                    "status": m2mspoke.get("status", ""),
-                                                    "spokedevice_name": m2mspoke.get("spokedevice_name", "")
-                                                  })
-                    microtikhub_info = {"hub_ip": device["microtik_hub_info"]["hub_ip"].split("/")[0],
-                                     "hub_location":device["microtik_hub_info"]["branch_location"],
-                                         "hub_status":hubstatus,
-                                         "hub_uuid": device["microtik_hub_info"]["uuid"],
-                                         "hub_host_id": device.get("microtik_hub_info", {}).get("host_id", ""),
-                                         "no_active_spoke":no_active_m2mspokes,
-                                         "no_inactive_spoke":no_inactive_m2mspokes,
-                                         "bandwidth_info":bandwidth_info_m2m,
-                                         "active_spokes": active_m2mspokes,
-                                         "inactive_spokes": inactive_m2mspokes,
-                                         "spokes_info": m2mspokes_info,
-                                         "bandwidth_info_hub": bandwidth_info_m2m
-                                    }
-                    org_info["hub_info"].append(microtikhub_info)
-                    org_info["total_no_active_spokes"] += no_active_m2mspokes
-                    org_info["total_no_inactive_spokes"] += no_inactive_m2mspokes 
-                    org_info["hub_info_only"].append({"branch_location": device["microtik_hub_info"]["branch_location"],
-                                         "hub_ip":device["microtik_hub_info"]["hub_ip"].split("/")[0],
-                                         "hub_status":hubstatus,
-                                         "uuid": device["microtik_hub_info"]["uuid"],
-                                         "host_id": device.get("microtik_hub_info", {}).get("host_id", ""),
-                                         "hub_dialer_ip_cidr": device["microtik_hub_info"]["hub_dialer_ip_cidr"]
-                                         })
-                
+                                         })   
             final_data.append(org_info) 
         with open(deviceinfo_path, "w") as f:
             json.dump(final_data, f)

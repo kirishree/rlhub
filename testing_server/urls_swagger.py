@@ -30,7 +30,21 @@ from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, 
 from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
 from django.conf import settings
 from django.conf.urls.static import static
-
+from reach.microtik_views import add_microtik_hub
+from reach.views import (   get_m2mspoke_config, 
+                            get_firewall_filter_details_spoke, 
+                            get_firewall_nat_details_spoke,
+                            get_blocked_app_details_spoke, 
+                            add_app_spoke, 
+                            add_firewall_filter_spoke, 
+                            add_firewall_nat_spoke, 
+                            del_app_spoke,
+                            del_nat_rule_spoke,
+                            del_filter_rule_spoke,
+                            move_filter_rule_spoke,
+                            edit_filter_rule_spoke,
+                            edit_nat_rule_spoke
+                            )
 schema_view = get_schema_view(
    openapi.Info(
       title="ReachLink",
@@ -92,6 +106,20 @@ urlpatterns = [
     path('beapi/get_robustelspoke_config', get_robustelspoke_config, name='get_robustelspoke_config'),
     path('beapi/logfile_content', logfile_content, name='logfile_content'),
 
+    path('beapi/firewall/filter_details_spoke', get_firewall_filter_details_spoke),
+    path('beapi/firewall/nat_details_spoke', get_firewall_nat_details_spoke),
+    path('beapi/firewall/blocked_app_details_spoke', get_blocked_app_details_spoke),
+    path('beapi/firewall/add_app_spoke', add_app_spoke),
+    path('beapi/firewall/add_firewall_rule', add_firewall_filter_spoke),
+    path('beapi/firewall/add_nat_rule', add_firewall_nat_spoke),
+    path('beapi/firewall/del_app', del_app_spoke),
+    path('beapi/firewall/del_filter_rule', del_filter_rule_spoke),
+    path('beapi/firewall/del_nat_rule', del_nat_rule_spoke),
+    path('beapi/firewall/move_filter_rule', move_filter_rule_spoke),
+    path('beapi/firewall/edit_filter_rule', edit_filter_rule_spoke),
+    path('beapi/firewall/edit_nat_rule', edit_nat_rule_spoke),
+    path('beapi/get_m2mspoke_config', get_m2mspoke_config, name='get_m2mspoke_config'),
+    path('beapi/config_microtik_hub', add_microtik_hub, name='add_microtik_hub'),
     # Swagger & Redoc URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

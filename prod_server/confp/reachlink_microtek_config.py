@@ -1,3 +1,4 @@
+#python -m PyInstaller --onefile --console reachlink_m2m_config.py --icon=link.ico
 import paramiko
 import time
 import json
@@ -5,12 +6,12 @@ import requests
 import getpass
 import re
 import ipaddress
-hub_ip = "185.69.209.251"
+hub_ip = "185.69.209.245"
 router_ip = "192.168.88.1"
 username = "admin"
 password = ""
-urllogin = "https://reachlinktest.cloudetel.com/beapi/auth"
-url = "https://reachlinktest.cloudetel.com/beapi/get_microtekspoke_config"
+urllogin = "https://reachlink.cloudetel.com/beapi/auth"
+url = "https://reachlink.cloudetel.com/beapi/get_microtekspoke_config"
 def send_command(shell, command, wait_time=2):
     shell.send(command + '\n')
     time.sleep(wait_time)  # Wait for the command to be processed  
@@ -23,8 +24,7 @@ def send_command_wo(shell, command, delay=1):
     return output
 
 def set_openvpn_client(spokeinfo):
-# Define the router details   
-
+    # Define the router details 
     # Create an SSH client instance
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -33,7 +33,7 @@ def set_openvpn_client(spokeinfo):
         # Connect to the router
         ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False, timeout=30, banner_timeout=60)
         # Execute the ping command
-        clientname = "reachlink"
+        clientname = spokeinfo["spokedevice_name"] + ".ovpn"
         certname = clientname + "_1"
         stdin, stdout, stderr = ssh_client.exec_command(f'interface ovpn-client add name=reachlink max-mtu=1500 connect-to={hub_ip} port=1194 mode=ip user={clientname} profile=default-encryption certificate={certname} verify-server-certificate=yes auth=sha1 cipher=aes256 use-peer-dns=yes  add-default-route=no')
         stdin, stdout, stderr = ssh_client.exec_command(f'snmp set enabled=yes')
@@ -86,7 +86,7 @@ def main():
             break
     print(f"Enter the registered device(branch) location:")
     branch_location = input()
-    branch_loc = branch_location.lower()
+    branch_loc = branch_location.lower()    
     headers = {"Content-Type": "application/json"}
     authinfo = json.dumps({"username": username,"password": password})
     try:
@@ -97,12 +97,12 @@ def main():
             json_authresponse = json.loads(json_authresponse)
             if "access" not in json_authresponse:
                 if not (json_authresponse["message"]):                
-                    print(json_authresponse["msg_status"])
+                    print(json_authresponse["msg_status"]) 
                 print("Enter a key to exit...")
                 input()
                 return
-            else:  
-                print("Login Successfull. Getting configuration...")              
+            else:   
+                print("Login Successfull. Getting configuration...")               
                 access_token = json_authresponse["access"]                
         else:
             print("Error while authenticating data")
@@ -142,7 +142,7 @@ def main():
         print(f"Error while getting configuration: {e}")
         print("Enter a key to exit...")
         input()
-        return     
+        return
     print("Start to configure")
     set_openvpn_client(spokeinfo)
 
