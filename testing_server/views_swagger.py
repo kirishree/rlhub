@@ -2195,7 +2195,7 @@ def get_interface_details_spoke(request):
         elif "microtek" in data["uuid"]:           
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            interface_details, respstatus = microtek_configure.interfacedetails(data)                 
+            interface_details, respstatus = microtek_configure.interfacedetails(data)          
             #return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
