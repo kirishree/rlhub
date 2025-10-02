@@ -3367,7 +3367,7 @@ def add_rate_limit(data):
                 # Execute the trace command 
                 lan_ntwk = False
                 for lanaddr in lan_ip:
-                    if is_in_same_network(limit["target_address"], lanaddr):
+                    if is_in_same_network(limit["target_address"].split("/")[0], lanaddr):
                         lan_ntwk = True
                         break
                 if lan_ntwk:
