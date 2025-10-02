@@ -3496,7 +3496,7 @@ def add_rate_limit(data):
                 if lan_ntwk:
                     max_limit = f'{limit["max_upload_limit"]}M/{limit["max_download_limit"]}M'
                     print(max_limit)
-                    name = f"{limit["target_address"]}_{max_limit}"
+                    name = f"{limit['target_address']}_{max_limit}"
                     print(name)
                     stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple add name={name} comment={limit["description"]} target={limit["target_address"]} max-limit={max_limit}')
                     print("stdout", stdout.read().decode())
