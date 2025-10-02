@@ -3103,7 +3103,7 @@ def ping_spoke(request: HttpRequest):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            ping_result, respstatus = microtek_configure.pingspoke(data)          
+            ping_result = microtek_configure.pingspoke(data)          
             if ping_result == "-1":
                 response = [{"message":f"Error: Subnet {data['subnet']} Not Reachable"}]
             else:                
