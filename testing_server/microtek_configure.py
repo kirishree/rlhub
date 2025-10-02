@@ -3271,7 +3271,7 @@ def get_rate_limit_info(data):
                         ratelimit_status = "Enabled"               
 
                 if "name=" in ruleinfostrip:
-                    name = ruleinfostrip.split("name=")[1].split(" ")[0]   
+                    name = ruleinfostrip.split("name=")[1].split('"')[1]   
                     if description == "":
                         status_info = ruleinfostrip.split(" ")[1]  
                         rule_no = ruleinfostrip.split(" ")[0]                  
