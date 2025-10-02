@@ -3294,10 +3294,10 @@ def get_rate_limit_info(data):
             collect.append({"name":name, 
                             "rule_no":rule_no,                                                    
                             "description":description,
-                            "firewall_status":ratelimit_status,                           
+                            "status":ratelimit_status,                           
                             "target_address": target_address,
-                            "upload_limit":upload_limit,
-                            "download_limit":download_limit,   
+                            "max_upload_limit":upload_limit,
+                            "max_download_limit":download_limit,   
                             })         
     except Exception as e:
         print(e)
