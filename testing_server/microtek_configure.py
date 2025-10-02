@@ -84,6 +84,7 @@ def pingspoke(data):
                 "exception": ""
             }
             )
+    print("avg_rtt", avg_rtt)
     return avg_rtt
 
 def addroute(data):   
