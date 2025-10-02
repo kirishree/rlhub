@@ -3311,3 +3311,94 @@ def get_rate_limit_info(data):
                 }
             )
     return collect
+
+def is_in_same_network(target_address: str, lan_network: str) -> bool:
+    """
+    Check whether the target address is part of the specified LAN network.
+
+    :param target_address: IP address to validate (e.g., "192.168.90.50")
+    :param lan_network: Network definition in CIDR (e.g., "192.168.90.0/24")
+    :return: True if target is within the LAN network, otherwise False
+    """
+    try:
+        ip = ipaddress.ip_address(target_address)
+        network = ipaddress.ip_network(lan_network, strict=False)
+        return ip in network
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return False
+    
+def add_rate_limit(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:
+            branch_id = data["tunnel_ip"].split("/")[0]
+            cache_key = f"interfaces_branch_{branch_id}"
+            interface_details = cache.get(cache_key)
+            if not interface_details:
+                interface_details = interfacedetails(data)
+            for intfc in interface_details:
+                if intfc["interface_name"] == "bridge":
+                    lan_ip = intfc["addresses"]
+            
+            for limit in data["rules"]:
+                # Execute the trace command 
+                lan_ntwk = False
+                for lanaddr in lan_ip:
+                    if is_in_same_network(limit["target_address"], lanaddr):
+                        lan_ntwk = True
+                        break
+                if lan_ntwk:
+                    max_limit = f'{limit["max_upload_limit"]}M/{limit["max_download_limit"]}M'
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple add name={limit["name"]} comment={limit["description"]} target={limit["target_address"]} max-limit={max_limit}')
+                    response = [{"message": "Rate limit applied successfully"}]
+                else:
+                    response = [{"message": "Error: Target Address should be in LAN Network"}]
+                    break
+        except Exception as e:
+            logger.error(
+                f"Error while applying ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]         
+        # Close the SSH connection
+        ssh_client.close()         
+    except Exception as e:
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+    return response
