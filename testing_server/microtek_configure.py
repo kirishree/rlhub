@@ -3442,7 +3442,7 @@ def get_rate_limit_info(data):
                     #script_name = f"check_quota_{name.split('_')[1]}" 
                     for script in scr_rules_list:
                         if name in script:
-                            volume_limit = script.split("source=:local limit")[1].split(":")[0]
+                            volume_limit = script.split("source=:local limit")[1].split(";")[0]
                             volume_gb = int(volume_limit) / 1000000000 
 
                     if description == "":
