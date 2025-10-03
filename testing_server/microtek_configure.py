@@ -3526,36 +3526,12 @@ def add_rate_limit(data):
                     quota_limit = int(limit.get("volume_limit", 0)) * 1000000000  # in bytes
 
                     check_script_name = f"check_quota_{target_ip}"
-                    check_script_cmd = f"""/system script add name={check_script_name} source="
-:local limit {quota_limit}
-:local qname "{queue_name}"
-
-:local usage [/queue simple get [find name=$qname] bytes]
-
-:local tx [:pick $usage 0 [:find $usage "/"]]
-:local rx [:pick $usage ([:find $usage "/"] + 1) [:len $usage]]
-
-:local total ($tx + $rx)
-
-:log info ("Current usage for " . $qname . ": TX=" . $tx . " bytes, RX=" . $rx . " bytes, TOTAL=" . $total . " bytes")
-
-:if ($total > $limit) do={{
-    /queue simple set [find name=$qname] max-limit=64k/64k
-    :log warning ("Client quota exceeded for " . $qname . " - blocked")
-}}
-"
-"""
+                    check_script_cmd = f"""/system script add name={check_script_name} source=":local limit {quota_limit} :local qname "{queue_name}" :local usage [/queue simple get [find name=$qname] bytes] :local tx [:pick $usage 0 [:find $usage "/"]] :local rx [:pick $usage ([:find $usage "/"] + 1) [:len $usage]] :local total ($tx + $rx) :log info ("Current usage for " . $qname . ": TX=" . $tx . " bytes, RX=" . $rx . " bytes, TOTAL=" . $total . " bytes") :if ($total > $limit) do={{ /queue simple set [find name=$qname] max-limit=64k/64k :log warning ("Client quota exceeded for " . $qname . " - blocked")}}" """
                     ssh_client.exec_command(check_script_cmd)
 
                     # Reset script (daily reset at midnight)
                     reset_script_name = f"reset_quota_{target_ip}"
-                    reset_script_cmd = f"""/system script add name={reset_script_name} source="
-:local qname "{queue_name}"
-/queue simple reset-counters [find name=$qname]
-/queue simple set [find name=$qname] max-limit={max_limit}
-:log info ("Daily quota reset for " . $qname)
-"
-"""
+                    reset_script_cmd = f"""/system script add name={reset_script_name} source=":local qname "{queue_name}" /queue simple reset-counters [find name=$qname] /queue simple set [find name=$qname] max-limit={max_limit} :log info ("Daily quota reset for " . $qname)" """
                     ssh_client.exec_command(reset_script_cmd)
 
                     # Scheduler for check every 5 min
