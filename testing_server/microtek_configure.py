@@ -3359,9 +3359,41 @@ def get_rate_limit_info(data):
             )
             ssh_client.close() 
             return []        
+        
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/system script print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            scr_output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    scr_output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the system script command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
         # Close the SSH connection
         ssh_client.close()  
-        collect = []          
+        collect = []   
+        #queue info       
         ratelimit_info = output.split("\n")[1:-1]
         rules = []
         rules_info =[]      
@@ -3370,7 +3402,18 @@ def get_rate_limit_info(data):
                 rules.append(rateinfo)
             else:
                 rules_info.append(rules)
-                rules = []        
+                rules = []  
+        #script info scr_rules_list = [script1, script2]
+        script_info = scr_output.split("\n")[1:-1]
+        scr_rules = ""
+        scr_rules_list =[]      
+        for scrinfo in script_info:
+            if scrinfo.strip():
+                scr_rules +=scrinfo
+            else:
+                scr_rules_list.append(scr_rules)
+                scr_rules = ""
+
         for rule in rules_info:
             description = ""
             ratelimit_status = ""
@@ -3394,7 +3437,14 @@ def get_rate_limit_info(data):
                         ratelimit_status = "Enabled"               
 
                 if "name=" in ruleinfostrip:
-                    name = ruleinfostrip.split("name=")[1].split('"')[1]   
+                    name = ruleinfostrip.split("name=")[1].split('"')[1]  
+                    volume_gb = None
+                    #script_name = f"check_quota_{name.split('_')[1]}" 
+                    for script in scr_rules_list:
+                        if name in script:
+                            volume_limit = script.split("source=:local limit")[1].split(":")[0]
+                            volume_gb = int(volume_limit) / 1000000000 
+
                     if description == "":
                         status_info = ruleinfostrip.split(" ")[1]  
                         rule_no = ruleinfostrip.split(" ")[0]                  
@@ -3420,7 +3470,8 @@ def get_rate_limit_info(data):
                             "status":ratelimit_status,                           
                             "target_address": target_address,
                             "max_upload_limit":upload_limit,
-                            "max_download_limit":download_limit,   
+                            "max_download_limit":download_limit,  
+                            "volume_limit_gb":volume_gb 
                             })         
     except Exception as e:
         print(e)
