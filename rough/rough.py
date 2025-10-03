@@ -270,3 +270,11 @@ def add_rate_limit(data):
             }
         )
     return response
+    check_script_name = "check_quota_192.168.88.23"
+    quota_limit = 1000000000
+    queue_name = "quota_192.168.88.23"
+    check_script_cmd = f"""/system script add name={check_script_name} policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive source=":local limit {quota_limit}; :local qname \\"{queue_name}\\"; :local usage [/queue simple get [find name=$qname] bytes]; :local tx [:pick $usage 0 [:find $usage "/"]]; :local rx [:pick $usage ([:find $usage "/"] + 1) [:len $usage]]; :local total ($tx + $rx); :log info (\\"Current usage for \\" . $qname . \\": TOTAL=\\" . $total . \\" bytes\\"); :if ($total > $limit) do={{ /queue simple set [find name=$qname] max-limit=64k/64k; :log warning (\\"Client quota exceeded for \\" . $qname . \\" - blocked\\"); }}" """
+
+
+#check_script_cmd = f"""/system script add name={check_script_name} source=":local limit {quota_limit} :local qname "{queue_name}" :local usage [/queue simple get [find name=$qname] bytes] :local tx [:pick $usage 0 [:find $usage "/"]] :local rx [:pick $usage ([:find $usage "/"] + 1) [:len $usage]] :local total ($tx + $rx) :log info ("Current usage for " . $qname . ": TX=" . $tx . " bytes, RX=" . $rx . " bytes, TOTAL=" . $total . " bytes") :if ($total > $limit) do={{ /queue simple set [find name=$qname] max-limit=64k/64k :log warning ("Client quota exceeded for " . $qname . " - blocked")}}" """
+                    #check_script_cmd = f"""/system script add name={check_script_name} policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive source=":local limit {quota_limit}; :local qname \\"{queue_name}\\"; :local usage [/queue simple get [find name=$qname] bytes]; :local tx [:pick $usage 0 [:find $usage "/"]]; :local rx [:pick $usage ([:find $usage "/"] + 1) [:len $usage]]; :local total ($tx + $rx); :log info (\\"Current usage for \\" . $qname . \\": TOTAL=\\" . $total . \\" bytes\\"); :if ($total > $limit) do={{ /queue simple set [find name=$qname] max-limit=64k/64k; :log warning (\\"Client quota exceeded for \\" . $qname . \\" - blocked\\"); }}" """
