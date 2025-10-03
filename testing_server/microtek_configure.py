@@ -3528,7 +3528,7 @@ def add_rate_limit(data):
                     check_script_name = f"check_quota_{target_ip}"
                     check_script_cmd = f"""/system script add name={check_script_name} source="
 :local limit {quota_limit}
-:local qname \\"{queue_name}\\"
+:local qname "{queue_name}"
 
 :local usage [/queue simple get [find name=$qname] bytes]
 
@@ -3550,7 +3550,7 @@ def add_rate_limit(data):
                     # Reset script (daily reset at midnight)
                     reset_script_name = f"reset_quota_{target_ip}"
                     reset_script_cmd = f"""/system script add name={reset_script_name} source="
-:local qname \\"{queue_name}\\"
+:local qname "{queue_name}"
 /queue simple reset-counters [find name=$qname]
 /queue simple set [find name=$qname] max-limit={max_limit}
 :log info ("Daily quota reset for " . $qname)
