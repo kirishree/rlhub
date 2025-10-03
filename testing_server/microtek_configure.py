@@ -3659,13 +3659,13 @@ def del_rate_limit(data):
             ssh_client.exec_command(f'/queue simple remove {data["rule_no"]}')
             target_addr = data['name'].split('_')[1]
             script_name = f"check_quota_{target_addr}"
-            ssh_client.exec_command(f'/system script remove [find name=\\"{script_name}\\"]')
+            ssh_client.exec_command(f'/system script remove [find name="{script_name}"]')
             reset_script_name = f"reset_quota_{target_addr}"
-            ssh_client.exec_command(f'/system script remove [find name=\\"{reset_script_name}\\"]')
+            ssh_client.exec_command(f'/system script remove [find name="{reset_script_name}"]')
             check_sched_name = f"check_sched_{target_addr}"
-            ssh_client.exec_command(f'/system scheduler remove [find name=\\"{check_sched_name}\\"]')
+            ssh_client.exec_command(f'/system scheduler remove [find name="{check_sched_name}"]')
             reset_sched_name = f"reset_sched_{target_addr}"
-            ssh_client.exec_command(f'/system scheduler remove [find name=\\"{reset_sched_name}\\"]')
+            ssh_client.exec_command(f'/system scheduler remove [find name="{reset_sched_name}"]')
             response = [{"message": f"{data['name']} applied successfully"}]
                 
         except Exception as e:
