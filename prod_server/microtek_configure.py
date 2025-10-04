@@ -3482,6 +3482,7 @@ def add_rate_limit(data):
                     break
 
         except Exception as e:
+            print(e)
             logger.error(
                 "Error while applying ratelimit",
                 extra={
@@ -3496,6 +3497,7 @@ def add_rate_limit(data):
         ssh_client.close()
 
     except Exception as e:
+        print(e)
         response = [{"message": "Error - Internal Server Error"}]
         logger.error(
             str(e),
