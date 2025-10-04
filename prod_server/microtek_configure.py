@@ -3277,8 +3277,9 @@ def get_rate_limit_info(data):
             if rateinfo.strip():
                 rules.append(rateinfo)
             else:
-                rules_info.append(rules)
-                rules = []  
+                if len(rules) > 0:
+                    rules_info.append(rules)
+                    rules = []  
         #script info scr_rules_list = [script1, script2]
         script_info = scr_output.split("\n")[1:-1]
         scr_rules = ""
@@ -3289,8 +3290,8 @@ def get_rate_limit_info(data):
             else:
                 scr_rules_list.append(scr_rules)
                 scr_rules = ""
-
-        for rule in rules_info:
+        
+        for rule in rules_info:            
             description = ""
             ratelimit_status = ""
             rule_no = ""
