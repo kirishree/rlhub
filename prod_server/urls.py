@@ -36,7 +36,11 @@ from reach.views import (   get_m2mspoke_config,
                             del_filter_rule_spoke,
                             move_filter_rule_spoke,
                             edit_filter_rule_spoke,
-                            edit_nat_rule_spoke
+                            edit_nat_rule_spoke,
+                            get_ratelimit_info,
+                            add_ratelimit,
+                            del_ratelimit,
+                            edit_ratelimit
                             )
 urlpatterns = [  
     path('beapi/get_m2mspoke_config', get_m2mspoke_config, name='get_m2mspoke_config'),
@@ -74,6 +78,11 @@ urlpatterns = [
     path('beapi/firewall/move_filter_rule', move_filter_rule_spoke),
     path('beapi/firewall/edit_filter_rule', edit_filter_rule_spoke),
     path('beapi/firewall/edit_nat_rule', edit_nat_rule_spoke),
+
+    path('beapi/firewall/ratelimit_info', get_ratelimit_info),
+    path('beapi/firewall/add_ratelimit', add_ratelimit),
+    path('beapi/firewall/del_ratelimit', del_ratelimit),
+    path('beapi/firewall/edit_ratelimit', edit_ratelimit),
 
     path('beapi/vlan_interface_delete_spoke', vlan_interface_delete_spoke, name='vlan_interface_delete_spoke'),
     path('beapi/add_route_spoke', add_route_spoke, name='add_route_spoke'),

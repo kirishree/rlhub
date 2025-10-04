@@ -3180,3 +3180,519 @@ def ShiftFilterRuledown(data):
         ssh_client.close()        
         return response
     
+def get_rate_limit_info(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_ratelimit_info",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/system script print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            scr_output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    scr_output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the system script command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []   
+        #queue info       
+        ratelimit_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for rateinfo in ratelimit_info:
+            if rateinfo.strip():
+                rules.append(rateinfo)
+            else:
+                rules_info.append(rules)
+                rules = []  
+        #script info scr_rules_list = [script1, script2]
+        script_info = scr_output.split("\n")[1:-1]
+        scr_rules = ""
+        scr_rules_list =[]      
+        for scrinfo in script_info:
+            if scrinfo.strip():
+                scr_rules +=scrinfo
+            else:
+                scr_rules_list.append(scr_rules)
+                scr_rules = ""
+
+        for rule in rules_info:
+            description = ""
+            ratelimit_status = ""
+            rule_no = ""
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1] 
+                    rule_no = ruleinfostrip.split(" ")[0]                   
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        ratelimit_status = "disabled"
+                    elif status_info == "I":
+                        ratelimit_status = "Invalid" 
+                    elif status_info == "D":
+                        ratelimit_status = "Dynamic" 
+                    else: 
+                        ratelimit_status = "Enabled"               
+
+                if "name=" in ruleinfostrip:
+                    name = ruleinfostrip.split("name=")[1].split('"')[1]  
+                    volume_gb = None
+                    #script_name = f"check_quota_{name.split('_')[1]}" 
+                    for script in scr_rules_list:
+                        if name in script:
+                            if len(script.split("source=:local limit")) > 1:
+                                volume_limit = script.split("source=:local limit")[1].split(";")[0]
+                                volume_gb = int(volume_limit) / 1000000000 
+                                break
+
+                    if description == "":
+                        status_info = ruleinfostrip.split(" ")[1]  
+                        rule_no = ruleinfostrip.split(" ")[0]                  
+#                       print("status_info", status_info)
+                        if status_info == "X":
+                            ratelimit_status = "disabled"
+                        elif status_info == "I":
+                            ratelimit_status = "Invalid" 
+                        elif status_info == "D":
+                            ratelimit_status = "Dynamic" 
+                        else: 
+                            ratelimit_status = "Enabled"                  
+                if "target=" in ruleinfostrip:
+                    target_address = ruleinfostrip.split("target=")[1].split(" ")[0]
+                if "max-limit=" in ruleinfostrip:
+                    max_limit = ruleinfostrip.split("max-limit=")[1].split(" ")[0]
+                    upload_limit = max_limit.split("/")[0]
+                    download_limit = max_limit.split("/")[1]
+                                
+            collect.append({"name":name, 
+                            "rule_no":rule_no,                                                    
+                            "description":description,
+                            "status":ratelimit_status,                           
+                            "target_address": target_address,
+                            "max_upload_limit":upload_limit,
+                            "max_download_limit":download_limit,  
+                            "volume_limit_gb":volume_gb 
+                            })         
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+    return collect
+
+def is_in_same_network(target_address: str, lan_network: str) -> bool:
+    """
+    Check whether the target address is part of the specified LAN network.
+
+    :param target_address: IP address to validate (e.g., "192.168.90.50")
+    :param lan_network: Network definition in CIDR (e.g., "192.168.90.0/24")
+    :return: True if target is within the LAN network, otherwise False
+    """
+    try:
+        ip = ipaddress.ip_address(target_address)
+        network = ipaddress.ip_network(lan_network, strict=False)
+        return ip in network
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return False
+
+def add_rate_limit(data):   
+    import paramiko
+    import logging
+    import ipaddress
+
+    logger = logging.getLogger(__name__)
+
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(
+                hostname=router_ip,
+                username=username,
+                password=password,
+                look_for_keys=False,
+                allow_agent=False
+            )
+        except Exception as e:
+            logger.error(
+                "SSH Connection error",
+                extra={
+                    "device_type": "MikroTik",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+
+        try:
+            branch_id = data["tunnel_ip"].split("/")[0]
+            cache_key = f"interfaces_branch_{branch_id}"
+            interface_details = cache.get(cache_key)
+            if not interface_details:
+                interface_details, _ = interfacedetails(data)
+
+            lan_ip = []
+            for intfc in interface_details:
+                if intfc["interface_name"] == "bridge":
+                    lan_ip = intfc["addresses"]
+
+            for limit in data["rules"]:
+                # Check if address belongs to LAN network
+                lan_ntwk = False
+                for lanaddr in lan_ip:
+                    if is_in_same_network(limit["target_address"].split("/")[0], lanaddr["IPv4address"]):
+                        lan_ntwk = True
+                        break
+
+                if lan_ntwk:
+                    max_limit = f'{limit["max_upload_limit"]}M/{limit["max_download_limit"]}M'
+                    target_ip = limit['target_address'].split('/')[0]
+
+                    queue_name = f"quota_{target_ip}"
+
+                    # Add queue
+                    stdin, stdout, stderr = ssh_client.exec_command(
+                        f'/queue simple add name={queue_name} comment="{limit["description"]}" target={limit["target_address"]} max-limit={max_limit}'
+                    )
+                    is_error = stdout.read().decode().strip()
+
+                    if is_error:
+                        logger.warning(f"Error- ratelimit {target_ip}-Already Exist")
+                        response = [{"message":f"Error- ratelimit {target_ip}-Already Exist"}]
+                        return response
+
+                    quota_limit = int(limit.get("volume_limit", 0)) * 1000000000  # in bytes
+                    if quota_limit != 0:
+                        # Check Quota script 
+                        check_script_name = f"check_quota_{target_ip}"                   
+                        check_script_cmd = f"""/system script add name={check_script_name} source=":local limit {quota_limit}; :local qname \\"{queue_name}\\"; :local usage [/queue simple get [find name=\\$qname] bytes]; :local tx [:pick \\$usage 0 [:find \\$usage \\"/\\"]]; :local rx [:pick \\$usage ([:find \\$usage \\"/\\"] + 1) [:len \\$usage]]; :local total (\\$tx + \\$rx); :log info (\\"Current usage for \\" . \\$qname . \\": TOTAL=\\" . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue simple set [find name=\\$qname] max-limit=64k/64k; :log warning (\\"Client quota exceeded for \\" . \\$qname . \\" - blocked\\") }}" """
+                        ssh_client.exec_command(check_script_cmd)
+                    
+                        # Reset script (daily reset at midnight)
+                        reset_script_name = f"reset_quota_{target_ip}"
+                        reset_script_cmd = f"""/system script add name={reset_script_name} source=":local qname \\"{queue_name}\\"; /queue simple reset-counters [find name=\\$qname]; /queue simple set [find name=\\$qname] max-limit={max_limit}; :log info (\\"Daily quota reset for \\" . \\$qname)" """
+                        ssh_client.exec_command(reset_script_cmd)
+
+                        # Scheduler for check every 5 min
+                        check_sched_name = f"check_sched_{target_ip}"
+                        check_sched_cmd = f"/system scheduler add name={check_sched_name} interval=5m on-event={check_script_name}"
+                        ssh_client.exec_command(check_sched_cmd)
+
+                        # Scheduler for reset at midnight
+                        reset_sched_name = f"reset_sched_{target_ip}"
+                        reset_sched_cmd = f"/system scheduler add name={reset_sched_name} start-time=00:00:00 interval=1d on-event={reset_script_name}"
+                        ssh_client.exec_command(reset_sched_cmd)
+
+                    response = [{"message": "Rate limit applied successfully"}]
+                else:
+                    response = [{"message": "Error: Target Address should be in LAN Network"}]
+                    break
+
+        except Exception as e:
+            logger.error(
+                "Error while applying ratelimit",
+                extra={
+                    "device_type": "MikroTik",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]
+
+        ssh_client.close()
+
+    except Exception as e:
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+            str(e),
+            extra={
+                "device_type": "MikroTik",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_ratelimit",
+                "exception": str(e)
+            }
+        )
+    return response
+
+def del_rate_limit(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:                       
+            ssh_client.exec_command(f'/queue simple remove {data["rule_no"]}')
+            target_addr = data['name'].split('_')[1]
+            script_name = f"check_quota_{target_addr}"
+            ssh_client.exec_command(f'/system script remove [find name="{script_name}"]')
+            reset_script_name = f"reset_quota_{target_addr}"
+            ssh_client.exec_command(f'/system script remove [find name="{reset_script_name}"]')
+            check_sched_name = f"check_sched_{target_addr}"
+            ssh_client.exec_command(f'/system scheduler remove [find name="{check_sched_name}"]')
+            reset_sched_name = f"reset_sched_{target_addr}"
+            ssh_client.exec_command(f'/system scheduler remove [find name="{reset_sched_name}"]')
+            response = [{"message": f"{data['name']} Deleted successfully"}]
+                
+        except Exception as e:
+            logger.error(
+                f"Error while applying ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "del_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]         
+        # Close the SSH connection
+        ssh_client.close()         
+    except Exception as e:
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+    return response           
+
+def edit_rate_limit(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:                       
+            ssh_client.exec_command(f'/queue simple remove {data["rule_no"]}')
+            target_addr = data['name'].split('_')[1]
+            script_name = f"check_quota_{target_addr}"
+            ssh_client.exec_command(f'/system script remove [find name="{script_name}"]')
+            reset_script_name = f"reset_quota_{target_addr}"
+            ssh_client.exec_command(f'/system script remove [find name="{reset_script_name}"]')
+            check_sched_name = f"check_sched_{target_addr}"
+            ssh_client.exec_command(f'/system scheduler remove [find name="{check_sched_name}"]')
+            reset_sched_name = f"reset_sched_{target_addr}"
+            ssh_client.exec_command(f'/system scheduler remove [find name="{reset_sched_name}"]')
+            response = [{"message": f"{data['name']} applied successfully"}]
+
+            branch_id = data["tunnel_ip"].split("/")[0]
+            cache_key = f"interfaces_branch_{branch_id}"
+            interface_details = cache.get(cache_key)
+            if not interface_details:
+                interface_details, _ = interfacedetails(data)
+
+            lan_ip = []
+            for intfc in interface_details:
+                if intfc["interface_name"] == "bridge":
+                    lan_ip = intfc["addresses"]
+
+            
+            # Check if address belongs to LAN network
+            lan_ntwk = False
+            for lanaddr in lan_ip:
+                if is_in_same_network(data["target_address"].split("/")[0], lanaddr["IPv4address"]):
+                    lan_ntwk = True
+                    break
+
+            if lan_ntwk:
+                max_limit = f'{data["max_upload_limit"]}M/{data["max_download_limit"]}M'
+                target_ip = data['target_address'].split('/')[0]
+                queue_name = f"quota_{target_ip}"
+
+                # Add queue
+                stdin, stdout, stderr = ssh_client.exec_command(
+                        f'/queue simple add name={queue_name} comment="{data["description"]}" target={data["target_address"]} max-limit={max_limit}'
+                )
+                is_error = stdout.read().decode().strip()
+
+                if is_error:
+                    logger.warning(f"Queue add error: {is_error}")   
+                    response = [{"message": "Error - Internal Server Error"}]         
+                    # Close the SSH connection
+                    ssh_client.close()    
+                    return response                    
+
+                quota_limit = int(data.get("volume_limit", 0)) * 1000000000  # in bytes
+                if quota_limit != 0:
+                    # Check Quota script 
+                    check_script_name = f"check_quota_{target_ip}"                   
+                    check_script_cmd = f"""/system script add name={check_script_name} source=":local limit {quota_limit}; :local qname \\"{queue_name}\\"; :local usage [/queue simple get [find name=\\$qname] bytes]; :local tx [:pick \\$usage 0 [:find \\$usage \\"/\\"]]; :local rx [:pick \\$usage ([:find \\$usage \\"/\\"] + 1) [:len \\$usage]]; :local total (\\$tx + \\$rx); :log info (\\"Current usage for \\" . \\$qname . \\": TOTAL=\\" . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue simple set [find name=\\$qname] max-limit=64k/64k; :log warning (\\"Client quota exceeded for \\" . \\$qname . \\" - blocked\\") }}" """
+                    ssh_client.exec_command(check_script_cmd)
+                    
+                    # Reset script (daily reset at midnight)
+                    reset_script_name = f"reset_quota_{target_ip}"
+                    reset_script_cmd = f"""/system script add name={reset_script_name} source=":local qname \\"{queue_name}\\"; /queue simple reset-counters [find name=\\$qname]; /queue simple set [find name=\\$qname] max-limit={max_limit}; :log info (\\"Daily quota reset for \\" . \\$qname)" """
+                    ssh_client.exec_command(reset_script_cmd)
+
+                    # Scheduler for check every 5 min
+                    check_sched_name = f"check_sched_{target_ip}"
+                    check_sched_cmd = f"/system scheduler add name={check_sched_name} interval=5m on-event={check_script_name}"
+                    ssh_client.exec_command(check_sched_cmd)
+
+                    # Scheduler for reset at midnight
+                    reset_sched_name = f"reset_sched_{target_ip}"
+                    reset_sched_cmd = f"/system scheduler add name={reset_sched_name} start-time=00:00:00 interval=1d on-event={reset_script_name}"
+                    ssh_client.exec_command(reset_sched_cmd)
+
+                    response = [{"message": "Rate limit edited successfully"}]
+            else:
+                response = [{"message": "Error: Target Address should be in LAN Network"}]   
+        except Exception as e:
+            logger.error(
+                f"Error while editing ratelimit info",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "edit_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]         
+        # Close the SSH connection
+        ssh_client.close()         
+    except Exception as e:
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "edit_ratelimit",
+                    "exception": str(e)
+                }
+            )
+    return response           
