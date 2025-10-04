@@ -3422,7 +3422,7 @@ def add_rate_limit(data):
             cache_key = f"interfaces_branch_{branch_id}"
             interface_details = cache.get(cache_key)
             if not interface_details:
-                interface_details, _ = interfacedetails(data)
+                interface_details = interfacedetails(data)
 
             lan_ip = []
             for intfc in interface_details:
