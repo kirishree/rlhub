@@ -3570,11 +3570,12 @@ def add_rate_limit(data):
                     stdin, stdout, stderr = ssh_client.exec_command(
                         f'/queue simple add name={queue_name} comment="{limit["description"]}" target={limit["target_address"]} max-limit={max_limit}'
                     )
-                    is_error = stderr.read().decode().strip()
+                    is_error = stdout.read().decode().strip()
 
                     if is_error:
-                        logger.warning(f"Queue add error: {is_error}")
-                        continue
+                        logger.warning(f"Error- ratelimit {target_ip}-Already Exist")
+                        response = [{"message":f"Error- ratelimit {target_ip}-Already Exist"}]
+                        return response
 
                     quota_limit = int(limit.get("volume_limit", 0)) * 1000000000  # in bytes
                     if quota_limit != 0:
@@ -3791,7 +3792,7 @@ def edit_rate_limit(data):
                     reset_sched_cmd = f"/system scheduler add name={reset_sched_name} start-time=00:00:00 interval=1d on-event={reset_script_name}"
                     ssh_client.exec_command(reset_sched_cmd)
 
-                    response = [{"message": "Rate limit applied successfully"}]
+                    response = [{"message": "Rate limit edited successfully"}]
             else:
                 response = [{"message": "Error: Target Address should be in LAN Network"}]   
         except Exception as e:
