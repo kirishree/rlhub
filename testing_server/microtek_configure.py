@@ -682,24 +682,24 @@ def interfaceconfig(data):
                 print("Timeout reached. Terminating the traceroute command.")
                 break  
         addresses_info = output.split("\n")  
-        interface_addresses = [] 
-        for addr in addresses_info:
-            if "address=" in addr:
-                    intfcname = addr.split("interface=")[1].split(" ")[0] 
-                    stat = addr.split(" ")[1]
-                    if intfcname != data["intfc_name"] and stat != "I":
-                        intfcaddress = addr.split("address=")[1].split(" ")[0]  
-                        interface_addresses.append(intfcaddress) 
-        for int_addr in data["new_addresses"]:
-            for address in interface_addresses:
-                corrected_subnet = ipaddress.ip_network(address, strict=False)
-                ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
-                if ip_obj in corrected_subnet:  
-                    print(ip_obj)
-                    print(interface_addresses)
-                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr['address']}"}]
-                    ssh_client.close()            
-                    return response
+        #interface_addresses = [] 
+        #for addr in addresses_info:
+        #    if "address=" in addr:
+        #            intfcname = addr.split("interface=")[1].split(" ")[0] 
+        #            stat = addr.split(" ")[1]
+        #            if intfcname != data["intfc_name"] and stat != "I":
+        #                intfcaddress = addr.split("address=")[1].split(" ")[0]  
+        #                interface_addresses.append(intfcaddress) 
+        #for int_addr in data["new_addresses"]:
+        #    for address in interface_addresses:
+        #        corrected_subnet = ipaddress.ip_network(address, strict=False)
+        #        ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
+        #        if ip_obj in corrected_subnet:  
+        #            print(ip_obj)
+        #            print(interface_addresses)
+        #            response = [{"message": f"Error while configuring interface due to address conflict {int_addr['address']}"}]
+        #            ssh_client.close()            
+        #            return response
         for newaddr in data["new_addresses"]:
             stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')  
         #DHCP POOL Config
