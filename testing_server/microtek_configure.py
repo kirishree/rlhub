@@ -562,7 +562,7 @@ def rate_limit(ssh_client, subnet_id_lan):
                 f'/queue tree remove [find name="queue_download"]'
         )
         stdin, stdout, stderr = ssh_client.exec_command(
-                f'/queue tree add name=parent_queue'
+                f'/queue tree add name=parent_queue parent=global'
         )
         stdin, stdout, stderr = ssh_client.exec_command(
                 f'/queue tree add name=queue_upload parent=parent_queue packet-mark=mark_upload queue=pcq-upload-default max-limit=20M'
