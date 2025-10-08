@@ -541,6 +541,9 @@ def interfacedetails(data):
 def rate_limit(ssh_client, subnet_id_lan):
     try:
         stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall filter disable [find comment="defconf: fasttrack"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
                 '/ip firewall mangle remove [find comment="mark_upload_ratelimit"]'
         )
         stdin, stdout, stderr = ssh_client.exec_command(
@@ -4086,6 +4089,7 @@ def get_lan_clients_info(data):
                 arp_rules = ""
         collect = []
         for arpdetail in arp_rules_list:
+            print(arpdetail)
             if "address=" in arpdetail:
                 addr = arpdetail.split("address=")[1].split(" ")[0]
             else:
