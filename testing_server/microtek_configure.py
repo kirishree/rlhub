@@ -3468,7 +3468,7 @@ def get_rate_limit_info(data):
             if rateinfo.strip():
                 rate_rules +=rateinfo
             else:
-                rate_rules_list.append(scr_rules)
+                rate_rules_list.append(rate_rules)
                 rate_rules = ""
         
         #script info scr_rules_list = [script1, script2]
