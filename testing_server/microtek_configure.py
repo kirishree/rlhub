@@ -537,6 +537,70 @@ def interfacedetails(data):
             }
             )
     return collect, respstatus     
+
+def rate_limit(ssh_client, subnet_id_lan):
+    try:
+        stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall mangle remove [find comment="mark_upload_ratelimit"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall mangle remove [find comment="mark_download_ratelimit"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall mangle add chain=forward src-address="{subnet_id_lan}" src-address-list="!quota_exclude" action=mark-packet new-packet-mark=mark_upload comment=mark_upload_ratelimit'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall mangle add chain=forward dst-address="{subnet_id_lan}" dst-address-list="!quota_exclude" action=mark-packet new-packet-mark=mark_download comment=mark_download_ratelimit'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree remove [find name="parent_queue"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree remove [find name="queue_upload"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree remove [find name="queue_download"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree add name=parent_queue'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree add name=queue_upload parent=parent_queue packet-mark=mark_upload queue=pcq-upload-default max-limit=20M'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree add name=queue_download parent=parent_queue packet-mark=mark_download queue=pcq-download-default max-limit=20M'
+        )
+        ssh_client.exec_command(f'/system script remove [find name="check_quota"]')
+            
+        ssh_client.exec_command(f'/system script remove [find name="reset_quota"]')
+        
+        ssh_client.exec_command(f'/system scheduler remove [find name="check_schedule"]')
+        
+        ssh_client.exec_command(f'/system scheduler remove [find name="reset_schedule"]')
+
+        # Check Quota script 
+        quota_limit =  10000000000  #10GB                
+        check_script_cmd = f"""/system script add name=check_quota source=":local limit {quota_limit}; :local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; :local upBytes [/queue tree get [find name=\\$qUp] bytes]; :local downBytes [/queue tree get [find name=\\$qDown] bytes]; :local total (\\$upBytes + \\$downBytes); :log info (\\"Current usage for network\\"  . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue tree set [find name=\\$qUp] max-limit=64k; /queue tree set [find name=\\$qDown] max-limit=64k; :log warning (\\"Quota exceeded for tree - throttled both directions - blocked\\") }}" """
+        ssh_client.exec_command(check_script_cmd)
+
+                    
+        # Reset script (daily reset at midnight)
+        max_limit = "20M"
+        reset_script_cmd = f"""/system script add name=reset_quota source=":local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; /queue tree reset-counters [find name=\\$qDown];  /queue tree reset-counters [find name=\\$qUp]; /queue tree set [find name=\\$qUp] max-limit={max_limit}; /queue tree set [find name=\\$qDown] max-limit={max_limit}; :log info (\\"Daily quota reset for \\" )" """
+        ssh_client.exec_command(reset_script_cmd)
+
+        # Scheduler for check every 5 min
+        
+        check_sched_cmd = f"/system scheduler add name=check_schedule interval=5m on-event=check_quota"
+        ssh_client.exec_command(check_sched_cmd)
+
+        # Scheduler for reset at midnight
+        
+        reset_sched_cmd = f"/system scheduler add name=reset_schedule start-time=00:00:00 interval=1d on-event=reset_quota"
+        ssh_client.exec_command(reset_sched_cmd)
+    except Exception as e:
+        print("tree config",e)
+        
 def interfaceconfig(data):   
    # Define the router details       
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -634,29 +698,7 @@ def interfaceconfig(data):
                     ssh_client.close()            
                     return response
         for newaddr in data["new_addresses"]:
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')
-            
-            if newaddr["address"].split(".")[0] != "10":
-                if newaddr["address"].split(".")[0] == "172":
-                    if 15 < int(newaddr["address"].split(".")[1]) < 32:
-                        private_ip = True
-                    else:
-                        private_ip = False
-                elif newaddr["address"].split(".")[0] == "192":
-                    if newaddr["address"].split(".")[1] == "168":
-                        private_ip = True
-                    else:
-                        private_ip = False
-                elif int(newaddr["address"].split(".")[0]) > 223: 
-                    private_ip = True
-                else:
-                    private_ip = False
-            else:
-                private_ip = True
-            if not private_ip:
-                routerrealip = newaddr["address"].split("/")[0]
-                routersubnet = str(ipaddress.ip_network(newaddr["address"], strict=False))
-                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=output src-address={routerrealip} dst-address=!{routersubnet} action=mark-routing new-routing-mark=reachlink')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')  
         #DHCP POOL Config
         if data["intfc_name"] == "bridge":            
             lan_addr = data["new_addresses"][0]["address"]
@@ -774,7 +816,8 @@ def interfaceconfig(data):
                             poolnumbers = addr.split(" ")[1]  
                             break
                 stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
-                
+                #Configure the RateLimiting on LAN
+                rate_limit(ssh_client, subnet_id_lan)
                 response = [{"message":f"LAN configured successfully on {lan_addr}"}]
             else:
                 response = [{"message":"LAN IP configured but error in DHCP configuration."}]
@@ -3556,7 +3599,10 @@ def add_rate_limit(data):
                 # Check if address belongs to LAN network
                 lan_ntwk = False
                 for lanaddr in lan_ip:
-                    if is_in_same_network(limit["target_address"].split("/")[0], lanaddr["IPv4address"]):
+                    target_network = ipaddress.ip_network(limit["target_address"], strict=False)
+                    lan_network = ipaddress.ip_network(lanaddr["IPv4address"], strict=False)
+                    if str(lan_network) == str(target_network):
+                    #if is_in_same_network(limit["target_address"].split("/")[0], lanaddr["IPv4address"]):
                         lan_ntwk = True
                         break
 
