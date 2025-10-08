@@ -3441,8 +3441,10 @@ def get_rate_limit_info(data):
             current_usage = ""
             stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_upload] bytes]')
             upload_bytes = stdout.read().decode() 
+            print("upload bytes", upload_bytes)
             stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_download] bytes]')
-            download_bytes = stdout.read().decode() 
+            download_bytes = stdout.read().decode()
+            print("download_bytes", download_bytes) 
             current_usage = int(upload_bytes) + int(download_bytes)        
         except Exception as e:
             logger.error(
@@ -3481,14 +3483,14 @@ def get_rate_limit_info(data):
         for rule in ratelimit_info:
             if 'name="queue_upload"' in rule:
                 if "max-limit=" in rule:
-                    upload_limit = rule.split("max-limit=")[1].split(" ")[0]
+                    upload_limit = rule.split("max-limit=")[1].split(";")[0]
             if 'name="queue_download"' in rule:
                 if "max-limit=" in rule:
-                    download_limit = rule.split("max-limit=")[1].split(" ")[0]          
+                    download_limit = rule.split("max-limit=")[1].split(";")[0]          
         for scrrule in scr_rules_list:
             if 'name="check_quota"' in scrrule:
                 if ":local limit" in scrrule:
-                    volume_limit =  scrrule.split(":local limit")[1].split(" ")[0]
+                    volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
                     volume_gb = int(volume_limit) / 1000000000
             if 'name="reset_quota"' in scrrule:
                 if "[find name=$qUp] max-limit=" in scrrule:
