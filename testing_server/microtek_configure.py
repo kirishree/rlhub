@@ -3826,3 +3826,192 @@ def edit_rate_limit(data):
                 }
             )
     return response           
+
+def add_exemption_list(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_exemptionlist",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        for addr in data.get("addresses", []):
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall address-list list=quota_exclude address={addr}'
+            )
+        logger.info(
+                f"Rate limit edited successfully",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_exemption_list",
+                    "exception": ""
+                }
+            )
+        response = [{"message": f'Address {data.get("addresses", [])} added to exemption list'}]
+    except Exception as e:        
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_exemption_list",
+                    "exception": str(e)
+                }
+            )
+    return response           
+
+def get_exemption_list(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall address-list print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_exemption_list",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []             
+           
+        # Close the SSH connection
+        ssh_client.close()          
+        #queue info       
+        address_list_info = output.split("\n")[1:-1]
+        exem_rules = ""
+        exem_rules_list =[]      
+        for exeminfo in address_list_info:
+            if exeminfo.strip():
+                exem_rules += exeminfo
+            else:
+                exem_rules_list.append(exem_rules)
+                exem_rules = ""
+        exemlist = []
+        for exem in exem_rules_list:
+            if "list=quota_exclude" in exem:
+                exemlist.append(exem.split("address=")[1].split(" ")[0])
+    except Exception as e:        
+        
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_exemption_list",
+                    "exception": str(e)
+                }
+            )
+    return exemlist           
+
+def del_exemption_list(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_exemption_list",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        for addr in data.get("addresses", []):
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall address-list remove [find address={addr}]'
+            )
+        logger.info(
+                f"Rate limit edited successfully",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "del_exemption_list",
+                    "exception": ""
+                }
+            )
+        response = [{"message": f'{data.get("addresses", [])} removed from Exemption list'}]
+    except Exception as e:        
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "del_exemption_list",
+                    "exception": str(e)
+                }
+            )
+    return response           

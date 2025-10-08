@@ -2607,7 +2607,7 @@ def interface_config_spoke(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
-            
+
             interface_details = microtek_configure.interfaceconfig(data)                 
             return JsonResponse(interface_details,safe=False) 
         elif "cisco" in data["uuid"]:            
@@ -5313,6 +5313,199 @@ def edit_ratelimit(request):
     except Exception as e:
         logger.error(f"Error: Add RateLimit Rule in Spoke:{e}")
         response = [{"message": f"Error: while adding Ratelimit rule"}]
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def get_exemptionlist(request):
+    try:
+        data = json.loads(request.body)
+        #print(data)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "get_exemptionlist" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"exemptionlist_branch_{branch_id}"      
+        ratelimit_info = cache.get(cache_key)
+        if ratelimit_info:
+            return JsonResponse(ratelimit_info, safe=False, status=200)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.get_exemption_list(data)   
+            cache.set(cache_key, response, timeout=60)              
+            return JsonResponse(response, safe=False, status=200) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Get Exemptionlist in Spoke:{e}")
+        response = []
+    return JsonResponse(response, safe=False)
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def add_exemptionlist(request):
+    try:
+        data = json.loads(request.body)
+        #print(data)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "add_exemptionlist" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"exemptionlist_branch_{branch_id}"       
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.add_exemption_list(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Add Exemptionlist Rule in Spoke:{e}")
+        response = [{"message": f"Error: while adding Exemptionlist rule"}]
+    return JsonResponse(response, safe=False)
+
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def del_exemptionlist(request):
+    try:
+        data = json.loads(request.body)
+        #print(data)
+        # Capture the public IP from the request headers
+        public_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+        logger.debug(f"Requested_ip:{public_ip}, payload: {data}",
+                    extra={ "be_api_endpoint": "del_ratelimit" }                    
+                    )
+        branch_id = data["tunnel_ip"].split("/")[0] 
+        cache_key = f"exemptionlist_branch_{branch_id}"      
+        cache.delete(cache_key)
+        if ".net" in data.get("uuid", ""):       
+            cache1_key = f"branch_details_{data['uuid']}"
+            router_info = cache.get_or_set(
+                        cache1_key,
+                        lambda: coll_tunnel_ip.find_one({"uuid": data["uuid"]}),
+                        timeout=300
+                        )    
+        if ".net" not in data.get("uuid", ""):            
+            tunnel_ip = data["tunnel_ip"].split("/")[0] 
+            url = "http://" + tunnel_ip + ":5000/"
+            # Set the headers to indicate that you are sending JSON data
+            headers = {"Content-Type": "application/json"}            
+            json_data = json.dumps(data)           
+            try:
+                response = requests.post(url + "app_config", data=json_data, headers=headers)                           
+                if response.status_code == 200:           
+                    get_response = response.text.replace("'", "\"")  # Replace single quotes with double quotes
+                    response = json.loads(get_response)               
+                else:
+                    response = [{"message":"Error while configuring interface in spoke"}]
+            except requests.exceptions.RequestException as e:
+                print("disconnected")
+                response = [{"message":"Error:Tunnel disconnected in the middle. So pl try again"}] 
+        elif "microtek" in data["uuid"]:
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            response = microtek_configure.del_exemption_list(data)                 
+            return JsonResponse(response, safe=False) 
+        elif "cisco" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            #response = router_configure.interfaceconfig(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+        elif "robustel" in data["uuid"]:            
+            #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
+            data["router_username"] = router_info["router_username"]
+            data["router_password"] = router_info["router_password"]
+            data["spokedevice_name"] = router_info["spokedevice_name"]
+            #response = robustel_configure.interface_config(data)
+            response = [{"message": f"Error: This device doesn't support this feature"}]
+            print(response)
+    except Exception as e:
+        logger.error(f"Error: Del Exemptionlist in Spoke:{e}")
+        response = [{"message": f"Error: while delete address in exemptionlist"}]
     return JsonResponse(response, safe=False)
 
 @api_view(['POST'])  
