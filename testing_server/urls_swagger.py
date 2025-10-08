@@ -128,7 +128,7 @@ urlpatterns = [
     path('beapi/firewall/edit_ratelimit', edit_ratelimit),
     path('beapi/firewall/add_exemption_list', add_exemptionlist),
     path('beapi/firewall/get_exemption_list', get_exemptionlist),
-    path('beapi/firewall/del_exemptionlist', del_exemptionlist),
+    path('beapi/firewall/del_exemption_list', del_exemptionlist),
 
     path('beapi/get_m2mspoke_config', get_m2mspoke_config, name='get_m2mspoke_config'),
     path('beapi/config_microtik_hub', add_microtik_hub, name='add_microtik_hub'),
