@@ -4046,7 +4046,7 @@ def get_lan_clients_info(data):
             return [{"message": "Error - SSH Connection error"}]
         try:
             # Execute the trace command 
-            stdin, stdout, stderr = ssh_client.exec_command(f'/ip arp print')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip arp print detail')
             # Initialize variables for output collection
             start_time = time.time()
             timeout = 10  # Stop after 10 seconds
