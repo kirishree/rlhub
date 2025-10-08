@@ -3487,13 +3487,11 @@ def get_rate_limit_info(data):
         reset_upload_limit = ""
         reset_download_limit = ""
         for rule in rate_rules_list:
-            if 'name="queue_upload"' in rule:
-                print(rule)
+            if 'name="queue_upload"' in rule:                
                 if "max-limit=" in rule:
                     upload_limit = rule.split("max-limit=")[1].split(" ")[0]
                     print("upload_limit", upload_limit)
-            if 'name="queue_download"' in rule:
-                print(rule)
+            if 'name="queue_download"' in rule:                
                 if "max-limit=" in rule:
                     download_limit = rule.split("max-limit=")[1].split(" ")[0]    
                     print("download_limit", download_limit)      
@@ -3501,8 +3499,7 @@ def get_rate_limit_info(data):
             if 'name="check_quota"' in scrrule:
                 if ":local limit" in scrrule:
                     volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
-                    volume_gb = int(volume_limit) / 1000000000
-            if 'name="reset_quota"' in scrrule:
+                    volume_gb = int(volume_limit) / 1000000000            
                 if "[find name=$qUp] max-limit=" in scrrule:
                     reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
                 if "[find name=$qDown] max-limit=" in scrrule:
