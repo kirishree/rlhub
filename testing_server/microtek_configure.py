@@ -600,7 +600,7 @@ def rate_limit(ssh_client, subnet_id_lan):
         ssh_client.exec_command(reset_sched_cmd)
     except Exception as e:
         print("tree config",e)
-        
+
 def interfaceconfig(data):   
    # Define the router details       
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -686,7 +686,8 @@ def interfaceconfig(data):
         for addr in addresses_info:
             if "address=" in addr:
                     intfcname = addr.split("interface=")[1].split(" ")[0] 
-                    if intfcname != data["intfc_name"]:
+                    stat = addr.split(" ")[1]
+                    if intfcname != data["intfc_name"] and stat != "I":
                         intfcaddress = addr.split("address=")[1].split(" ")[0]  
                         interface_addresses.append(intfcaddress) 
         for int_addr in data["new_addresses"]:
@@ -694,6 +695,8 @@ def interfaceconfig(data):
                 corrected_subnet = ipaddress.ip_network(address, strict=False)
                 ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
                 if ip_obj in corrected_subnet:  
+                    print(ip_obj)
+                    print(interface_addresses)
                     response = [{"message": f"Error while configuring interface due to address conflict {int_addr['address']}"}]
                     ssh_client.close()            
                     return response
