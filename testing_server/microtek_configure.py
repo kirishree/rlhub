@@ -3462,6 +3462,14 @@ def get_rate_limit_info(data):
         collect = []   
         #queue info       
         ratelimit_info = output.split("\n")[1:-1]
+        rate_rules = ""
+        rate_rules_list =[]      
+        for rateinfo in ratelimit_info:
+            if rateinfo.strip():
+                rate_rules +=rateinfo
+            else:
+                rate_rules_list.append(scr_rules)
+                rate_rules = ""
         
         #script info scr_rules_list = [script1, script2]
         script_info = scr_output.split("\n")[1:-1]
@@ -3478,7 +3486,7 @@ def get_rate_limit_info(data):
         volume_gb = ""
         reset_upload_limit = ""
         reset_download_limit = ""
-        for rule in ratelimit_info:
+        for rule in rate_rules_list:
             if 'name="queue_upload"' in rule:
                 print(rule)
                 if "max-limit=" in rule:
