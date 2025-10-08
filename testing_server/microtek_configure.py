@@ -3854,7 +3854,7 @@ def add_exemption_list(data):
             return [{"message": "Error - SSH Connection error"}]
         for addr in data.get("addresses", []):
             stdin, stdout, stderr = ssh_client.exec_command(
-                f'/ip firewall address-list list=quota_exclude address={addr}'
+                f'/ip firewall address-list add list=quota_exclude address={addr}'
             )
         logger.info(
                 f"Rate limit edited successfully",
