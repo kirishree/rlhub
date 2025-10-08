@@ -3377,7 +3377,7 @@ def get_rate_limit_info(data):
             return []
         try:
             # Execute the trace command 
-            stdin, stdout, stderr = ssh_client.exec_command(f'/queue simple print detail')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/queue tree print detail')
             # Initialize variables for output collection
             start_time = time.time()
             timeout = 10  # Stop after 10 seconds
@@ -3435,20 +3435,34 @@ def get_rate_limit_info(data):
                 }
             )
             ssh_client.close() 
-            return []        
+            return []   
+        try:
+            # Execute the trace command 
+            current_usage = ""
+            stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_upload] bytes]')
+            upload_bytes = stdout.read().decode() 
+            stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_download] bytes]')
+            download_bytes = stdout.read().decode() 
+            current_usage = int(upload_bytes) + int(download_bytes)        
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []   
+           
         # Close the SSH connection
         ssh_client.close()  
         collect = []   
         #queue info       
         ratelimit_info = output.split("\n")[1:-1]
-        rules = []
-        rules_info =[]      
-        for rateinfo in ratelimit_info:
-            if rateinfo.strip():
-                rules.append(rateinfo)
-            else:
-                rules_info.append(rules)
-                rules = []  
+        
         #script info scr_rules_list = [script1, script2]
         script_info = scr_output.split("\n")[1:-1]
         scr_rules = ""
@@ -3459,67 +3473,40 @@ def get_rate_limit_info(data):
             else:
                 scr_rules_list.append(scr_rules)
                 scr_rules = ""
-
-        for rule in rules_info:
-            description = ""
-            ratelimit_status = ""
-            rule_no = ""
-            for ruleinfo in rule:
-                ruleinfostrip = ruleinfo.strip()
-                # Clean up extra spaces or non-visible characters using regex
-                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
-                if " ;;; " in ruleinfostrip:
-                    description = ruleinfostrip.split(" ;;; ")[1]                  
-                    status_info = ruleinfostrip.split(" ")[1] 
-                    rule_no = ruleinfostrip.split(" ")[0]                   
-#                    print("status_info", status_info)
-                    if status_info == "X":
-                        ratelimit_status = "disabled"
-                    elif status_info == "I":
-                        ratelimit_status = "Invalid" 
-                    elif status_info == "D":
-                        ratelimit_status = "Dynamic" 
-                    else: 
-                        ratelimit_status = "Enabled"               
-
-                if "name=" in ruleinfostrip:
-                    name = ruleinfostrip.split("name=")[1].split('"')[1]  
-                    volume_gb = None
-                    #script_name = f"check_quota_{name.split('_')[1]}" 
-                    for script in scr_rules_list:
-                        if name in script:
-                            if len(script.split("source=:local limit")) > 1:
-                                volume_limit = script.split("source=:local limit")[1].split(";")[0]
-                                volume_gb = int(volume_limit) / 1000000000 
-                                break
-
-                    if description == "":
-                        status_info = ruleinfostrip.split(" ")[1]  
-                        rule_no = ruleinfostrip.split(" ")[0]                  
-#                       print("status_info", status_info)
-                        if status_info == "X":
-                            ratelimit_status = "disabled"
-                        elif status_info == "I":
-                            ratelimit_status = "Invalid" 
-                        elif status_info == "D":
-                            ratelimit_status = "Dynamic" 
-                        else: 
-                            ratelimit_status = "Enabled"                  
-                if "target=" in ruleinfostrip:
-                    target_address = ruleinfostrip.split("target=")[1].split(" ")[0]
-                if "max-limit=" in ruleinfostrip:
-                    max_limit = ruleinfostrip.split("max-limit=")[1].split(" ")[0]
-                    upload_limit = max_limit.split("/")[0]
-                    download_limit = max_limit.split("/")[1]
-                                
-            collect.append({"name":name, 
-                            "rule_no":rule_no,                                                    
-                            "description":description,
-                            "status":ratelimit_status,                           
-                            "target_address": target_address,
+        upload_limit = ""
+        download_limit = ""
+        volume_gb = ""
+        reset_upload_limit = ""
+        reset_download_limit = ""
+        for rule in ratelimit_info:
+            if 'name="queue_upload"' in rule:
+                if "max-limit=" in rule:
+                    upload_limit = rule.split("max-limit=")[1].split(" ")[0]
+            if 'name="queue_download"' in rule:
+                if "max-limit=" in rule:
+                    download_limit = rule.split("max-limit=")[1].split(" ")[0]          
+        for scrrule in scr_rules_list:
+            if 'name="check_quota"' in scrrule:
+                if ":local limit" in scrrule:
+                    volume_limit =  scrrule.split(":local limit")[1].split(" ")[0]
+                    volume_gb = int(volume_limit) / 1000000000
+            if 'name="reset_quota"' in scrrule:
+                if "[find name=$qUp] max-limit=" in scrrule:
+                    reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
+                if "[find name=$qDown] max-limit=" in scrrule:
+                    reset_download_limit =  scrrule.split("[find name=$qDown] max-limit=")[1].split(";")[0]
+                      
+        collect.append({"name":"", 
+                            "rule_no":"1",                                                    
+                            "description":"rate_limit_network",
+                            "status":"Enable",                           
+                            "target_address": "LAN_Network",
                             "max_upload_limit":upload_limit,
                             "max_download_limit":download_limit,  
-                            "volume_limit_gb":volume_gb 
+                            "volume_limit_gb":volume_gb,
+                            "downgrade_upload_limit":reset_upload_limit,
+                            "downgrade_download_limit":reset_download_limit,
+                            "current_usage":current_usage
                             })         
     except Exception as e:
         print(e)
