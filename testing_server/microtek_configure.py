@@ -3480,10 +3480,12 @@ def get_rate_limit_info(data):
         reset_download_limit = ""
         for rule in ratelimit_info:
             if 'name="queue_upload"' in rule:
+                print(rule)
                 if "max-limit=" in rule:
                     upload_limit = rule.split("max-limit=")[1].split(" ")[0]
                     print("upload_limit", upload_limit)
             if 'name="queue_download"' in rule:
+                print(rule)
                 if "max-limit=" in rule:
                     download_limit = rule.split("max-limit=")[1].split(" ")[0]    
                     print("download_limit", download_limit)      
