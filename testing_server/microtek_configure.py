@@ -3501,6 +3501,7 @@ def get_rate_limit_info(data):
                     print("download_limit", download_limit)      
         for scrrule in scr_rules_list:
             if 'name="check_quota"' in scrrule:
+                print(scrrule)
                 if ":local limit" in scrrule:
                     volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
                     volume_gb = int(volume_limit) / 1000000000            
@@ -3602,7 +3603,7 @@ def edit_rate_limit(data):
         #downgrade_upload_limit = data.get("downgrade_upload_limit", "64k")
         #downgrade_download_limit = data.get("downgrade_download_limit", "64k")
         
-        quota_limit = int(data.get("volume_limit_gb", 0)) * 1000000000  # in bytes                  
+        quota_limit = int(data.get("volume_limit", 0)) * 1000000000  # in bytes                  
         
         check_script_cmd = f"""/system script add name=check_quota source=":local limit {quota_limit}; :local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; :local upBytes [/queue tree get [find name=\\$qUp] bytes]; :local downBytes [/queue tree get [find name=\\$qDown] bytes]; :local total (\\$upBytes + \\$downBytes); :log info (\\"Current usage for network\\"  . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue tree set [find name=\\$qUp] max-limit={downgrade_upload_limit}; /queue tree set [find name=\\$qDown] max-limit={downgrade_download_limit}; :log warning (\\"Quota exceeded for tree - throttled both directions - blocked\\") }}" """
         ssh_client.exec_command(check_script_cmd)
