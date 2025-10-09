@@ -3498,10 +3498,10 @@ def get_rate_limit_info(data):
             if 'name="queue_download"' in rule:                
                 if "max-limit=" in rule:
                     download_limit = rule.split("max-limit=")[1].split(" ")[0]    
-                          
+        print("scr_rules_list", scr_rules_list)                 
         for scrrule in scr_rules_list:
             if 'name="check_quota"' in scrrule:
-                print("scrrule", scrrule)
+                #print("scrrule", scrrule)
                 if ":local limit" in scrrule:
                     volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
                     volume_gb = int(volume_limit) / 1000000000            
