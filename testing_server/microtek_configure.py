@@ -3481,6 +3481,7 @@ def get_rate_limit_info(data):
         scr_rules_list =[]      
         for scrinfo in script_info:
             if scrinfo.strip():
+                scrinfo = re.sub(r'\s+', ' ', scrinfo)
                 scr_rules +=scrinfo
             else:
                 scr_rules_list.append(scr_rules)
