@@ -3469,9 +3469,7 @@ def get_rate_limit_info(data):
         rate_rules = ""
         rate_rules_list =[]      
         for rateinfo in ratelimit_info:
-            if rateinfo.strip():
-                print("####################")
-                print(rateinfo)
+            if rateinfo.strip():                
                 rate_rules +=rateinfo
             else:
                 rate_rules_list.append(rate_rules)
@@ -3485,8 +3483,9 @@ def get_rate_limit_info(data):
             scrinfo = scrinfo.strip()
             scrinfo = re.sub(r'\s+', ' ', scrinfo)
             if scrinfo:                
-                scr_rules +=scrinfo
+                scr_rules += f" {scrinfo}"
             else:
+                scr_rules = re.sub(r'\s+', ' ', scr_rules)
                 scr_rules_list.append(scr_rules)
                 scr_rules = ""
         upload_limit = ""
