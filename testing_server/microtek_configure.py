@@ -3502,8 +3502,8 @@ def get_rate_limit_info(data):
                     download_limit = rule.split("max-limit=")[1].split(" ")[0]    
                          
         for scrrule in scr_rules_list:
-            print("###############")
-            print("scr_rules_list", scrrule)
+            #print("###############")
+            #print("scr_rules_list", scrrule)
             if 'name="check_quota"' in scrrule:
                 #print("scrrule", scrrule)
                 if ":local limit" in scrrule:
