@@ -3601,7 +3601,7 @@ def edit_rate_limit(data):
         downgrade_upload_limit = data.get("downgrade_upload_limit")
         downgrade_download_limit = data.get("downgrade_download_limit")
         if not downgrade_download_limit or downgrade_download_limit == "":
-            downgrade_download_limit = "64k"
+            downgrade_download_limit = "64k" 
         if not downgrade_upload_limit or downgrade_upload_limit == "":
             downgrade_upload_limit = "64k"
         #downgrade_upload_limit = data.get("downgrade_upload_limit", "64k")

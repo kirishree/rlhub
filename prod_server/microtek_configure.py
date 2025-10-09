@@ -3356,8 +3356,9 @@ def get_rate_limit_info(data):
             scrinfo = scrinfo.strip()
             scrinfo = re.sub(r'\s+', ' ', scrinfo)
             if scrinfo:                
-                scr_rules +=scrinfo
+                scr_rules += f" {scrinfo}"
             else:
+                scr_rules = re.sub(r'\s+', ' ', scr_rules)
                 scr_rules_list.append(scr_rules)
                 scr_rules = ""
         upload_limit = ""
