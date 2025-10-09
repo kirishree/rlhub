@@ -689,6 +689,7 @@ def interfaceconfig(data):
         #for addr in addresses_info:
         #    if "address=" in addr:
         #            intfcname = addr.split("interface=")[1].split(" ")[0] 
+                    #addr = re.sub(r'\s+', ' ', addr)  # Replace multiple spaces with a single space
         #            stat = addr.split(" ")[1]
         #            if intfcname != data["intfc_name"] and stat != "I":
         #                intfcaddress = addr.split("address=")[1].split(" ")[0]  
