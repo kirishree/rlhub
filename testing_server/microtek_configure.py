@@ -3447,7 +3447,8 @@ def get_rate_limit_info(data):
             upload_bytes = stdout.read().decode()             
             stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_download] bytes]')
             download_bytes = stdout.read().decode()             
-            current_usage = int(upload_bytes) + int(download_bytes)        
+            current_usage = int(upload_bytes) + int(download_bytes)  
+            current_usage = current_usage / 1000000000    
         except Exception as e:
             logger.error(
                 f"Error while getting ratelimit details",
