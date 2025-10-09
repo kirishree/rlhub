@@ -3494,14 +3494,14 @@ def get_rate_limit_info(data):
             if 'name="queue_upload"' in rule:                
                 if "max-limit=" in rule:
                     upload_limit = rule.split("max-limit=")[1].split(" ")[0]
-                    print("upload_limit", upload_limit)
+                    
             if 'name="queue_download"' in rule:                
                 if "max-limit=" in rule:
                     download_limit = rule.split("max-limit=")[1].split(" ")[0]    
-                    print("download_limit", download_limit)      
+                          
         for scrrule in scr_rules_list:
             if 'name="check_quota"' in scrrule:
-                print(scrrule)
+                print("scrrule", scrrule)
                 if ":local limit" in scrrule:
                     volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
                     volume_gb = int(volume_limit) / 1000000000            
@@ -3905,7 +3905,7 @@ def get_lan_clients_info(data):
                 arp_rules = ""
         collect = []
         for arpdetail in arp_rules_list:
-            print(arpdetail)
+            #print(arpdetail)
             if "address=" in arpdetail:
                 addr = arpdetail.split("address=")[1].split(" ")[0]
             else:
