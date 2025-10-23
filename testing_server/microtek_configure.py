@@ -3482,7 +3482,7 @@ def get_item_id(host_id, name):
         print(f"Failed to get Host list: {e}")
         return False   
 
-def total_volume_wrong(itemidreceived, itemidsent):
+def total_volume(itemidreceived, itemidsent):
     total_volume = 0
     time_from, time_till = get_today_time_range()
 
@@ -3519,7 +3519,7 @@ def total_volume_wrong(itemidreceived, itemidsent):
             total_received = sum(receivedvalues)
 
             # Convert from bytes to MB or GB
-            total_volume = round((total_sent + total_received) / (1024 * 1024 * 1024), 4)  # in GB
+            total_volume = round((total_sent + total_received) * 60 / (1024 * 1024 * 1024), 4)  # in GB
 
     except Exception as e:
         print(f"Failed to get History: {e}")
@@ -3527,7 +3527,7 @@ def total_volume_wrong(itemidreceived, itemidsent):
     return total_volume
 
 
-def total_volume(itemidreceived, itemidsent):
+def total_volume_not(itemidreceived, itemidsent):
     time_from, time_till = get_today_time_range()
 
     get_history = {
@@ -3732,14 +3732,15 @@ def get_rate_limit_info(data):
                     reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
                 if "[find name=$qDown] max-limit=" in scrrule:
                     reset_download_limit =  scrrule.split("[find name=$qDown] max-limit=")[1].split(";")[0]
-        #item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
-        item_id = get_item_id(data.get("host_id", ""), "octets")
+        item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
+        #item_id = get_item_id(data.get("host_id", ""), "octets")
         for item in item_id:
             if "sent" in item["name"]:
                 itemid_sent = item["itemid"]                
             if "received" in item["name"]:
                 itemid_received = item["itemid"] 
-        bridge_usage =  total_volume(itemid_received, itemid_sent)            
+        bridge_usage =  total_volume(itemid_received, itemid_sent)   
+        bridge_usage_old =  total_volume_old(itemid_received, itemid_sent)            
         collect.append({"name":"", 
                             "rule_no":"1",                                                    
                             "description":"rate_limit_network",
@@ -3751,7 +3752,9 @@ def get_rate_limit_info(data):
                             "downgrade_upload_limit":reset_upload_limit,
                             "downgrade_download_limit":reset_download_limit,
                             "current_usage":current_usage,
-                            "brideg_usage": bridge_usage
+                            "brideg_usage": bridge_usage,
+                            "brideg_usage_old": bridge_usage_old,
+
                             })         
     except Exception as e:
         print(e)
