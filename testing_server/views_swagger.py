@@ -5099,6 +5099,7 @@ def get_ratelimit_info(request):
             #router_info = coll_tunnel_ip.find_one({"uuid":data["uuid"]})
             data["router_username"] = router_info["router_username"]
             data["router_password"] = router_info["router_password"]
+            data["host_id"] = router_info["host_id"]
             response = microtek_configure.get_rate_limit_info(data)   
                          
             return JsonResponse(response, safe=False, status=200) 

@@ -3,6 +3,22 @@ import time
 import ipaddress
 import re
 import logging
+import requests
+from datetime import datetime
+import numpy as np  # For percentile calculation
+zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
+auth_token = config('ZABBIX_API_TOKEN')
+ZABBIX_WEB_URL=config('ZABBIX_WEB_URL') # Zabbix server details
+USERNAME=config('USERNAME')
+PASSWORD=config('PASSWORD')
+login_payload = {
+    "name": USERNAME,
+    "password": PASSWORD,
+    "enter": "Sign in"
+}
+
+# Create a session
+session = requests.Session()
 from decouple import config
 from django.core.cache import cache
 openvpn_network = config('OPENVPN_NETWORK')
@@ -3353,7 +3369,162 @@ def ShiftFilterRuledown(data):
         # Close the SSH connection
         ssh_client.close()        
         return response
-    
+
+def get_percentile(itemidsent, itemidreceived, interval, fromdate):    
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",                  
+            "itemids": [itemidsent, itemidreceived],            
+            "time_from": int(fromdate),
+            "time_till": int(fromdate) + interval
+        },
+        'auth': auth_token,
+        'id': 1,
+    }    
+    try:
+        response = session.post(zabbix_api_url, json=get_history)        
+        history_results = response.json().get('result')        
+        sentvalues = []
+        receivedvalues = []        
+        for history_result in history_results:
+            if history_result["itemid"] == itemidsent:
+                sentvalues.append(int(history_result["value"]))
+            if history_result["itemid"] == itemidreceived:
+                receivedvalues.append(int(history_result["value"]))         
+        if len(sentvalues) > 0:
+            in_value_avg = round(np.mean(sentvalues), 4)
+            out_value_avg = round(np.mean(receivedvalues), 4)
+        percentile_result = {"in_avg":in_value_avg,                             
+                             "out_avg": out_value_avg                             
+                             }
+        return percentile_result
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+        return []
+
+def convert_to_mbps(bits):
+    """Convert bits to Megabits per second (Mbit/s)."""
+    return round(int(bits) / (1024 * 1024), 4)
+ 
+def get_today_time_range():
+    now = datetime.now()
+    today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
+    return int(today_start.timestamp()), int(now.timestamp())
+
+def total_volume_old(itemidreceived, itemidsent):    
+    total_volume = 0  
+    time_from, time_till = get_today_time_range()
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",                  
+            "itemids": [itemidsent, itemidreceived],            
+            "time_from": time_from,
+            "time_till": time_till
+        },
+        'auth': auth_token,
+        'id': 1,
+    }  
+    try:
+        response = session.post(zabbix_api_url, json=get_history)        
+        history_results = response.json().get('result')        
+        sentvalues = []
+        receivedvalues = []        
+        for history_result in history_results:
+            if history_result["itemid"] == itemidsent:
+                sentvalues.append(int(history_result["value"]))
+            if history_result["itemid"] == itemidreceived:
+                receivedvalues.append(int(history_result["value"]))         
+        if len(sentvalues) > 0:
+            in_value_avg = round(np.mean(sentvalues), 4)
+            out_value_avg = round(np.mean(receivedvalues), 4) 
+            
+            in_speed = convert_to_mbps(in_value_avg)
+            out_speed = convert_to_mbps(int(out_value_avg))
+        
+            in_volume = round((in_speed * 180) / (8), 4)
+            out_volume = round((out_speed * 180) / (8), 4)
+        
+            total_volume = round(in_volume + out_volume, 4) 
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+        
+    return total_volume
+
+def get_item_id(host_id, name):    
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid", "name"],
+            "hostids": host_id,
+            "search": {
+                        "name": name
+                        },           
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        update_response = session.post(zabbix_api_url, json=get_item)
+        update_result1 = update_response.json()
+        update_result = update_result1.get('result')
+        if 'error' in update_result:
+            print(f"Failed to get item list: {update_result['error']['data']}")
+            return False
+        else:            
+            return update_result
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
+
+def total_volume(itemidreceived, itemidsent):
+    total_volume = 0
+    time_from, time_till = get_today_time_range()
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": [itemidsent, itemidreceived],
+            "time_from": time_from,
+            "time_till": time_till,
+            "history": 3   # 3 is float type for interface traffic ifInOutOctets
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        history_results = response.json().get('result', [])
+
+        sentvalues = []
+        receivedvalues = []
+
+        for history_result in history_results:
+            if history_result["itemid"] == itemidsent:
+                sentvalues.append(float(history_result["value"]))
+            elif history_result["itemid"] == itemidreceived:
+                receivedvalues.append(float(history_result["value"]))
+
+        if sentvalues and receivedvalues:
+            # Use SUM directly to get volume in bytes
+            total_sent = sum(sentvalues)
+            total_received = sum(receivedvalues)
+
+            # Convert from bytes to MB or GB
+            total_volume = round((total_sent + total_received) / (1024 * 1024 * 1024), 4)  # in GB
+
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+
+    return total_volume
+  
 def get_rate_limit_info(data):   
    # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -3515,7 +3686,13 @@ def get_rate_limit_info(data):
                     reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
                 if "[find name=$qDown] max-limit=" in scrrule:
                     reset_download_limit =  scrrule.split("[find name=$qDown] max-limit=")[1].split(";")[0]
-                      
+        item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
+        for item in item_id:
+            if "sent" in item["name"]:
+                itemid_sent = item["itemid"]                
+            if "received" in item["name"]:
+                itemid_received = item["itemid"] 
+        bridge_usage =  total_volume(itemid_received, itemid_sent)            
         collect.append({"name":"", 
                             "rule_no":"1",                                                    
                             "description":"rate_limit_network",
@@ -3526,7 +3703,8 @@ def get_rate_limit_info(data):
                             "volume_limit_gb":volume_gb,
                             "downgrade_upload_limit":reset_upload_limit,
                             "downgrade_download_limit":reset_download_limit,
-                            "current_usage":current_usage
+                            "current_usage":current_usage,
+                            "brideg_usage": bridge_usage
                             })         
     except Exception as e:
         print(e)
