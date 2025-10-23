@@ -3795,7 +3795,7 @@ def get_rate_limit_info(data):
             if "received" in item["name"]:
                 itemid_received = item["itemid"] 
         bridge_usage =  total_volume(itemid_received, itemid_sent)   
-        bridge_usage_old =  total_volume_old(itemid_received, itemid_sent)            
+        #bridge_usage_old =  total_volume_old(itemid_received, itemid_sent)            
         collect.append({"name":"", 
                             "rule_no":"1",                                                    
                             "description":"rate_limit_network",
@@ -3807,8 +3807,7 @@ def get_rate_limit_info(data):
                             "downgrade_upload_limit":reset_upload_limit,
                             "downgrade_download_limit":reset_download_limit,
                             "current_usage":current_usage,
-                            "brideg_usage": bridge_usage,
-                            "brideg_usage_old": bridge_usage_old,
+                            "brideg_usage": bridge_usage                          
 
                             })         
     except Exception as e:
