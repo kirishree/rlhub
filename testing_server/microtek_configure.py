@@ -5,6 +5,7 @@ import re
 import logging
 import requests
 from datetime import datetime
+from decouple import config
 import numpy as np  # For percentile calculation
 zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
 auth_token = config('ZABBIX_API_TOKEN')
