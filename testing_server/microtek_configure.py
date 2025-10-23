@@ -3482,7 +3482,7 @@ def get_item_id(host_id, name):
         print(f"Failed to get Host list: {e}")
         return False   
 
-def total_volume(itemidreceived, itemidsent):
+def total_volume_wrong(itemidreceived, itemidsent):
     total_volume = 0
     time_from, time_till = get_today_time_range()
 
@@ -3525,7 +3525,52 @@ def total_volume(itemidreceived, itemidsent):
         print(f"Failed to get History: {e}")
 
     return total_volume
-  
+
+
+def total_volume(itemidreceived, itemidsent):
+    time_from, time_till = get_today_time_range()
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": [itemidsent, itemidreceived],
+            "time_from": time_from,
+            "time_till": time_till,
+            "history": 3,  # numeric unsigned (byte counters)
+            "sortfield": "clock",
+            "sortorder": "ASC"
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        history_results = response.json().get('result', [])
+
+        sent_values = []
+        recv_values = []
+
+        for item in history_results:
+            if item["itemid"] == itemidsent:
+                sent_values.append(int(item["value"]))
+            elif item["itemid"] == itemidreceived:
+                recv_values.append(int(item["value"]))
+
+        if sent_values and recv_values:
+            sent_today = sent_values[-1] - sent_values[0]   # last - first
+            recv_today = recv_values[-1] - recv_values[0]
+            total_bytes = sent_today + recv_today
+            total_gb = round(total_bytes / (1024 * 1024 * 1024), 4)  # Convert to GB
+            return total_gb
+
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+
+    return 0
+ 
 def get_rate_limit_info(data):   
    # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -3687,7 +3732,8 @@ def get_rate_limit_info(data):
                     reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
                 if "[find name=$qDown] max-limit=" in scrrule:
                     reset_download_limit =  scrrule.split("[find name=$qDown] max-limit=")[1].split(";")[0]
-        item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
+        #item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
+        item_id = get_item_id(data.get("host_id", ""), "octets")
         for item in item_id:
             if "sent" in item["name"]:
                 itemid_sent = item["itemid"]                
