@@ -3494,6 +3494,61 @@ def total_volume(itemidreceived, itemidsent):
             "itemids": [itemidsent, itemidreceived],
             "time_from": time_from,
             "time_till": time_till,
+            "history": 0,  # 0 = float type (bits per second for net.if.in/out)
+            "sortfield": "clock",
+            "sortorder": "ASC"
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        history_results = response.json().get('result', [])
+
+        # Separate values WITH timestamp
+        sent_list = []
+        recv_list = []
+
+        for item in history_results:
+            if item["itemid"] == itemidsent:
+                sent_list.append((int(item["clock"]), float(item["value"])))
+            elif item["itemid"] == itemidreceived:
+                recv_list.append((int(item["clock"]), float(item["value"])))
+
+        # Sort by timestamp (important)
+        sent_list.sort(key=lambda x: x[0])
+        recv_list.sort(key=lambda x: x[0])
+
+        # Calculate total usage
+        total_bytes = 0
+        poll_interval = 60  # assume 60 seconds; change if different in Zabbix
+
+        for entry in sent_list:
+            total_bytes += (entry[1] * poll_interval) / 8  # bits to bytes
+
+        for entry in recv_list:
+            total_bytes += (entry[1] * poll_interval) / 8
+
+        total_volume = round(total_bytes / (1024 * 1024 * 1024), 4)  # in GB
+
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+
+    return total_volume
+
+def total_volume11(itemidreceived, itemidsent):
+    total_volume = 0
+    time_from, time_till = get_today_time_range()
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": [itemidsent, itemidreceived],
+            "time_from": time_from,
+            "time_till": time_till,
             "history": 3   # 3 is float type for interface traffic ifInOutOctets
         },
         'auth': auth_token,
