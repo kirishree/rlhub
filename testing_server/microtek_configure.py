@@ -3494,7 +3494,7 @@ def total_volume(itemidreceived, itemidsent):
             "itemids": [itemidsent, itemidreceived],
             "time_from": time_from,
             "time_till": time_till,
-            "history": 0,  # 0 = float type (bits per second for net.if.in/out)
+            
             "sortfield": "clock",
             "sortorder": "ASC"
         },
