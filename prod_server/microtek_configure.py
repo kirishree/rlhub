@@ -3,9 +3,25 @@ import time
 import ipaddress
 import re
 import logging
+import requests
+from datetime import datetime
 from decouple import config
 from django.core.cache import cache
 openvpn_network = config('OPENVPN_NETWORK')
+import numpy as np  # For percentile calculation
+zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
+auth_token = config('ZABBIX_API_TOKEN')
+ZABBIX_WEB_URL=config('ZABBIX_WEB_URL') # Zabbix server details
+USERNAME=config('USERNAME')
+PASSWORD=config('PASSWORD')
+login_payload = {
+    "name": USERNAME,
+    "password": PASSWORD,
+    "enter": "Sign in"
+}
+
+# Create a session
+session = requests.Session()
 logger = logging.getLogger('reachlink')
 def pingspoke(data):   
     # Define the router details
@@ -668,6 +684,7 @@ def rate_limit(ssh_client, subnet_id_lan):
         stdin, stdout, stderr = ssh_client.exec_command(
                 f'/queue tree add name=queue_upload parent=parent_queue packet-mark=mark_upload queue=pcq-upload-default max-limit=20M'
         )
+        
         stdin, stdout, stderr = ssh_client.exec_command(
                 f'/queue tree add name=queue_download parent=parent_queue packet-mark=mark_download queue=pcq-download-default max-limit=20M'
         )
@@ -3226,7 +3243,94 @@ def ShiftFilterRuledown(data):
         # Close the SSH connection
         ssh_client.close()        
         return response
-    
+
+def get_item_id(host_id, name):    
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid", "name"],
+            "hostids": host_id,
+            "search": {
+                        "name": name
+                        },           
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        update_response = session.post(zabbix_api_url, json=get_item)
+        update_result1 = update_response.json()
+        update_result = update_result1.get('result')
+        if 'error' in update_result:
+            print(f"Failed to get item list: {update_result['error']['data']}")
+            return False
+        else:            
+            return update_result
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
+
+def get_today_time_range():
+    now = datetime.now()
+    today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
+    return int(today_start.timestamp()), int(now.timestamp())
+
+def total_volume(itemidreceived, itemidsent):
+    total_volume = 0
+    time_from, time_till = get_today_time_range()
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": [itemidsent, itemidreceived],
+            "time_from": time_from,
+            "time_till": time_till,
+            
+            "sortfield": "clock",
+            "sortorder": "ASC"
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        history_results = response.json().get('result', [])
+
+        # Separate values WITH timestamp
+        sent_list = []
+        recv_list = []
+
+        for item in history_results:
+            if item["itemid"] == itemidsent:
+                sent_list.append((int(item["clock"]), float(item["value"])))
+            elif item["itemid"] == itemidreceived:
+                recv_list.append((int(item["clock"]), float(item["value"])))
+
+        # Sort by timestamp (important)
+        sent_list.sort(key=lambda x: x[0])
+        recv_list.sort(key=lambda x: x[0])
+
+        # Calculate total usage
+        total_bytes = 0
+        poll_interval = 60  # assume 60 seconds; change if different in Zabbix
+
+        for entry in sent_list:
+            total_bytes += (entry[1] * poll_interval) / 8  # bits to bytes
+
+        for entry in recv_list:
+            total_bytes += (entry[1] * poll_interval) / 8
+
+        total_volume = round(total_bytes / (1024 * 1024 * 1024), 4)  # in GB
+
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+
+    return total_volume
+   
 def get_rate_limit_info(data):   
    # Define the router details
     router_ip = data["tunnel_ip"].split("/")[0]
@@ -3321,7 +3425,7 @@ def get_rate_limit_info(data):
             stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_download] bytes]')
             download_bytes = stdout.read().decode()             
             current_usage_bytes = int(upload_bytes) + int(download_bytes)  
-            current_usage_gb = current_usage_bytes / 1000000000 
+            current_usage_gb = round((current_usage_bytes / 1000000000 ), 4)
             current_usage = f"{str(current_usage_gb)} GB"      
         except Exception as e:
             logger.error(
@@ -3381,12 +3485,21 @@ def get_rate_limit_info(data):
             if 'name="check_quota"' in scrrule:
                 if ":local limit" in scrrule:
                     volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
+                    print(volume_limit)
                     volume_gb = int(volume_limit) / 1000000000            
                 if "[find name=$qUp] max-limit=" in scrrule:
                     reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
                 if "[find name=$qDown] max-limit=" in scrrule:
                     reset_download_limit =  scrrule.split("[find name=$qDown] max-limit=")[1].split(";")[0]
-                      
+        item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
+        
+        for item in item_id:
+            if "sent" in item["name"]:
+                itemid_sent = item["itemid"]                
+            if "received" in item["name"]:
+                itemid_received = item["itemid"] 
+        bridge_usage =  total_volume(itemid_received, itemid_sent)   
+             
         collect.append({"name":"", 
                             "rule_no":"1",                                                    
                             "description":"rate_limit_network",
