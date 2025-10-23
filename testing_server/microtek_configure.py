@@ -3446,8 +3446,8 @@ def total_volume_old(itemidreceived, itemidsent):
             in_speed = convert_to_mbps(in_value_avg)
             out_speed = convert_to_mbps(int(out_value_avg))
         
-            in_volume = round((in_speed * 180) / (8), 4)
-            out_volume = round((out_speed * 180) / (8), 4)
+            in_volume = round((in_speed * 60) / (8), 4)
+            out_volume = round((out_speed * 60) / (8), 4)
         
             total_volume = round(in_volume + out_volume, 4) 
     except Exception as e:
@@ -3519,7 +3519,7 @@ def total_volume(itemidreceived, itemidsent):
             total_received = sum(receivedvalues)
 
             # Convert from bytes to MB or GB
-            total_volume = round((total_sent + total_received) * 60 / (1024 * 1024 * 1024), 4)  # in GB
+            total_volume = round((total_sent + total_received) / (1024 * 1024 * 1024), 4)  # in GB
 
     except Exception as e:
         print(f"Failed to get History: {e}")
