@@ -3510,7 +3510,8 @@ def get_rate_limit_info(data):
                             "volume_limit_gb":volume_gb,
                             "downgrade_upload_limit":reset_upload_limit,
                             "downgrade_download_limit":reset_download_limit,
-                            "current_usage":current_usage
+                            "current_usage":current_usage,
+                            "LAN_usage": bridge_usage
                             })         
     except Exception as e:
         print(e)
