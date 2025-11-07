@@ -2737,7 +2737,7 @@ def delfilterrule(data):
         # Execute the ping command               
         for rule in data["rules"]:  
             comment = rule["comment"] 
-            if "enable-ssh" in rule["comment"].lower() or "enable-snmpaccess" in rule["comment"].lower() or "enable-winboxaccess" in rule["comment"].lower():
+            if "enable-ssh" in rule["comment"].lower() or "enable-snmpaccess" in rule["comment"].lower() or "enable-winboxaccess" in rule["comment"].lower() or "icmp" in rule["comment"].lower():
                 response = [{"message": f"Permission Denied to remove this rule: {comment}"}]
                 break
             else:
@@ -2977,7 +2977,7 @@ def editfilterrule(data):
          
         #comment = data["comment"] 
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
-        if int(data["rule_no"]) < 7:
+        if int(data["rule_no"]) < 9:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
             ssh_client.close()
             return response
@@ -3172,7 +3172,7 @@ def ShiftFilterRuledown(data):
          
         #comment = data["comment"] 
         #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
-        if int(data["rule_no"]) < 7:
+        if int(data["rule_no"]) < 9:
             response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
             ssh_client.close()
             return response
