@@ -1,0 +1,163 @@
+[
+    {
+        "organization_id": "ae2ecdf4d69b469db04dc438d9663e10",
+        "regusers": [
+            {
+                "username": "aabid@ld.sa",
+                "userid": "d875208142f643cfac1890f9934858ce",
+                "first_name": "Aabid",
+                "last_name": "Khan",
+                "user_role": "ADMIN"
+            },
+            {
+                "username": "testrlp1@example.com",
+                "userid": "4c6addef33d047f394be4bb5045c8060",
+                "first_name": "testrlp",
+                "last_name": "rl",
+                "user_role": "USER"
+            }
+        ],
+        "subscription_from": {
+            "$date": "2025-09-04T12:32:11Z"
+        },
+        "subscription_to": {
+            "$date": "2026-09-04T12:32:11Z"
+        },
+        "total_users": 200,
+        "remaining_users": 171,
+        "registered_devices": [
+            {
+                "reachlink_hub_info": {
+                    "uuid": "reachlinkserver.net",
+                    "host_id": "10084",
+                    "itemid_received": "49381",
+                    "itemid_sent": "49389",
+                    "branch_location": "Reachlink_server",
+                    "hub_ip": "185.69.209.245"
+                },
+                "microtek_spokes_info": [
+                    {
+                        "uuid": "head_office_LastDimension_microtek.net",
+                        "branch_location": "head_office",
+                        "spokedevice_name": "microtekspoke1-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "10.8.0.5",
+                        "public_ip": "109.83.150.142",
+                        "router_username": "microtekspoke1-lastdimension",
+                        "router_password": "@j2p6bqi",
+                        "_id": {
+                            "$oid": "68b989bc3fc08a5492e8b8f5"
+                        },
+                        "host_id": "10645",
+                        "itemid_received": "49822",
+                        "itemid_sent": "49854"
+                    },
+                    {
+                        "uuid": "branch1_LastDimension_microtek.net",
+                        "branch_location": "branch1",
+                        "spokedevice_name": "microtekspoke2-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "10.8.0.6",
+                        "public_ip": "109.83.150.142",
+                        "router_username": "microtekspoke2-lastdimension",
+                        "router_password": "2@ltfvec",
+                        "_id": {
+                            "$oid": "68b99e2085f6974b05320679"
+                        },
+                        "host_id": "10646",
+                        "itemid_received": "49972",
+                        "itemid_sent": "50004"
+                    },
+                    {
+                        "uuid": "branch2_LastDimension_microtek.net",
+                        "branch_location": "branch2",
+                        "spokedevice_name": "microtekspoke3-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "10.8.0.7",
+                        "public_ip": "77.223.252.3",
+                        "router_username": "microtekspoke3-lastdimension",
+                        "router_password": "vi5@2qzo",
+                        "_id": {
+                            "$oid": "68beb00c34d8fa4f0e729b06"
+                        },
+                        "host_id": "10647",
+                        "itemid_received": "50140",
+                        "itemid_sent": "50172"
+                    },
+                    {
+                        "uuid": "branch3_LastDimension_microtek.net",
+                        "branch_location": "branch3",
+                        "spokedevice_name": "microtekspoke4-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "microtekspoke4-lastdimension",
+                        "router_password": "y1ninp8@",
+                        "_id": {
+                            "$oid": "68c9396a512d3003927fe8e8"
+                        }
+                    },
+                    {
+                        "uuid": "branch4_LastDimension_microtek.net",
+                        "branch_location": "branch4",
+                        "spokedevice_name": "microtekspoke5-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "microtekspoke5-lastdimension",
+                        "router_password": "q@w1p43l",
+                        "_id": {
+                            "$oid": "68d3c1c1c066fd9646b0aea4"
+                        }
+                    },
+                    {
+                        "uuid": "branch5_LastDimension_microtek.net",
+                        "branch_location": "branch5",
+                        "spokedevice_name": "microtekspoke6-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "10.8.0.8",
+                        "public_ip": "51.36.223.10",
+                        "router_username": "microtekspoke6-lastdimension",
+                        "router_password": "fx07@pw7",
+                        "_id": {
+                            "$oid": "68d3c3cec066fd9646b0aea5"
+                        },
+                        "host_id": "10648",
+                        "itemid_received": "50335",
+                        "itemid_sent": "50367"
+                    },
+                    {
+                        "uuid": "branch6_LastDimension_microtek.net",
+                        "branch_location": "branch6",
+                        "spokedevice_name": "microtekspoke7-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "microtekspoke7-lastdimension",
+                        "router_password": "ng5c@3qv",
+                        "_id": {
+                            "$oid": "68d3d53e7087b2ac1bed3a4d"
+                        }
+                    }
+                ],
+                "robustel_spokes_info": [
+                    {
+                        "uuid": "robustel_test_branch1_LastDimension_robustel.net",
+                        "branch_location": "robustel_test_branch1",
+                        "spokedevice_name": "robustelspoke1-LastDimension",
+                        "router_username": "admin",
+                        "router_password": "admin",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "_id": {
+                            "$oid": "691d44aea541aa536c595b8a"
+                        }
+                    }
+                ],
+                "cisco_spokes_info": [],
+                "ubuntu_spokes_info": []
+            }
+        ],
+        "organization_name": "LastDimension"
+    }
+]
