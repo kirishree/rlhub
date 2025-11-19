@@ -1,0 +1,17 @@
+[Unit]
+Description=Celery Worker Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=sudo
+WorkingDirectory=/root/reachlink/
+Environment="PATH=/root/reachlink/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/root/reachlink/venv/bin/celery -A reachlink worker --loglevel=info
+
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

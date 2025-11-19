@@ -1,0 +1,13 @@
+[Unit]
+Description=gunicorn daemon for ReachLink BE
+After=network.target
+
+[Service]
+User=root
+Group=sudo
+WorkingDirectory=/etc/reach/reachlink/
+ExecStart=/usr/local/bin/gunicorn --workers 3 --bind 0.0.0.0:5000 reachlink.wsgi:application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

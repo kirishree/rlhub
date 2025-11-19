@@ -1,0 +1,19 @@
+[Unit]
+Description=ReachLink Frontend
+After=network.target
+
+[Service]
+User=reachlinkfe
+Group=reachlinkfe
+WorkingDirectory=/opt/reachlinkfe/etel_reachlink_web_fe
+ExecStart=/usr/local/bin/pnpm build:start
+
+# Proper log redirection
+StandardOutput=append:/var/log/reachlink/reachlinkfe.log
+StandardError=append:/var/log/reachlink/reachlinkfe.log
+Restart=always
+RestartSec=10
+
+
+[Install]
+WantedBy=multi-user.target

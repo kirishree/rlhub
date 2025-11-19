@@ -1,0 +1,15 @@
+[Unit]
+Description=gunicorn daemon for ReachLink
+After=network.target
+
+[Service]
+User=root
+Group=sudo
+WorkingDirectory=/root/reachlink/
+Environment="PATH=/root/reachlink/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/root/reachlink/venv/bin/gunicorn --workers 4 --threads 2 --bind 0.0.0.0:5000 --timeout 100 reachlink.wsgi:application
+LimitNOFILE=65535
+			
+
+[Install]
+WantedBy=multi-user.target

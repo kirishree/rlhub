@@ -345,9 +345,13 @@ def main():
                             bandwidth_info.append({"branch_location": rodevice["branch_location"],
                                                    "bits_recieved": 0,
                                                     "bits_sent": 0})
+                        public_ip = rodevice["public_ip"]
+                        for tunnels in tunnel_info:
+                            if rodevice["tunnel_ip"] == tunnels["tunnel_ip"]:
+                                public_ip = tunnels["public_ip"]
                         robustel_info.append({  "uuid": rodevice["uuid"],
                                                     "tunnel_ip": rodevice["tunnel_ip"],
-                                                    "public_ip":rodevice.get("public_ip", "None"),
+                                                    "public_ip":public_ip,
                                                     "branch_location": rodevice.get("branch_location", ""),
                                                     "subnet": rodevice.get("subnet", []),
                                                     "vrf": rodevice.get("vrf", ""),                                                
