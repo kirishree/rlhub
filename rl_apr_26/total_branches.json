@@ -1,0 +1,1 @@
+[{"public_ip": "None", "tunnel_ip": "10.50.50.92", "branch_location": "jeddah", "subnet": [], "vrf": "vrf1", "uuid": "jeddah_78.110.5.90_ciscodevice.net", "router_username": "spoke5-compedu", "router_password": "t8p0u2l@", "spokedevice_name": "Spoke2-compedu", "hub_ip": "78.110.5.90", "host_id": "10632", "status": "inactive"}]

@@ -96,7 +96,9 @@ def authenticate_user(data):
         headers = {
                     "Authorization": f"Bearer {access_token}"
                   }
-        service_response = requests.get(url+"services/", headers=headers)
+        subscription_response = requests.get(url+"subscription_transactions/", headers=headers)
+        subsjson_response = subscription_response.json()   
+                     
         if service_response.status_code == 200:
             servicejson_response = service_response.json()
             services_info = servicejson_response["data"]["services"]

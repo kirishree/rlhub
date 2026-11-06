@@ -22,7 +22,8 @@ from reach.views import vlan_interface_delete_spoke, add_route_spoke, get_pbr_in
 from reach.views import hub_info, get_ciscospoke_config, get_ciscohub_config
 from reach.views import create_vlan_interface_hub, create_sub_interface_hub, create_loopback_interface_hub, interface_config_hub
 from reach.views import vlan_interface_delete_hub, create_tunnel_interface_hub, create_loopback_interface_spoke, create_sub_interface_spoke, create_tunnel_interface_spoke
-from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info, logfile_content
+from reach.views import login_or_register, change_password, homepage_info, get_microtekspoke_config, traffic_report, get_robustelspoke_config, adminhomepage_info
+from reach.views.log_views import logfile_content
 from reach.microtik_views import add_microtik_hub
 from reach.views import (   get_m2mspoke_config, 
                             get_firewall_filter_details_spoke, 
@@ -96,7 +97,7 @@ urlpatterns = [
     path('beapi/add_route_spoke', add_route_spoke, name='add_route_spoke'),
     path('beapi/get_pbr_info_spoke', get_pbr_info_spoke, name='get_pbr_info_spoke'),
     path('beapi/addstaticroute_hub', addstaticroute_hub, name='addstaticroute_hub'),
-    path('beapi/deletestaticroute_hub', delstaticroute_hub, name='delstaticroute_hub'),
+    #path('beapi/deletestaticroute_hub', delstaticroute_hub, name='delstaticroute_hub'),
     path('beapi/del_staticroute_spoke', del_staticroute_spoke, name='del_staticroute_spoke'),
     path('beapi/get_interface_details_hub', get_interface_details_hub, name='get_interface_details_hub'),
     path('beapi/add_cisco_hub', add_cisco_hub, name='add_cisco_hub'),

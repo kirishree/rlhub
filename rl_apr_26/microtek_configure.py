@@ -1,0 +1,4122 @@
+import paramiko
+import time
+import ipaddress
+import re
+import logging
+import requests
+from datetime import datetime
+from decouple import config
+from django.core.cache import cache
+openvpn_network = config('OPENVPN_NETWORK')
+import numpy as np  # For percentile calculation
+zabbix_api_url = config('ZABBIX_API_URL')  # Replace with your Zabbix API URL
+auth_token = config('ZABBIX_API_TOKEN')
+ZABBIX_WEB_URL=config('ZABBIX_WEB_URL') # Zabbix server details
+USERNAME=config('USERNAME')
+PASSWORD=config('PASSWORD')
+login_payload = {
+    "name": USERNAME,
+    "password": PASSWORD,
+    "enter": "Sign in"
+}
+
+# Create a session
+session = requests.Session()
+logger = logging.getLogger('reachlink')
+def pingspoke(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "pingspoke",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ping {data["subnet"]} count 5')
+        final_output = " "
+        # Read the output in real-time
+        start_time = time.time()
+        timeout = 8  # Stop after 10 seconds
+        while True:
+            line = stdout.readline()
+            if not line:  # No more output
+                break            
+            out = line.strip()    
+            if data["subnet"] != "10.8.0.1":
+                if "10.8.0.1" in out or "127.0.0.1" in out:
+                    final_output = "packet-loss=100%"
+                    break  
+            if "while resolving ip-address: name does not exist" in out or "invalid value" in out:
+                final_output = "packet-loss=100%"
+                break  
+            if "sent=" in out:
+                final_output = out
+                break
+            # Stop the loop after the timeout
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the ping command.")
+                break
+    except Exception as e:
+        logger.error(
+            f"Error while ping spoke",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "pingspoke",
+                "exception": str(e)
+            }
+            )
+    finally:
+        # Close the SSH connection
+        ssh_client.close() 
+    if "avg-rtt=" in final_output:
+        avg_rtt = final_output.split(" ")[4].split("=")[1]        
+    elif "packet-loss=100%" in final_output:
+        avg_rtt = "-1"
+    else:
+        avg_rtt = "0"
+    logger.info(
+            f"ping result {final_output}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "pingspoke",
+                "exception": ""
+            }
+            )
+    return avg_rtt
+
+def addroute(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addroute",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command
+        subnets = data["subnet_info"]
+        not_added_route = []
+        route_conflict = False
+        for subnet in subnets:
+            corrected_dst = str(ipaddress.ip_network(subnet["subnet"], strict=False))        
+            corrected_subnet = ipaddress.ip_network(openvpn_network, strict=False)
+            dstip = corrected_dst.split("/")[0]
+            ip_obj = ipaddress.ip_address(dstip)
+            if ip_obj in corrected_subnet:
+                    response = [{"message": f"Error while adding route due to route conflict {openvpn_network}"}]
+                    route_conflict = True
+                    break  
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip route add dst-address={corrected_dst} gateway={subnet["gateway"]}')
+            # Read the actual output and errors
+            output = stdout.read().decode()
+            if output:
+                not_added_route.append(corrected_dst)
+        if not route_conflict:
+            if len(not_added_route) == 0:       
+                response = [{"message": "Route(s) added"}]
+            else:
+                response = [{"message": f"Error: {not_added_route} not added"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addroute",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding route",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addroute",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding route. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def clean_traceroute_output(raw_output):
+    # This regex matches ANSI escape sequences
+    ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+    cleaned_output = ansi_escape.sub('', raw_output)
+    return cleaned_output
+
+def traceroute(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "traceroute",
+                "exception": str(e)
+            }
+            )
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/tool traceroute {data["trace_ip"]}')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(1024).decode()  # Read available data
+
+                if data["trace_ip"] in output:
+                    break
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break         
+    except Exception as e:
+        logger.error(
+            f"Error while traceroute in Microtek Spoke",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "traceroute",
+                "exception": str(e)
+            }
+            )        
+        return "Error while traceroute in Microtek Spoke"        
+    finally:
+        # Close the SSH connection
+        ssh_client.close()
+        #return output.strip()       
+        cleaned_output = clean_traceroute_output(output)
+        out = cleaned_output.split("\r")
+        final = out[0]
+        lastline = out[-1].strip()
+        lastline = re.sub(r'\s+', ' ', lastline)        
+        if not lastline:
+            print("lasttt", out[-1])
+            out = out[:-1]
+        for out1 in out:
+            emptyidentify = out1.strip()
+            emptyidentify = re.sub(r'\s+', ' ', emptyidentify)
+            #print("out1", out1)
+            if not emptyidentify:                
+                final = out[0]
+            if out1:
+                final +=out1
+        return final
+
+
+def routingtable1(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "routingtable1",
+                "exception": str(e)
+            }
+            )
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break         
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return "Error while traceroute in Microtek Spoke"        
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        routes = output.split("\n")
+        i = 0
+        collect = []
+        for route in routes:
+#           print("hi")
+            if i < 5:
+                i = i+1
+            if i > 4:
+                newroutes = []
+                route_info = route.strip().split(" ")
+                for info in route_info:
+                    if info:
+                        newroutes.append(info)
+                if len(newroutes) > 2:
+                    if newroutes[1] == "ADC":
+                        collect.append({"protocol":newroutes[1],
+                                "destination": newroutes[2],
+                                "gateway": "None",
+                                "metric":newroutes[-1],
+                                "outgoint_interface_name": newroutes[4],
+                                "table_id": "Main Routing table"
+
+                                })
+                    if newroutes[1] == "ADS" or newroutes[1] == "S" or newroutes[1] =="DS":
+                        collect.append({"protocol":newroutes[1],
+                                "destination": newroutes[2],
+                                "gateway": newroutes[3],
+                                "metric":newroutes[-1],
+                                "outgoint_interface_name": "None",
+                                "table_id": "Main Routing table"
+
+                                })
+                    if newroutes[1] == "A" or newroutes[1] == "X":
+                        collect.append({"protocol":newroutes[2],
+                                "destination": newroutes[3],
+                                "gateway": newroutes[4],
+                                "metric":newroutes[-1],
+                                "outgoint_interface_name": "None",
+                                "table_id": "Main Routing table"
+
+                                })
+        return collect
+        
+def routingtable(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "routingtable",
+                "exception": str(e)
+            }
+            )
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break         
+    except Exception as e:
+        logger.error(
+            f"Error while getting routing table",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "routingtable",
+                "exception": str(e)
+            }
+            )
+        return "Error while getting routing table in Microtek Spoke"        
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        routes_info = output.split("\n")[3:]
+        routesinfo = []
+        data =[]      
+        for route in routes_info:
+            if route.strip():
+                routesinfo.append(route)
+            else:
+                data.append(routesinfo)
+                routesinfo = []
+        collect = []
+        for info in data:
+            routingtableava = False
+            interface = " "
+            for routeinfo in info:
+                routeinfostrip = routeinfo.strip()
+                if "dst-address=" in routeinfostrip:
+                    destination = routeinfostrip.split("dst-address=")[1].split(" ")[0]
+                    protocolinfo = routeinfostrip.split("dst-address=")[0].split(" ")[1:-1]
+                    protocol = " "
+                    for proto in protocolinfo:
+                        protocol = protocol + proto
+                    if "s" in protocol or "S" in protocol:
+                        protocol = "static"
+                if " gateway=" in routeinfostrip:
+                    gateway = routeinfostrip.split("gateway=")[1].split(" ")[0]
+                    if gateway == "ovpn1":
+                        gateway = "Base Tunnel"                       
+                    if gateway == "reachlink":
+                        gateway = "Overlay Tunnel"
+                if "distance=" in routeinfostrip:
+                    distance = routeinfostrip.split("distance=")[1].split(" ")[0]
+                if "reachable via" in routeinfostrip:
+                    interface = routeinfostrip.split("reachable via")[1].split(" ")[2]
+                    if interface == "ovpn1":
+                        interface = "Base Tunnel"                       
+                    if interface == "reachlink":
+                        interface = "Overlay Tunnel"
+                if "routing-mark=" in routeinfostrip:
+                    routingtable = routeinfostrip.split("routing-mark=")[1].split(" ")[0]
+                    routingtableava = True
+            if not routingtableava:
+                routingtable = "Main Routing table"
+            collect.append({"protocol":protocol,
+                                "destination": destination,
+                                "gateway": gateway,
+                                "metric":distance,
+                                "outgoint_interface_name": interface,
+                                "table_id": routingtable
+
+                                })
+        return collect
+
+def interfacedetails(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_interface_details",
+                "exception": str(e)
+            }
+            )
+            return []
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break         
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        addressoutput = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                addressoutput += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break         
+    except Exception as e:
+        logger.error(
+            f"Error while getting interface details",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_interface_details",
+                "exception": str(e)
+            }
+            )
+        return []        
+    finally:
+        # Close the SSH connection
+        ssh_client.close()            
+        interface_info = output.split("\n")[1:-1]
+        intfcinfo = []
+        data =[]      
+        for intfc in interface_info:
+            if intfc.strip():
+                intfcinfo.append(intfc)
+            else:
+                data.append(intfcinfo)
+                intfcinfo = []
+        collect = []
+        for info in data:           
+            for intinfo in info:
+                intinfostrip = intinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                intinfostrip = re.sub(r'\s+', ' ', intinfostrip)  # Replace multiple spaces with a single space
+                if " name=" in intinfostrip:
+                    interfacename = intinfostrip.split(" name=")[1].split('"')[1]                   
+                    status_info = intinfostrip.split(" ")[1]
+#                    print("status_info", status_info)
+                    if status_info == "R":
+                        intfc_status = "up"
+                    else:
+                        intfc_status = "down" 
+                if "defconf" in intinfostrip:
+                    status_info = intinfostrip.split(" ")[1]
+                    print("status_info", status_info)
+                    if status_info == "R":
+                        intfc_status = "up"
+                    else:
+                        intfc_status = "down"
+
+                if "type=" in intinfostrip:
+                    typeinfo = intinfostrip.split("type=")[1].split('"')[1]
+                    if typeinfo == "bridge":
+                       interfacename = "bridge"
+                    if typeinfo == "vlan":
+                       typeinfo = "VLAN"
+                if "mac-address=" in intinfostrip:
+                    macaddress = intinfostrip.split("mac-address=")[1].split(" ")[0]
+                if "actual-mtu=" in intinfostrip:
+                    mtu = intinfostrip.split("actual-mtu")[1].split(" ")[0]
+            if intfc_status == "up":
+                statusintfc = "up"    
+            else:
+                statusintfc = "down"
+            #if interfacename != "ether2" and interfacename != "ether3" and interfacename != "ether4" and interfacename != "ether5":
+            collect.append({"interface_name":interfacename,
+                                "mac_address": macaddress,
+                                "type": typeinfo,
+                                "mtu": mtu,
+                                "addresses": [{"IPv4address":" "}],
+                                "status":intfc_status
+                                })        
+        addresses_info = addressoutput.split("\n")[1:-1]
+        addressinfo = []
+        data1 =[]      
+        for addr in addresses_info:            
+            if addr.strip():
+                addressinfo.append(addr)
+            else:
+                data1.append(addressinfo)
+                addressinfo = []
+        collectaddr = []
+        for info1 in data1:             
+            for addrinfo in info1:
+                addrinfostrip = addrinfo.strip()            
+                if "address=" in addrinfostrip:
+                    intfcaddress = addrinfostrip.split("address=")[1].split(" ")[0]
+                    
+                if " interface=" in addrinfostrip:
+                    intfc = addrinfostrip.split(" interface=")[1].split(" ")[0]             
+            collectaddr.append({"interface_name":intfc,
+                                "address": intfcaddress                                            
+
+                                })     
+        for interface in collect:
+            for intfci in collectaddr:
+                if interface["interface_name"] == intfci["interface_name"]:                 
+                    if intfci["address"] != " ":
+                       interface["addresses"].append({"IPv4address":intfci["address"]})
+        for interface in collect:
+            if interface["interface_name"] == "ovpn1":
+                interface["interface_name"] = "Base Tunnel"
+                interface["type"] = "tunnel"
+            if interface["interface_name"] == "reachlink":
+                interface["interface_name"] = "Overlay Tunnel"
+                interface["type"] = "tunnel"
+            interface["addresses"] = [addr for addr in interface["addresses"] if addr["IPv4address"].strip()]    
+        return collect
+
+def prefix_len_to_netmask(prefix_len):
+    # Validate the prefix length
+    print(prefix_len)
+    prefix_len = int(prefix_len)
+    if not 0 <= prefix_len <= 32:
+        raise ValueError("Prefix length must be between 0 and 32")
+    # Calculate the netmask using bitwise operations
+    netmask = 0xffffffff ^ (1 << (32 - prefix_len)) - 1
+    # Format the netmask into IP address format
+    netmask_str = ".".join(str((netmask >> i) & 0xff) for i in [24, 16, 8, 0])
+    return netmask_str
+
+def get_ip_addresses(ip_address, netmask):
+    # Create an IPv4Network object representing the subnet
+    subnet = ipaddress.IPv4Network(f"{ip_address}/{netmask}", strict=False)
+    # Get the subnet ID and broadcast address
+    subnet_id = subnet.network_address
+    broadcast_ip = subnet.broadcast_address
+
+    # Extract and return the list of host IPs (excluding subnet ID and broadcast IP)
+    #host_ips = [str(ip) for ip in subnet.hosts()]
+    
+    if subnet.prefixlen == 31:
+        # For /31, both IPs can act as hosts (point-to-point links)
+        first_host = subnet.network_address
+        last_host = subnet.broadcast_address
+    else:
+        # For other subnets, calculate first and last host IPs
+        first_host = subnet.network_address + 1
+        last_host = subnet.broadcast_address - 1
+
+   
+    host_ips = [first_host, last_host]    
+    return {
+        "Subnet_ID": str(subnet_id),
+        "Broadcast_IP": str(broadcast_ip),
+        "Host_IPs": host_ips
+    }
+def rate_limit(ssh_client, subnet_id_lan):
+    try:
+        stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall filter disable [find comment="defconf: fasttrack"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall mangle remove [find comment="mark_upload_ratelimit"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall mangle remove [find comment="mark_download_ratelimit"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall mangle add chain=forward src-address="{subnet_id_lan}" src-address-list="!quota_exclude" action=mark-packet new-packet-mark=mark_upload comment=mark_upload_ratelimit'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall mangle add chain=forward dst-address="{subnet_id_lan}" dst-address-list="!quota_exclude" action=mark-packet new-packet-mark=mark_download comment=mark_download_ratelimit'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree remove [find name="parent_queue"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree remove [find name="queue_upload"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree remove [find name="queue_download"]'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree add name=parent_queue parent=global'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree add name=queue_upload parent=parent_queue packet-mark=mark_upload queue=pcq-upload-default max-limit=20M'
+        )
+        
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree add name=queue_download parent=parent_queue packet-mark=mark_download queue=pcq-download-default max-limit=20M'
+        )
+        ssh_client.exec_command(f'/system script remove [find name="check_quota"]')
+            
+        ssh_client.exec_command(f'/system script remove [find name="reset_quota"]')
+        
+        ssh_client.exec_command(f'/system scheduler remove [find name="check_schedule"]')
+        
+        ssh_client.exec_command(f'/system scheduler remove [find name="reset_schedule"]')
+
+        # Check Quota script 
+        quota_limit =  10000000000  #10GB                
+        check_script_cmd = f"""/system script add name=check_quota source=":local limit {quota_limit}; :local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; :local upBytes [/queue tree get [find name=\\$qUp] bytes]; :local downBytes [/queue tree get [find name=\\$qDown] bytes]; :local total (\\$upBytes + \\$downBytes); :log info (\\"Current usage for network\\"  . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue tree set [find name=\\$qUp] max-limit=64k; /queue tree set [find name=\\$qDown] max-limit=64k; :log warning (\\"Quota exceeded for tree - throttled both directions - blocked\\") }}" """
+        ssh_client.exec_command(check_script_cmd)
+
+                    
+        # Reset script (daily reset at midnight)
+        max_limit = "20M"
+        reset_script_cmd = f"""/system script add name=reset_quota source=":local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; /queue tree reset-counters [find name=\\$qDown];  /queue tree reset-counters [find name=\\$qUp]; /queue tree set [find name=\\$qUp] max-limit={max_limit}; /queue tree set [find name=\\$qDown] max-limit={max_limit}; :log info (\\"Daily quota reset for \\" )" """
+        ssh_client.exec_command(reset_script_cmd)
+
+        # Scheduler for check every 5 min
+        
+        check_sched_cmd = f"/system scheduler add name=check_schedule interval=5m on-event=check_quota"
+        ssh_client.exec_command(check_sched_cmd)
+
+        # Scheduler for reset at midnight
+        
+        reset_sched_cmd = f"/system scheduler add name=reset_schedule start-time=00:00:00 interval=1d on-event=reset_quota"
+        ssh_client.exec_command(reset_sched_cmd)
+    except Exception as e:
+        print("tree config",e)
+        
+def interfaceconfig(data):   
+   # Define the router details       
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+     # Create an SSH client instance
+    
+    if data["intfc_name"] == "ether1" or data["intfc_name"] == "Base Tunnel" or data["intfc_name"] == "Overlay Tunnel":
+        response = [{"message": f"Error don't try to modify {data['intfc_name']} interface address"}]
+        return response
+    if "ether" in data["intfc_name"] and "." not in data["intfc_name"]:
+        response = [{"message": f"Error don't try to assign IP on layer 2 interface"}]
+        return response
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
+            response = [{"message":"Error: SSH connection error"}]
+            return response
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")   
+        for i in range(1, len(addresses_info)):
+            addr = addresses_info[i]
+            addr = addr.strip()
+                # Clean up extra spaces or non-visible characters using regex
+            addr = re.sub(r'\s+', ' ', addr)  # Replace multiple spaces with a single space
+            if "address=" in addr:
+                    intfcname = addr.split("interface=")[1].split(" ")[0] 
+                    #print(intfcname)
+                    if intfcname == data["intfc_name"]:                                                                          
+                            removeitemno = addr.split(" ")[0]                             
+                            if len(removeitemno) > 1:                                
+                                removeitemno = addresses_info[i-1].strip().split(" ")[0]                                                                          
+                            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
+        
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")  
+        interface_addresses = [] 
+        for addr in addresses_info:
+            if "address=" in addr:
+                    intfcname = addr.split("interface=")[1].split(" ")[0] 
+                    addr = re.sub(r'\s+', ' ', addr)  # Replace multiple spaces with a single space
+                    stat = addr.split(" ")[1]
+                    if intfcname != data["intfc_name"] and stat != "I":
+                        intfcaddress = addr.split("address=")[1].split(" ")[0]  
+                        interface_addresses.append(intfcaddress) 
+        for int_addr in data["new_addresses"]:
+            for address in interface_addresses:
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(int_addr["address"].split("/")[0])
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr['address']}"}]
+                    ssh_client.close()            
+                    return response
+        for newaddr in data["new_addresses"]:
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr["address"]} interface={data["intfc_name"]}')
+        
+        #DHCP POOL Config
+        if data["intfc_name"] == "bridge":            
+            lan_addr = data["new_addresses"][0]["address"]
+            netmask = prefix_len_to_netmask(lan_addr.split("/")[1])
+            ip_addr = lan_addr.split("/")[0]       
+            ip_addresses = get_ip_addresses(ip_addr, netmask) 
+            dhcp_start_address = ip_addresses["Host_IPs"][0]
+            dhcp_end_address = ip_addresses["Host_IPs"][1]
+            #
+            subnet_id_lan = ip_addresses["Subnet_ID"] + "/" + lan_addr.split("/")[1]
+
+            #Update network address
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            dhcpserver_info = output.split("\n")[1:-1]
+            for old_rule in dhcpserver_info:
+                if "address=" in old_rule:
+                    old_rule = old_rule.strip()
+                    old_rule = re.sub(r'\s+', ' ', old_rule)
+                    old_address = old_rule.split("address=")[1].split(" ")[0]
+                    print(old_address)
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network remove [find address="{old_address}"]')
+                    print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+                    print("DHCP-Server Remove STDERR:", stderr.read().decode())                    
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server network add address="{subnet_id_lan}" gateway="{ip_addr}" dns-server="{ip_addr}"')
+            #print("DHCP-Server STDOUT:", stdout.read().decode())
+            #print("DHCP-Server STDERR:", stderr.read().decode())
+            
+            #Add  Drop rule  for other DNS
+            #delete old rule if any
+            stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall filter remove [find comment="Drop DNS not to MikroTik"]'
+            )
+            #print("Delete UDP STDOUT:", stdout.read().decode())
+            #print("Delete UDP STDERR:", stderr.read().decode())
+
+            stdin, stdout, stderr = ssh_client.exec_command(
+                '/ip firewall filter remove [find comment="Drop TCP DNS not to MikroTik"]'
+            )
+            #print("Delete TCP STDOUT:", stdout.read().decode())
+            #print("Delete TCP STDERR:", stderr.read().decode())
+            
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall filter add chain=forward protocol=udp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=[find comment="enable-snmpaccess"] comment="Drop DNS not to MikroTik"'
+            )
+
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall filter add chain=forward protocol=tcp dst-port=53 dst-address="!{ip_addr}" action=drop place-before=[find comment="enable-snmpaccess"] comment="Drop TCP DNS not to MikroTik"'
+            )
+            #print("STDOUT:", stdout.read().decode())
+            #print("STDERR:", stderr.read().decode())
+            # Execute the dhcp server command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            dhcppool_info = output.split("\n")  
+            #print(dhcppool_info) 
+            for addr in dhcppool_info:
+                if "interface=" in addr:
+                    intfcname = addr.split("interface=")[1].split(" ")[0]   
+                    if intfcname == "bridge":
+                        poolname = addr.split("address-pool=")[1].split(" ")[0]                
+                        break
+            #print(poolname)
+            if poolname:
+                # Execute the ip pool command 
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
+                # Initialize variables for output collection
+                start_time = time.time()
+                timeout = 10  # Stop after 10 seconds
+        
+                # Use a loop to monitor and collect output
+                output = ""
+                while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                    if stdout.channel.recv_ready():
+                        output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                    # Break if timeout is reached
+                    if time.time() - start_time > timeout:
+                        print("Timeout reached. Terminating the traceroute command.")
+                        break  
+                pool_info = output.split("\n")   
+                for addr in pool_info:
+                    if "name=" in addr:
+                        getpoolname = addr.split("name=")[1].split(" ")[0].split('"')[1]      
+                        if poolname == getpoolname:
+                            poolnumbers = addr.split(" ")[1]  
+                            break
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
+                #Configure the RateLimiting on LAN
+                rate_limit(ssh_client, subnet_id_lan)
+                response = [{"message":f"LAN configured successfully on {lan_addr}"}]
+            else:
+                response = [{"message":"LAN IP configured but error in DHCP configuration."}]
+        response = [{"message": f"Interface {data['intfc_name']} updated"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "interface_config",
+                "exception": ""
+            }
+            )
+    except Exception as e:
+        logger.error(
+            f"Error in interface config",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "interface_config",
+                "exception": str(e)
+            }
+            )
+        response = [{"message": f"Error while updating interface {data['intfc_name']}"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def createvlaninterface(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    if data['link'] == "ether1":
+        response = [{"message": "Error: Don't create a VLAN directly on a Layer 3 interface"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "createvlan_interface",
+                "exception": ""
+            }
+            )
+        return response
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "create_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message":"Error: SSH connection timeout"}]
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data               
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")  
+        interface_addresses = [] 
+        for addr in addresses_info:
+            if "address=" in addr:
+                    if " I " in addr:
+                        continue
+                    intfcaddress = addr.split("address=")[1].split(" ")[0]  
+                    interface_addresses.append(intfcaddress) 
+        for int_addr in data["addresses"]:
+            for address in interface_addresses:                   
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])                
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring interface due to address conflict {int_addr}"}]
+                    ssh_client.close()            
+                    return response
+        vlan_int_name = f"{data['link']}.{data['vlan_id']}"
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan add name={vlan_int_name} vlan-id={data["vlan_id"]} interface={data["link"]}')  
+        for newaddr in data["addresses"]:
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={newaddr} interface={vlan_int_name}')  
+        response = [{"message": f"Interface {vlan_int_name} created "}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "create_interface",
+                "exception": " "
+            }
+            )
+    except Exception as e:
+        logger.error(
+            f"Error in interface create",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "create_interface",
+                "exception": str(e)
+            }
+            )
+        response = [{"message": f"Error while creating interface {data['link']}"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def createtunnelinterface(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    greintfcname = "gretunnel" + data["tunnel_intfc_name"] 
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)               
+        except Exception as e:
+            logger.error(
+            f"SSH Connection time out",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "create_tunnel_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error: SSH connection timeout"}]
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data               
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")  
+        interface_addresses = [] 
+        for addr in addresses_info:
+            if "address=" in addr:
+                    if " I " in addr:
+                        continue
+                    intfcaddress = addr.split("address=")[1].split(" ")[0] 
+                    if data["link"] == addr.split("interface=")[1].split(" ")[0]:
+                        local_address = intfcaddress.split("/")[0]
+                    interface_addresses.append(intfcaddress) 
+        for int_addr in data["addresses"]:
+            for address in interface_addresses:                   
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(int_addr.split("/")[0])                
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while creating Tunnel interface due to address conflict {int_addr}"}]
+                    ssh_client.close()            
+                    return response             
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre add name={greintfcname} local-address={local_address} remote-address={data["destination_ip"]}')  
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={data["addresses"][0]} interface={greintfcname}')  
+        response = [{"message": f"Tunnel interface {greintfcname} created "}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "create_tunnel_interface",
+                "exception": " "
+            }
+            )
+
+    except Exception as e:
+        logger.error(
+            f"Error in tunnel interface create",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "create_tunnel_interface",
+                "exception": str(e)
+            }
+            )
+        response = [{"message": f"Error while creating Tunnel interface {greintfcname}. Pl try again!"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def deletevlaninterface(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection timeout",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+            return [{"message":"Error: SSH Connection timeout"}]
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        vlan_info = output.split("\n")   
+        for addr in vlan_info:
+            if "name=" in addr:
+                    vlanname = addr.split("name=")[1].split(" ")[0].split('"')[1]                    
+                    print("vlanname", vlanname)
+                    print(data["intfc_name"])
+                    if vlanname == data['intfc_name']:
+                            print("hi")
+                            removeitemno = addr.split(" ")[1]
+                            print("vlan item", removeitemno)
+                            stdin, stdout, stderr = ssh_client.exec_command(f'/interface vlan remove {removeitemno}')
+                            response = [{"message": f"Interface {data['intfc_name']} deleted"}]
+                            ssh_client.close()       
+                            return response
+        response = [{"message": f"Error no such interface {data['intfc_name']}"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": " "
+            }
+            )
+    except Exception as e:
+        logger.error(
+            f"Error while deleting interface",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_interface",
+                "exception": str(e)
+            }
+            )
+        response = [{"message": f"Error while deleting interface {data['intfc_name']}. Pl try again!"}]
+          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def deletetunnelinterface(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data               
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        gre_info = output.split("\n")   
+        for addr in gre_info:
+            if "name=" in addr:
+                    tunnelname = addr.split("name=")[1].split(" ")[0].split('"')[1]                    
+                    print("tunnelname", tunnelname)
+                    print(data["intfc_name"])
+                    if tunnelname == data['intfc_name']:                            
+                            removeitemno = addr.split(" ")[1]                            
+                            stdin, stdout, stderr = ssh_client.exec_command(f'/interface gre remove {removeitemno}')
+                            response = [{"message": f"Interface {data['intfc_name']} deleted"}]
+                            ssh_client.close()       
+                            return response
+        response = [{"message": f"Error no such Tunnel interface {data['intfc_name']}"}]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = [{"message": f"Error while deleting Tunnel interface {data['intfc_name']}. Pl try again!"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def configurepbr(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the command to add rule in mangle for PBR
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle print')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data             
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        mangle_info = output.split("\n")[1:-1]
+        mangleinfo = []
+        data_pbr =[]      
+        for intfc in mangle_info:
+            if intfc.strip():
+                mangleinfo.append(intfc)
+            else:
+                data_pbr.append(mangleinfo)
+                mangleinfo = []
+        collect = []
+        for info in data_pbr:            
+            new_routing_mark = " "  
+            src_address = "any"
+            dst_address = "any"     
+            for pbrinfo in info:                
+                pbrinfostrip = pbrinfo.strip()
+                if "new-routing-mark=" in pbrinfostrip:
+                    new_routing_mark = pbrinfostrip.split("new-routing-mark=")[1].split(" ")[0]                   
+                if "src-address=" in pbrinfostrip:
+                    src_address = pbrinfostrip.split("src-address=")[1].split(" ")[0]   
+                if "dst-address=" in pbrinfostrip:
+                    dst_address = pbrinfostrip.split("dst-address=")[1].split(" ")[0]                 
+            if new_routing_mark != " ":   
+                collect.append({"new_routing_mark":new_routing_mark,
+                            "src_address": src_address,
+                            "dst_address": dst_address})    
+        
+        # Execute the command to add rule in mangle for PBR
+        for subnet in data["realip_subnet"]:          
+            subnet_key = "destination" if "destination" in subnet else "subnet" if "subnet" in subnet else None
+            alreadyconfigured = False
+            if subnet_key:
+                for pbr in collect:                    
+                    if pbr["src_address"] == subnet[subnet_key]:
+                        alreadyconfigured = True
+                        break
+                if alreadyconfigured == False:
+                    stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle add chain=prerouting src-address={subnet[subnet_key]} dst-address=!{subnet[subnet_key]} action=mark-routing new-routing-mark=reachlink')
+        response = [{"message": f"Successfully configured PBR in Microtek Spoke"}]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = [{"message": f"Error while configuring PBR in Microtek Spoke"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def getconfigurepbr(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the command to add rule in mangle for PBR
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall mangle print')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        mangle_info = output.split("\n")[1:-1]
+        mangleinfo = []
+        data =[]      
+        for intfc in mangle_info:
+            if intfc.strip():
+                mangleinfo.append(intfc)
+            else:
+                data.append(mangleinfo)
+                mangleinfo = []
+        collect = []
+        for info in data:   
+            new_routing_mark = " "  
+            src_address = "any"
+            dst_address = "any"     
+            for pbrinfo in info:
+                pbrinfostrip = pbrinfo.strip()
+                if "new-routing-mark=" in pbrinfostrip:
+                    new_routing_mark = pbrinfostrip.split("new-routing-mark=")[1].split(" ")[0]                   
+                if "src-address=" in pbrinfostrip:
+                    src_address = pbrinfostrip.split("src-address=")[1].split(" ")[0]   
+                if "dst-address=" in pbrinfostrip:
+                    dst_address = pbrinfostrip.split("dst-address=")[1].split(" ")[0]                 
+            if new_routing_mark != " ":   
+                collect.append({"new_routing_mark":new_routing_mark,
+                            "src_address": src_address,
+                            "dst_address": dst_address})    
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")   
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return collect
+
+def delstaticroute(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:            
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip route print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data    
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:                
+                break  
+        route_info = output.split("\n") 
+        for routes in data["routes_info"]:  
+            if "0.0.0.0" in routes["destination"] or "10.8.0.0/24" in routes["destination"]:
+                response = [{"message": f"Error: Route {routes['destination']} deletion is prohibited "}]
+                break
+            for addr in route_info:
+                if "dst-address=" in addr and "gateway=" in addr:                    
+                    dstaddr = addr.split("dst-address=")[1].split(" ")[0]                   
+                    gateway = addr.split("gateway=")[1].split(" ")[0]                                      
+                    if dstaddr == routes["destination"] and gateway == routes["gateway"]:                            
+                            addrstrip = addr.strip()                            
+                            removeitemno = addrstrip.split(" ")[0]                            
+                            stdin, stdout, stderr = ssh_client.exec_command(f'/ip route remove {removeitemno}')                            
+                            response = [{"message": f"Route: {data['routes_info'][0]['destination']} deleted"}]        
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_static_route",
+                "exception": " "
+            }
+            )
+    except Exception as e:
+        logger.error(
+            f"Error while deleting route {data['routes_info']}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "delete_static_route",
+                "exception": str(e)
+            }
+            )
+        response = [{"message": f"Error while deleting route {data['routes_info']}. Pl try again!"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def laninfo(data):   
+   # Define the router details
+    
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+     # Create an SSH client instance
+    dhcp_start_addr = False
+    dhcp_end_addr = False
+    primary_dns = False
+    sec_dns = False
+    lan_ipaddr = False
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")   
+        for addr in addresses_info:
+#            addr = addr.strip()
+            if " interface=" in addr:
+                    intfcname = addr.split(" interface=")[1].split(" ")[0]   
+                    if intfcname == "bridge":
+                        print("adderess", addr)
+                        lan_ipaddr = addr.split("address=")[1].split(" ")[0]                
+                        break
+        # Execute the dns info command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns print')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        dns_info = output.split("\n")   
+        for dnsinfo in dns_info:
+            dnsinfo = dnsinfo.strip()
+            if "servers:" in dnsinfo:
+                    dnsservers = dnsinfo.split("servers:")[1].split(" ")[1]
+                    primary_dns = dnsservers.split(",")[0]
+                    sec_dns = dnsservers.split(",")[1]
+                    break
+        if lan_ipaddr:
+            # Execute the dhcp server command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            dhcppool_info = output.split("\n")   
+            for addr in dhcppool_info:
+                if "interface=" in addr:
+                    intfcname = addr.split("interface=")[1].split(" ")[0]   
+                    if intfcname == "bridge":
+                        poolname = addr.split("address-pool=")[1].split(" ")[0]                
+                        break
+            if poolname:
+                # Execute the ip pool command 
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
+                # Initialize variables for output collection
+                start_time = time.time()
+                timeout = 10  # Stop after 10 seconds
+        
+                # Use a loop to monitor and collect output
+                output = ""
+                while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                    if stdout.channel.recv_ready():
+                        output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                    # Break if timeout is reached
+                    if time.time() - start_time > timeout:
+                        print("Timeout reached. Terminating the traceroute command.")
+                        break  
+                pool_info = output.split("\n")   
+                for addr in pool_info:
+                    if "name=" in addr:
+                        getpoolname = addr.split("name=")[1].split(" ")[0].split('"')[1]      
+                        if poolname == getpoolname:
+                            addressrange = addr.split("ranges=")[1].split(" ")[0]  
+                            dhcp_start_addr = addressrange.split("-")[0]    
+                            dhcp_end_addr = addressrange.split("-")[1]        
+                            break
+        response = {"dhcp_start_addr":dhcp_start_addr,
+                   "dhcp_end_addr":dhcp_end_addr,
+                   "primary_dns":primary_dns,
+                   "sec_dns":sec_dns,
+                   "lan_ipaddr": lan_ipaddr}
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = {"dhcp_start_addr":dhcp_start_addr,
+                   "dhcp_end_addr":dhcp_end_addr,
+                   "primary_dns":primary_dns,
+                   "sec_dns":sec_dns,
+                   "lan_ipaddr": lan_ipaddr}
+          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+data = {"tunnel_ip":"10.200.202.6/24",
+        "router_username":"admin",
+        "router_password": "123@abc.com"}   
+   
+#print(laninfo(data))
+def  validateIP(ip_address):
+    octet = ip_address.split(".")
+    prefix_len = ip_address.split("/")[1]
+    if prefix_len == 32:
+        return False
+    if octet[0] == "10":
+        if int(prefix_len) > 7:
+            return True
+    if octet[0] == "172":
+        if 15 < int(octet[1]) < 32:
+            if int(prefix_len) > 15:
+                return True
+    if octet[0] == "192" and octet[1] == "168":
+        if int(prefix_len) > 23:
+            return True    
+    return False
+
+
+def lanconfig(data):   
+   # Define the router details
+    
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    ip_address = data.get("ipaddress")
+    if not (validateIP(ip_address)):
+            response = [{"message": "Error: IP should be in private range"}] 
+            print(response)  
+            return response
+    netmask = prefix_len_to_netmask(ip_address.split("/")[1])
+    ip_addr = ip_address.split("/")[0]       
+    ip_addresses = get_ip_addresses(ip_addr, netmask) 
+    if ip_addr == ip_addresses["Subnet_ID"] or ip_addr ==  ip_addresses[ "Broadcast_IP"]:
+            response = [{"message": "Error: Either Subnet ID or Broadcast IP is not able to assign"}]  
+            print(response) 
+            return response
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        addresses_info = output.split("\n")   
+        for addr in addresses_info:
+            if " interface=" in addr:
+                    intfcname = addr.split(" interface=")[1].split(" ")[0]                    
+                    if intfcname == "bridge":
+                        addr = addr.strip()
+                        removeitemno = addr.split(" ")[0]
+                        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address remove {removeitemno}')
+        
+        # Execute the trace command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the address print command.")
+                break  
+        addresses_info = output.split("\n")  
+        interface_addresses = [] 
+        for addr in addresses_info:
+            if "address=" in addr:
+                    intfcaddress = addr.split("address=")[1].split(" ")[0]  
+                    interface_addresses.append(intfcaddress) 
+#        for int_addr in data["new_addresses"]:
+        for address in interface_addresses:
+                corrected_subnet = ipaddress.ip_network(address, strict=False)
+                ip_obj = ipaddress.ip_address(ip_address.split("/")[0])
+                if ip_obj in corrected_subnet:  
+                    response = [{"message": f"Error while configuring interface due to address conflict {ip_address}"}]
+                    ssh_client.close()            
+                    return response
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip address add address={ip_address} interface=bridge')  
+        dhcp_start_address = ip_addresses["Host_IPs"][0]
+        dhcp_end_address = ip_addresses["Host_IPs"][1]
+        # Execute the dhcp server command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        dhcppool_info = output.split("\n")   
+        for addr in dhcppool_info:
+            if "interface=" in addr:
+                intfcname = addr.split("interface=")[1].split(" ")[0]   
+                if intfcname == "bridge":
+                    poolname = addr.split("address-pool=")[1].split(" ")[0]                
+                    break
+        if poolname:
+            # Execute the ip pool command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            pool_info = output.split("\n")   
+            for addr in pool_info:
+                if "name=" in addr:
+                    getpoolname = addr.split("name=")[1].split(" ")[0].split('"')[1]      
+                    if poolname == getpoolname:
+                        poolnumbers = addr.split(" ")[1]  
+                        break
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
+            response = [{"message":"LAN configured successfully"}]
+        else:
+            response = [{"message":"LAN IP configured but error in DHCP configuration."}]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = [{"message":"Error in LAN configuration"}]        
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+
+def dhcpconfig(data):   
+   # Define the router details    
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    primary_dns = data.get("primary_dns","8.8.8.8")
+    sec_dns = data.get("secondary_dns", "8.8.4.4")
+    dhcp_start_address = data.get("dhcp_start_addr", False)
+    dhcp_end_address = data.get("dhcp_end_addr", False)
+    if dhcp_start_address == False or dhcp_end_address == False:
+        reponse = {"message": "Error DHCp start address or end address is not available"}
+        return response
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the dhcp server command 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dhcp-server print detail')
+        # Initialize variables for output collection
+        start_time = time.time()
+        timeout = 10  # Stop after 10 seconds
+        
+        # Use a loop to monitor and collect output
+        output = ""
+        while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+            if stdout.channel.recv_ready():
+                output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+            # Break if timeout is reached
+            if time.time() - start_time > timeout:
+                print("Timeout reached. Terminating the traceroute command.")
+                break  
+        dhcppool_info = output.split("\n")   
+        for addr in dhcppool_info:
+            if "interface=" in addr:
+                intfcname = addr.split("interface=")[1].split(" ")[0]   
+                if intfcname == "bridge":
+                    poolname = addr.split("address-pool=")[1].split(" ")[0]                
+                    break
+        if poolname:
+            # Execute the ip pool command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break  
+            pool_info = output.split("\n")   
+            for addr in pool_info:
+                if "name=" in addr:
+                    getpoolname = addr.split("name=")[1].split(" ")[0].split('"')[1]      
+                    if poolname == getpoolname:
+                        poolnumbers = addr.split(" ")[1]  
+                        break
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool set numbers={poolnumbers} ranges={dhcp_start_address}-{dhcp_end_address}')
+            response = [{"message":"LAN configured successfully"}]
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns set servers={primary_dns},{sec_dns}')
+            response = [{"message": "DHCP configured successfully"}]
+        else:
+            response = [{"message":"Error in getting DHCP pool name."}]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        response = [{"message":"Error in DHCP configuration"}]          
+    finally:
+        # Close the SSH connection
+        ssh_client.close()       
+        return response
+                
+def openvpnserverconfig(data):   
+   # Define the router details    
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]   
+    public_ip = data["public_ip"] 
+    openvpn_network_addr = data["overlay_network_addr"]
+    pool_start_addr = data["pool_start_addr"]
+    pool_end_addr = data["pool_end_addr"]
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        # Connect to the router
+        ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        # Execute the dhcp server command 
+        ca_cmd = f"""
+            /certificate add \
+            name=CA \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={public_ip} \
+            subject-alt-name=IP:{public_ip} \
+            key-usage=key-cert-sign,crl-sign
+        """
+        stdin, stdout, stderr = ssh_client.exec_command(ca_cmd)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate sign CA ca=CA ca-crl-host={public_ip} ')
+        server_cert_cmd = f"""
+            /certificate add \
+            name=Server \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={public_ip} \
+            subject-alt-name=IP:{public_ip} \
+            key-usage=digital-sign,key-encipherment,tls-server
+        """
+        stdin, stdout, stderr = ssh_client.exec_command(server_cert_cmd)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate sign Server ca=CA')
+        client_cert_cmd = f"""
+            /certificate add \
+            name=Client \
+            country=SA \
+            state=Jeddah \
+            locality=Jeddah \
+            organization=CloudEtel \
+            unit=ReachLink \
+            common-name={public_ip} \
+            key-usage=tls-client
+        """
+        stdin, stdout, stderr = ssh_client.exec_command(client_cert_cmd)
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate sign Client ca=CA')
+        #create IP pool - For openVPN clients
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip pool add name=ovpn-pool ranges={pool_start_addr}-{pool_end_addr}')
+        #create_ppp_profile
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ppp profile add name=ovpn-profile local-address={openvpn_network_addr} remote-address=ovpn-pool')
+        #Create ppp secrets
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ppp secret add name=rlhub password=rlpass profile=ovpn-profile service=ovpn')
+        #Enable & configure openvpn server
+        stdin, stdout, stderr = ssh_client.exec_command(f'/interface ovpn-server server set enabled=yes certificate=Server auth=sha1 cipher=aes256 default-profile=ovpn-profile require-client-certificate=yes')
+        #Export CA certificate
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate export-certificate CA')
+        #Export Client Certificate
+        stdin, stdout, stderr = ssh_client.exec_command(f'/certificate export-certificate Client export-passphrase=rl123456')
+        # SFTP to download
+        sftp = ssh_client.open_sftp()
+        sftp.get("cert_export_CA.crt", "./cert_export_CA.crt")
+        sftp.get("cert_export_Client.crt", "./cert_export_Client.crt")
+        sftp.get("cert_export_Client.key", "./cert_export_Client.key")
+        sftp.close()
+
+    except Exception as e:
+        print(e)
+
+
+def firewalldetails(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_firewall_details",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting firewall details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_firewall_details",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []          
+        firewall_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for finfo in firewall_info:
+            if finfo.strip():
+                rules.append(finfo)
+            else:
+                rules_info.append(rules)
+                rules = []        
+        for rule in rules_info: 
+            chain = ""
+            action = ""
+            protocol = ""
+            src_address = "any"
+            dst_address = "any"
+            src_port = "any"
+            dst_port = "any"
+            description = ""
+            in_interface_list = "any"
+            out_interface_list = "any"
+            connection_state = ""
+            tls_host = ""  
+            in_interface = "any"
+            out_interface = "any" 
+            rule_no = ""       
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1]  
+                    rule_no = ruleinfostrip.split(" ")[0]                  
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        firewall_status = "disabled"
+                    elif status_info == "I":
+                        firewall_status= "Invalid" 
+                    elif status_info == "D":
+                        firewall_status= "Dynamic" 
+                    else: 
+                        firewall_status= "Enabled" 
+                #if "defconf" in intinfostrip:
+                #    status_info = intinfostrip.split(" ")[1]
+                #    print("status_info", status_info)
+                #    if status_info == "R":
+                #        intfc_status = "up"
+                #    else:
+                #        intfc_status = "down"
+
+                if "chain=" in ruleinfostrip:
+                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]  
+                    if description == "":
+                        status_info = ruleinfostrip.split(" ")[1]  
+                        rule_no = ruleinfostrip.split(" ")[0]                  
+#                       print("status_info", status_info)
+                        if status_info == "X":
+                            firewall_status = "disabled"
+                        elif status_info == "I":
+                            firewall_status= "Invalid" 
+                        elif status_info == "D":
+                            firewall_status= "Dynamic" 
+                        else: 
+                            firewall_status= "Enabled" 
+
+                if "action=" in ruleinfostrip:
+                    action = ruleinfostrip.split("action=")[1].split(" ")[0]
+                if "protocol=" in ruleinfostrip:
+                    protocol = ruleinfostrip.split("protocol=")[1].split(" ")[0]
+                if "src-address=" in ruleinfostrip:
+                    src_address = ruleinfostrip.split("src-address=")[1].split(" ")[0]
+                if "dst-address=" in ruleinfostrip:
+                    dst_address = ruleinfostrip.split("dst-address=")[1].split(" ")[0]
+                if "src-port=" in ruleinfostrip:
+                    src_port = ruleinfostrip.split("src-port=")[1].split(" ")[0]
+                if "dst-port=" in ruleinfostrip:
+                    dst_port = ruleinfostrip.split("dst-port=")[1].split(" ")[0]
+                if "in-interface-list=" in ruleinfostrip:
+                    in_interface_list = ruleinfostrip.split("in-interface-list=")[1].split(" ")[0]
+                if "out-interface-list=" in ruleinfostrip:
+                    out_interface_list = ruleinfostrip.split("out-interface-list=")[1].split(" ")[0]
+                if "connection-state=" in ruleinfostrip:
+                    connection_state = ruleinfostrip.split("connection-state=")[1].split(" ")[0]
+                if "tls-host=" in ruleinfostrip:
+                    tls_host= ruleinfostrip.split("tls-host=")[1].split(" ")[0]   
+                if "in-interface=" in ruleinfostrip:
+                    in_interface = ruleinfostrip.split("in-interface=")[1].split(" ")[0]
+                if "out-interface=" in ruleinfostrip:
+                    out_interface = ruleinfostrip.split("out-interface=")[1].split(" ")[0]                     
+            collect.append({"chain":chain ,
+                            "action": action,
+                            "protocol":protocol,
+                            "src_address":src_address,
+                            "dst_address":dst_address,
+                            "src_port": src_port,
+                            "dst_port":dst_port,
+                            "in_interface_list":in_interface_list,
+                            "out_interface_list": out_interface_list,
+                            "connection_state":connection_state,
+                            "tls_host":tls_host,
+                            "description":description,
+                            "firewall_status":firewall_status,
+                            "in_interface":in_interface,
+                            "out_interface":out_interface,
+                            "rule_no":rule_no
+                            })         
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_firewall_details",
+                    "exception": str(e)
+                }
+            )
+    return collect
+
+def firewallnatdetails(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_firewall_nat_details",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting firewall details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_firewall_nat_details",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []          
+        firewall_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for finfo in firewall_info:
+            if finfo.strip():
+                rules.append(finfo)
+            else:
+                rules_info.append(rules)
+                rules = []        
+        for rule in rules_info: 
+            chain = ""
+            action = ""
+            protocol = ""
+            src_address = "any"
+            dst_address = "any"
+            src_port = "any"
+            dst_port = "any"
+            description = ""
+            in_interface_list = "any"
+            out_interface_list = "any"
+            connection_state = ""
+            tls_host = ""  
+            in_interface = "any"
+            out_interface = "any"  
+            rule_no = ""      
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1] 
+                    rule_no = ruleinfostrip.split(" ")[0]                   
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        firewall_status = "disabled"
+                    elif status_info == "I":
+                        firewall_status= "Invalid" 
+                    elif status_info == "D":
+                        firewall_status= "Dynamic" 
+                    else: 
+                        firewall_status= "Enabled" 
+                #if "defconf" in intinfostrip:
+                #    status_info = intinfostrip.split(" ")[1]
+                #    print("status_info", status_info)
+                #    if status_info == "R":
+                #        intfc_status = "up"
+                #    else:
+                #        intfc_status = "down"
+
+                if "chain=" in ruleinfostrip:
+                    chain = ruleinfostrip.split("chain=")[1].split(" ")[0]   
+                    if description == "":
+                        status_info = ruleinfostrip.split(" ")[1]  
+                        rule_no = ruleinfostrip.split(" ")[0]                  
+#                       print("status_info", status_info)
+                        if status_info == "X":
+                            firewall_status = "disabled"
+                        elif status_info == "I":
+                            firewall_status= "Invalid" 
+                        elif status_info == "D":
+                            firewall_status= "Dynamic" 
+                        else: 
+                            firewall_status= "Enabled"                  
+                if "action=" in ruleinfostrip:
+                    action = ruleinfostrip.split("action=")[1].split(" ")[0]
+                if "protocol=" in ruleinfostrip:
+                    protocol = ruleinfostrip.split("protocol=")[1].split(" ")[0]
+                if "src-address=" in ruleinfostrip:
+                    src_address = ruleinfostrip.split("src-address=")[1].split(" ")[0]
+                if "dst-address=" in ruleinfostrip:
+                    dst_address = ruleinfostrip.split("dst-address=")[1].split(" ")[0]
+                if "src-port=" in ruleinfostrip:
+                    src_port = ruleinfostrip.split("src-port=")[1].split(" ")[0]
+                if "dst-port=" in ruleinfostrip:
+                    dst_port = ruleinfostrip.split("dst-port=")[1].split(" ")[0]
+                if "in-interface-list=" in ruleinfostrip:
+                    in_interface_list = ruleinfostrip.split("in-interface-list=")[1].split(" ")[0]
+                if "out-interface-list=" in ruleinfostrip:
+                    out_interface_list = ruleinfostrip.split("out-interface-list=")[1].split(" ")[0]
+                if "connection-state=" in ruleinfostrip:
+                    connection_state = ruleinfostrip.split("connection-state=")[1].split(" ")[0]
+                if "tls-host=" in ruleinfostrip:
+                    tls_host= ruleinfostrip.split("tls-host=")[1].split(" ")[0]   
+                if "in-interface=" in ruleinfostrip:
+                    in_interface = ruleinfostrip.split("in-interface=")[1].split(" ")[0]
+                if "out-interface=" in ruleinfostrip:
+                    out_interface = ruleinfostrip.split("out-interface=")[1].split(" ")[0]                     
+            collect.append({"chain":chain ,
+                            "action": action,
+                            "protocol":protocol,
+                            "src_address":src_address,
+                            "dst_address":dst_address,
+                            "src_port": src_port,
+                            "dst_port":dst_port,
+                            "in_interface_list":in_interface_list,
+                            "out_interface_list": out_interface_list,
+                            "connection_state":connection_state,
+                            "tls_host":tls_host,
+                            "description":description,
+                            "firewall_status":firewall_status,
+                            "in_interface":in_interface,
+                            "out_interface":out_interface,
+                            "rule_no":rule_no
+                            })         
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_firewall_nat_details",
+                    "exception": str(e)
+                }
+            )
+    return collect
+
+def blockedappdetails(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_app_details",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting firewall details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_app_details",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []          
+        firewall_info = output.split("\n")[1:-1]
+        rules = []
+        rules_info =[]      
+        for finfo in firewall_info:
+            if finfo.strip():
+                rules.append(finfo)
+            else:
+                rules_info.append(rules)
+                rules = []        
+        for rule in rules_info: 
+            name = ""
+            regexp = ""
+            address = ""            
+            description = ""            
+            rule_no = ""      
+            for ruleinfo in rule:
+                ruleinfostrip = ruleinfo.strip()
+                # Clean up extra spaces or non-visible characters using regex
+                ruleinfostrip = re.sub(r'\s+', ' ', ruleinfostrip)  # Replace multiple spaces with a single space
+                if " ;;; " in ruleinfostrip:
+                    description = ruleinfostrip.split(" ;;; ")[1]                  
+                    status_info = ruleinfostrip.split(" ")[1] 
+                    rule_no = ruleinfostrip.split(" ")[0]                
+#                    print("status_info", status_info)
+                    if status_info == "X":
+                        firewall_status = "disabled"                    
+                    elif status_info == "D":
+                        firewall_status= "Dynamic" 
+                    else: 
+                        firewall_status= "Enabled" 
+                #if "defconf" in intinfostrip:
+                #    status_info = intinfostrip.split(" ")[1]
+                #    print("status_info", status_info)
+                #    if status_info == "R":
+                #        intfc_status = "up"
+                #    else:
+                #        intfc_status = "down"
+
+                if "name=" in ruleinfostrip:
+                    name = ruleinfostrip.split("name=")[1].split('"')[1]                    
+                if "regexp=" in ruleinfostrip:
+                    regexp = ruleinfostrip.split("regexp=")[1].split('"')[1]
+                if "address=" in ruleinfostrip:
+                    address = ruleinfostrip.split("address=")[1].split(" ")[0]
+            if name == "router.lan":
+                continue                       
+            collect.append({"name":name ,
+                            "domain": regexp,
+                            "address":address,
+                            "rule_no":rule_no,                            
+                            "description":description,
+                            "firewall_status":firewall_status                            
+                            }) 
+
+        unique = {}
+        for item in collect:
+            domain = item["domain"]
+            # keep only the first occurrence of each domain
+            if domain not in unique:
+                unique[domain] = item
+
+        # Replace collect with deduplicated list
+        collect = list(unique.values())        
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_app_details",
+                    "exception": str(e)
+                }
+            )
+    return collect
+
+def addapp(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+    #print("app add", data)
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addapp",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for domain in data["domains"]:            
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} address=10.8.0.1')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=AAAA address=::1')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=CNAME cname=10.8.0.1')
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=FWD forward-to=10.8.0.1')
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static add comment=block_{domain} regexp={domain} type=NXDOMAIN')
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:               
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns cache flush')
+        response = [{"message": f"App {data['domains']} added successfully for blocking"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addapp_block",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding app",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "addapp_block",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding app for blocking. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def addfirewallrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:   
+            src_addr = rule.get("src_address")
+            dst_addr = rule.get("dst_address")
+            desc = rule.get("description")
+            cmd_parts = [f'/ip firewall filter add chain={rule["chain"]} action={rule["action"]}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')   
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if rule.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={rule["protocol"]}')
+                if rule.get("src_port"):
+                    cmd_parts.append(f'src-port={rule["src_port"]}')
+                if rule.get("dst_port"):
+                    cmd_parts.append(f'dst-port={rule["dst_port"]}')
+            
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)   
+        response = [{"message": f"Firewall Rule added successfully"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_rule_add",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding app",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_rule_add",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding filter rule in firewall. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def addfirewallnatrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:   
+            src_addr = rule.get("src_address")
+            dst_addr = rule.get("dst_address")
+            desc = rule.get("description")
+            cmd_parts = [f'/ip firewall nat add chain={rule["chain"]} action={rule["action"]}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')               
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if rule.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={rule["protocol"]}')
+                if rule.get("src_port"):
+                    cmd_parts.append(f'src-port={rule["src_port"]}')
+                if rule.get("dst_port"):
+                    cmd_parts.append(f'dst-port={rule["dst_port"]}')
+            
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd) 
+        response = [{"message": f"NAT Rule added successfully"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_nat_add",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when adding NAT Rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "firewall_filter_nat_add",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while adding nat rule in firewall. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def delapprule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "remove_app_blocking",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:  
+            comment = rule["comment"] 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns static remove [find comment="{comment}"]')     
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output: 
+        stdin, stdout, stderr = ssh_client.exec_command(f'/ip dns cache flush')              
+        
+        response = [{"message": f"{data['rules']} App removed from blocking"}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "remove_app_blocking",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when removing app from blocking",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "remove_app_blocking",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while removing app from blocking. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def delfilterrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:  
+            comment = rule["comment"] 
+            if "enable-ssh" in rule["comment"].lower() or "enable-snmpaccess" in rule["comment"].lower() or "enable-winboxaccess" in rule["comment"].lower() or "icmp" in rule["comment"].lower():
+                response = [{"message": f"Permission Denied to remove this rule: {comment}"}]
+                break
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove [find comment="{comment}"]')     
+
+                response = [{"message": f"{data['rules']} removed."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "filter_rule_del",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when removing rule from Firewall Filter",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "filter_rule_del",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while removing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def delnatrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+        for rule in data["rules"]:  
+            comment = rule["comment"] 
+            if "defconf: masquerade" in comment.lower():
+                response = [{"message": f"Permission Denied to remove this rule"}]
+                break
+            else:
+                stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove [find comment="{comment}"]')     
+                # Read the actual output and errors
+                #output = stdout.read().decode()
+                #if output:                      
+                response = [{"message": f"{data['rules']} removed."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_nat_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when removing rule from Firewall NAT",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while removing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def movefilterrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command             
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["place_above"]) < 7:
+            response = [{"message": f"Permission Denied to place above this rule: {data['place_above']}"}]            
+        elif int(data["move_rule_no"]) > int(data["place_above"]):
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["move_rule_no"]} {data["place_above"]}') 
+            #stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {data["rule_no"]} [find comment="{comment}"]')     
+            print("DHCP-Server Remove STDOUT:", stdout.read().decode())
+            print("DHCP-Server Remove STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule moved."}]
+        else:
+            branch_id = data["tunnel_ip"].split("/")[0] 
+            cache_key = f"firewall_branch_{branch_id}"   
+            firewallinfo = cache.get(cache_key)
+            if not firewallinfo:
+                firewallinfo = firewalldetails(data)
+            above_rule_info = firewallinfo[int(data["place_above"])]
+            rule_info = firewallinfo[int(data["move_rule_no"])]
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["move_rule_no"]}') 
+            if "disable" in rule_info["firewall_status"].lower():
+                disabled="yes" 
+            else:
+                disabled = "no"
+            cmd_parts = [f'/ip firewall filter add chain={rule_info["chain"]} action={rule_info["action"]} disabled={disabled}']
+            desc = rule_info.get("description")
+            src_addr = rule_info.get("src_address")
+            dst_addr = rule_info.get("dst_address")            
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')    
+            if src_addr != "any":                
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr != "any":
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if rule_info.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={rule_info["protocol"]}')
+                if rule_info.get("src_port"):
+                    cmd_parts.append(f'src-port={rule_info["src_port"]}')
+                if rule_info.get("dst_port"):
+                    cmd_parts.append(f'dst-port={rule_info["dst_port"]}')
+            if rule_info.get("in_interface_list") != "any":
+                cmd_parts.append(f'in-interface-list={rule_info.get("in_interface_list")}')
+            if rule_info.get("out_interface_list") != "any":
+                cmd_parts.append(f'out-interface-list={rule_info.get("out_interface_list")}') 
+            if rule_info.get("in_interface") != "any":
+                cmd_parts.append(f'in-interface={rule_info.get("in_interface")}') 
+            if rule_info.get("out_interface") != "any":
+                cmd_parts.append(f'out-interface={rule_info.get("out_interface")}') 
+            #cmd_parts.append(f'place-before={data["rule_no"]}')
+            cmd = " ".join(cmd_parts) 
+            print("add rule", cmd)          
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)  
+            print("DHCP-Server move STDOUT:", stdout.read().decode())
+            print("DHCP-Server move STDERR:", stderr.read().decode())
+            time.sleep(5)
+            rule_no_added = str(len(firewallinfo) - 1)
+            place_above = str(int(data["place_above"]))
+            place_above_comment = above_rule_info["description"]
+            cmd = f'/ip firewall filter move {rule_no_added} [find comment="{place_above_comment}"]'
+            print(cmd)
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)   
+            print("DHCP-Server move STDOUT:", stdout.read().decode())
+            print("DHCP-Server move STDERR:", stderr.read().decode())  
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule moved."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when move filter rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while moving rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def editfilterrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["rule_no"]) < 9:
+            response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+            ssh_client.close()
+            return response
+        else:
+            src_addr = data.get("src_address")
+            dst_addr = data.get("dst_address")
+            desc = data.get("description")             
+            if "disable" in data["status"].lower():
+                disabled="yes" 
+            else:
+                disabled = "no"
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["rule_no"]}') 
+            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} disabled={disabled}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')    
+            if src_addr and "." in src_addr:                
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr and "." in dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            #cmd_parts.append(f'place-before={data["rule_no"]}')
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)    
+            #print("stderr", stderr.read().decode())
+            #print("add stdout", stdout.read().decode())   
+            time.sleep(5) 
+            firewallinfo = firewalldetails(data)
+            rule_no = []
+            for fw in firewallinfo:
+                if fw["description"] == desc:
+                    rule_no.append(fw["rule_no"])
+            last_updated_rule_no = max(rule_no)   
+            #print(last_updated_rule_no)
+            #print(data["rule_no"])           
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {last_updated_rule_no} {data["rule_no"]}')
+            # Read the actual output and errors
+            #print("stderr--move", stderr.read().decode())
+            #print("stdout--move", stdout.read().decode())
+            #output = stdout.read().decode()
+            #if output:  
+            #    print("stdout", output)                    
+            response = [{"message": f"Rule edited."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when edit filter rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_filter_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while editing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+    
+def editnatrule(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_firewall_nat_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["rule_no"]) < 1:
+            response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+        else:
+            src_addr = data.get("src_address")
+            dst_addr = data.get("dst_address")
+            desc = data.get("description")  
+            print(data)
+            if "disable" in data["status"].lower():
+                disabled="yes" 
+            else:
+                disabled = "no"
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat remove {data["rule_no"]}') 
+                        
+            cmd_parts = [f'/ip firewall nat add chain={data["chain"]} action={data["action"]} disabled={disabled}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"') 
+            if src_addr:
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')            
+
+            cmd = " ".join(cmd_parts)            
+            stdin, stdout, stderr = ssh_client.exec_command(cmd) 
+            time.sleep(5) 
+            firewallinfo = firewallnatdetails(data)
+            rule_no = []
+            for fw in firewallinfo:
+                if fw["description"] == desc:
+                    rule_no.append(fw["rule_no"])
+            last_updated_rule_no = max(rule_no)
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall nat move {last_updated_rule_no} {data["rule_no"]}')   
+            # Read the actual output and errors
+            #output = stdout.read().decode()
+            #if output:                      
+            response = [{"message": f"Rule edited."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_nat_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when edit nat rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_nat_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while editing nat rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def ShiftFilterRuledown(data):   
+    # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection Error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_firewall_filter_rule",
+                "exception": str(e)
+            }
+            )
+        # Execute the ping command               
+         
+        #comment = data["comment"] 
+        #if "enable-ssh" in data["comment"].lower() or "enable-snmpaccess" in data["comment"].lower() or "enable-winboxaccess" in data["comment"].lower():
+        if int(data["rule_no"]) < 9:
+            response = [{"message": f"Permission Denied to edit this rule: {data['rule_no']}"}]            
+            ssh_client.close()
+            return response
+        else:
+            src_addr = data.get("src_address")
+            dst_addr = data.get("dst_address")
+            desc = data.get("description")             
+            if "disable" in data["status"].lower():
+                disabled="yes" 
+            else:
+                disabled = "no"
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter remove {data["rule_no"]}') 
+            cmd_parts = [f'/ip firewall filter add chain={data["chain"]} action={data["action"]} disabled={disabled}']
+            if desc:
+                cmd_parts.append(f'comment="{desc}"')    
+            if src_addr and "." in src_addr:                
+                cmd_parts.append(f'src-address={src_addr}')
+            if dst_addr and "." in dst_addr:
+                cmd_parts.append(f'dst-address={dst_addr}')
+            if data.get("protocol") in ("tcp", "udp"):  # only set ports for tcp/udp
+                cmd_parts.append(f'protocol={data["protocol"]}')
+                if data.get("src_port"):
+                    cmd_parts.append(f'src-port={data["src_port"]}')
+                if data.get("dst_port"):
+                    cmd_parts.append(f'dst-port={data["dst_port"]}')
+            #cmd_parts.append(f'place-before={data["rule_no"]}')
+            cmd = " ".join(cmd_parts)           
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)    
+            #print("stderr", stderr.read().decode())
+            #print("add stdout", stdout.read().decode())   
+            time.sleep(5) 
+            firewallinfo = firewalldetails(data)
+            rule_no = []
+            for fw in firewallinfo:
+                if fw["description"] == desc:
+                    rule_no.append(fw["rule_no"])
+            last_updated_rule_no = max(rule_no) 
+                  
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall filter move {last_updated_rule_no} {data["rule_no"]}')
+            # Read the actual output and errors
+            #print("stderr--move", stderr.read().decode())
+            #print("stdout--move", stdout.read().decode())
+            #output = stdout.read().decode()
+            #if output:  
+            #    print("stdout", output)                    
+            response = [{"message": f"Rule edited."}]
+        logger.info(
+            f"{response}",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "move_filter_rule",
+                "exception": ""
+            }
+            )
+    except Exception as e:        
+        logger.error(
+            f"Error occured when edit filter rule",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_filter_rule",
+                "exception": str(e)
+            }
+            )
+        response = [{"message":"Error while editing rule. Pl try again!"}] 
+    finally:
+        # Close the SSH connection
+        ssh_client.close()        
+        return response
+
+def get_item_id(host_id, name):    
+    get_item = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid", "name"],
+            "hostids": host_id,
+            "search": {
+                        "name": name
+                        },           
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+    try:
+        update_response = session.post(zabbix_api_url, json=get_item)
+        update_result1 = update_response.json()
+        update_result = update_result1.get('result')
+        if 'error' in update_result:
+            print(f"Failed to get item list: {update_result['error']['data']}")
+            return False
+        else:            
+            return update_result
+    except Exception as e:
+        print(f"Failed to get Host list: {e}")
+        return False   
+
+def get_today_time_range():
+    now = datetime.now()
+    today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
+    return int(today_start.timestamp()), int(now.timestamp())
+
+def total_volume(itemidreceived, itemidsent):
+    total_volume = 0
+    time_from, time_till = get_today_time_range()
+
+    get_history = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "itemids": [itemidsent, itemidreceived],
+            "time_from": time_from,
+            "time_till": time_till,
+            
+            "sortfield": "clock",
+            "sortorder": "ASC"
+        },
+        'auth': auth_token,
+        'id': 1,
+    }
+
+    try:
+        response = session.post(zabbix_api_url, json=get_history)
+        history_results = response.json().get('result', [])
+
+        # Separate values WITH timestamp
+        sent_list = []
+        recv_list = []
+
+        for item in history_results:
+            if item["itemid"] == itemidsent:
+                sent_list.append((int(item["clock"]), float(item["value"])))
+            elif item["itemid"] == itemidreceived:
+                recv_list.append((int(item["clock"]), float(item["value"])))
+
+        # Sort by timestamp (important)
+        sent_list.sort(key=lambda x: x[0])
+        recv_list.sort(key=lambda x: x[0])
+
+        # Calculate total usage
+        total_bytes = 0
+        poll_interval = 60  # assume 60 seconds; change if different in Zabbix
+
+        for entry in sent_list:
+            total_bytes += (entry[1] * poll_interval) / 8  # bits to bytes
+
+        for entry in recv_list:
+            total_bytes += (entry[1] * poll_interval) / 8
+
+        total_volume = round(total_bytes / (1024 * 1024 * 1024), 4)  # in GB
+
+    except Exception as e:
+        print(f"Failed to get History: {e}")
+
+    return total_volume
+   
+def get_rate_limit_info(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_ratelimit_info",
+                "exception": str(e)
+            }
+            )
+            return []
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/queue tree print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []        
+        
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/system script print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            scr_output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    scr_output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the system script command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []   
+        try:
+            # Execute the trace command 
+            current_usage = ""
+            stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_upload] bytes]')
+            upload_bytes = stdout.read().decode()             
+            stdin, stdout, stderr = ssh_client.exec_command(f'put [/queue tree get [find name=queue_download] bytes]')
+            download_bytes = stdout.read().decode()             
+            current_usage_bytes = int(upload_bytes) + int(download_bytes)  
+            current_usage_gb = round((current_usage_bytes / 1000000000 ), 4)
+            current_usage = f"{str(current_usage_gb)} GB"      
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []   
+           
+        # Close the SSH connection
+        ssh_client.close()  
+        collect = []   
+        #queue info       
+        ratelimit_info = output.split("\n")[1:-1]
+        rate_rules = ""
+        rate_rules_list =[]      
+        for rateinfo in ratelimit_info:
+            if rateinfo.strip():
+                rate_rules +=rateinfo
+            else:
+                rate_rules_list.append(rate_rules)
+                rate_rules = ""
+        
+        #script info scr_rules_list = [script1, script2]
+        script_info = scr_output.split("\n")[1:-1]
+        scr_rules = ""
+        scr_rules_list =[]      
+        for scrinfo in script_info:
+            scrinfo = scrinfo.strip()
+            scrinfo = re.sub(r'\s+', ' ', scrinfo)
+            if scrinfo:                
+                scr_rules += f" {scrinfo}"
+            else:
+                scr_rules = re.sub(r'\s+', ' ', scr_rules)
+                scr_rules_list.append(scr_rules)
+                scr_rules = ""
+        upload_limit = ""
+        download_limit = ""
+        volume_gb = ""
+        reset_upload_limit = ""
+        reset_download_limit = ""
+        for rule in rate_rules_list:
+            if 'name="queue_upload"' in rule:                
+                if "max-limit=" in rule:
+                    upload_limit = rule.split("max-limit=")[1].split(" ")[0]
+                    print("upload_limit", upload_limit)
+            if 'name="queue_download"' in rule:                
+                if "max-limit=" in rule:
+                    download_limit = rule.split("max-limit=")[1].split(" ")[0]    
+                    print("download_limit", download_limit)      
+        for scrrule in scr_rules_list:
+            if 'name="check_quota"' in scrrule:
+                if ":local limit" in scrrule:
+                    volume_limit =  scrrule.split(":local limit")[1].split(";")[0]
+                    print(volume_limit)
+                    volume_gb = int(volume_limit) / 1000000000            
+                if "[find name=$qUp] max-limit=" in scrrule:
+                    reset_upload_limit =  scrrule.split("[find name=$qUp] max-limit=")[1].split(";")[0]
+                if "[find name=$qDown] max-limit=" in scrrule:
+                    reset_download_limit =  scrrule.split("[find name=$qDown] max-limit=")[1].split(";")[0]
+        item_id = get_item_id(data.get("host_id", ""), f"Interface bridge: Bits")
+        
+        for item in item_id:
+            if "sent" in item["name"]:
+                itemid_sent = item["itemid"]                
+            if "received" in item["name"]:
+                itemid_received = item["itemid"] 
+        bridge_usage =  total_volume(itemid_received, itemid_sent)   
+             
+        collect.append({"name":"", 
+                            "rule_no":"1",                                                    
+                            "description":"rate_limit_network",
+                            "status":"Enable",                           
+                            "target_address": "LAN_Network",
+                            "max_upload_limit":upload_limit,
+                            "max_download_limit":download_limit,  
+                            "volume_limit_gb":volume_gb,
+                            "downgrade_upload_limit":reset_upload_limit,
+                            "downgrade_download_limit":reset_download_limit,
+                            "current_usage":current_usage,
+                            "LAN_usage": bridge_usage
+                            })         
+    except Exception as e:
+        print(e)
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_ratelimit_info",
+                    "exception": str(e)
+                }
+            )
+    return collect
+
+def is_in_same_network(target_address: str, lan_network: str) -> bool:
+    """
+    Check whether the target address is part of the specified LAN network.
+
+    :param target_address: IP address to validate (e.g., "192.168.90.50")
+    :param lan_network: Network definition in CIDR (e.g., "192.168.90.0/24")
+    :return: True if target is within the LAN network, otherwise False
+    """
+    try:
+        ip = ipaddress.ip_address(target_address)
+        network = ipaddress.ip_network(lan_network, strict=False)
+        return ip in network
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return False
+
+def edit_rate_limit(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        
+        max_upload_limit = f'{data["max_upload_limit"]}M'
+        max_download_limit = f'{data["max_download_limit"]}M'
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree set [find name=queue_upload] max-limit={max_upload_limit}'
+        )
+        stdin, stdout, stderr = ssh_client.exec_command(
+                f'/queue tree set [find name=queue_download] max-limit={max_download_limit}'
+        )        
+        ssh_client.exec_command(f'/system script remove [find name="check_quota"]')
+            
+        ssh_client.exec_command(f'/system script remove [find name="reset_quota"]')
+        
+        ssh_client.exec_command(f'/system scheduler remove [find name="check_schedule"]')
+        
+        ssh_client.exec_command(f'/system scheduler remove [find name="reset_schedule"]')
+
+        # Check Quota script 
+        downgrade_upload_limit = data.get("downgrade_upload_limit")
+        downgrade_download_limit = data.get("downgrade_download_limit")
+        if not downgrade_download_limit or downgrade_download_limit == "":
+            downgrade_download_limit = "64k"
+        if not downgrade_upload_limit or downgrade_upload_limit == "":
+            downgrade_upload_limit = "64k"
+        #downgrade_upload_limit = data.get("downgrade_upload_limit", "64k")
+        #downgrade_download_limit = data.get("downgrade_download_limit", "64k")
+
+        quota_limit = int(data.get("volume_limit", 0)) * 1000000000  # in bytes                  
+        check_script_cmd = f"""/system script add name=check_quota source=":local limit {quota_limit}; :local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; :local upBytes [/queue tree get [find name=\\$qUp] bytes]; :local downBytes [/queue tree get [find name=\\$qDown] bytes]; :local total (\\$upBytes + \\$downBytes); :log info (\\"Current usage for network\\"  . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue tree set [find name=\\$qUp] max-limit={downgrade_upload_limit}; /queue tree set [find name=\\$qDown] max-limit={downgrade_download_limit}; :log warning (\\"Quota exceeded for tree - throttled both directions - blocked\\") }}" """
+        ssh_client.exec_command(check_script_cmd)
+
+                    
+        # Reset script (daily reset at midnight)
+        
+        reset_script_cmd = f"""/system script add name=reset_quota source=":local qDown \\"queue_download\\"; :local qUp \\"queue_upload\\"; /queue tree reset-counters [find name=\\$qDown];  /queue tree reset-counters [find name=\\$qUp]; /queue tree set [find name=\\$qUp] max-limit={max_upload_limit}; /queue tree set [find name=\\$qDown] max-limit={max_download_limit}; :log info (\\"Daily quota reset for \\" )" """
+        ssh_client.exec_command(reset_script_cmd)
+
+        # Scheduler for check every 5 min
+        
+        check_sched_cmd = f"/system scheduler add name=check_schedule interval=5m on-event=check_quota"
+        ssh_client.exec_command(check_sched_cmd)
+
+        # Scheduler for reset at midnight
+        
+        reset_sched_cmd = f"/system scheduler add name=reset_schedule start-time=00:00:00 interval=1d on-event=reset_quota"
+        ssh_client.exec_command(reset_sched_cmd)
+        logger.info(
+                f"Rate limit edited successfully",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "edit_ratelimit",
+                    "exception": ""
+                }
+            )
+        response = [{"message": "Rate limit edited successfully"}]
+    except Exception as e:        
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "edit_ratelimit",
+                    "exception": str(e)
+                }
+            )
+    return response           
+
+def add_exemption_list(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_exemptionlist",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        for addr in data.get("addresses", []):
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall address-list add list=quota_exclude address={addr}'
+            )
+        logger.info(
+                f"Rate limit edited successfully",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_exemption_list",
+                    "exception": ""
+                }
+            )
+        response = [{"message": f'Address {data.get("addresses", [])} added to exemption list'}]
+    except Exception as e:        
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_exemption_list",
+                    "exception": str(e)
+                }
+            )
+    return response           
+
+def get_exemption_list(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "edit_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip firewall address-list print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_exemption_list",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []             
+           
+        # Close the SSH connection
+        ssh_client.close()          
+        #queue info       
+        address_list_info = output.split("\n")[1:-1]
+        exem_rules = ""
+        exem_rules_list =[]      
+        for exeminfo in address_list_info:
+            if exeminfo.strip():
+                exem_rules += exeminfo
+            else:
+                exem_rules_list.append(exem_rules)
+                exem_rules = ""
+        exemlist = []
+        for exem in exem_rules_list:
+            if "list=quota_exclude" in exem:
+                exemlist.append(exem.split("address=")[1].split(" ")[0])
+    except Exception as e:        
+        
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_exemption_list",
+                    "exception": str(e)
+                }
+            )
+    return exemlist           
+
+def del_exemption_list(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_exemption_list",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        for addr in data.get("addresses", []):
+            stdin, stdout, stderr = ssh_client.exec_command(
+                f'/ip firewall address-list remove [find address={addr}]'
+            )
+        logger.info(
+                f"Rate limit edited successfully",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "del_exemption_list",
+                    "exception": ""
+                }
+            )
+        response = [{"message": f'{data.get("addresses", [])} removed from Exemption list'}]
+    except Exception as e:        
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "del_exemption_list",
+                    "exception": str(e)
+                }
+            )
+    return response           
+
+def get_lan_clients_info(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "get_client_info",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:
+            # Execute the trace command 
+            stdin, stdout, stderr = ssh_client.exec_command(f'/ip arp print detail')
+            # Initialize variables for output collection
+            start_time = time.time()
+            timeout = 10  # Stop after 10 seconds
+        
+            # Use a loop to monitor and collect output
+            output = ""
+            while not stdout.channel.exit_status_ready() or stdout.channel.recv_ready():  # Wait for the command to complete
+                if stdout.channel.recv_ready():
+                    output += stdout.channel.recv(2048).decode()  # Read available data
+                
+            
+                # Break if timeout is reached
+                if time.time() - start_time > timeout:
+                    print("Timeout reached. Terminating the traceroute command.")
+                    break             
+        except Exception as e:
+            logger.error(
+                f"Error while getting ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_client_info",
+                    "exception": str(e)
+                }
+            )
+            ssh_client.close() 
+            return []             
+                   
+        # Close the SSH connection
+        ssh_client.close()          
+        #queue info       
+        arp_list_info = output.split("\n")[1:-1]
+        arp_rules = ""
+        arp_rules_list =[]      
+        for arpinfo in arp_list_info:
+            if arpinfo.strip():
+                arp_rules += arpinfo
+            else:
+                arp_rules_list.append(arp_rules)
+                arp_rules = ""
+        collect = []
+        for arpdetail in arp_rules_list:
+            print(arpdetail)
+            if "address=" in arpdetail:
+                addr = arpdetail.split("address=")[1].split(" ")[0]
+            else:
+                addr = ""
+            if "mac-address=" in arpdetail:
+                mac_addr = arpdetail.split("mac-address=")[1].split(" ")[0]
+            else:
+                mac_addr = ""
+            if "interface=" in arpdetail:
+                interface = arpdetail.split("interface=")[1].split(" ")[0]
+            else:
+                interface = ""
+            if "status=" in arpdetail:
+                status = arpdetail.split("status=")[1].split(" ")[0]
+            else:
+                status = ""
+            collect.append({"address":addr,
+                            "mac_address":mac_addr,
+                            "interface":interface,
+                            "status":status})   
+    except Exception as e:
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "get_client_info",
+                    "exception": str(e)
+                }
+            )
+    return collect        
+
+def add_rate_limit(data):   
+    import paramiko
+    import logging
+    import ipaddress
+
+    logger = logging.getLogger(__name__)
+
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(
+                hostname=router_ip,
+                username=username,
+                password=password,
+                look_for_keys=False,
+                allow_agent=False
+            )
+        except Exception as e:
+            logger.error(
+                "SSH Connection error",
+                extra={
+                    "device_type": "MikroTik",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+
+        try:
+            branch_id = data["tunnel_ip"].split("/")[0]
+            cache_key = f"interfaces_branch_{branch_id}"
+            interface_details = cache.get(cache_key)
+            if not interface_details:
+                interface_details = interfacedetails(data)
+
+            lan_ip = []
+            for intfc in interface_details:
+                if intfc["interface_name"] == "bridge":
+                    lan_ip = intfc["addresses"]
+
+            for limit in data["rules"]:
+                # Check if address belongs to LAN network
+                lan_ntwk = False
+                for lanaddr in lan_ip:
+                    if is_in_same_network(limit["target_address"].split("/")[0], lanaddr["IPv4address"]):
+                        lan_ntwk = True
+                        break
+
+                if lan_ntwk:
+                    max_limit = f'{limit["max_upload_limit"]}M/{limit["max_download_limit"]}M'
+                    target_ip = limit['target_address'].split('/')[0]
+
+                    queue_name = f"quota_{target_ip}"
+
+                    # Add queue
+                    stdin, stdout, stderr = ssh_client.exec_command(
+                        f'/queue simple add name={queue_name} comment="{limit["description"]}" target={limit["target_address"]} max-limit={max_limit}'
+                    )
+                    is_error = stdout.read().decode().strip()
+
+                    if is_error:
+                        logger.warning(f"Error- ratelimit {target_ip}-Already Exist")
+                        response = [{"message":f"Error- ratelimit {target_ip}-Already Exist"}]
+                        return response
+
+                    quota_limit = int(limit.get("volume_limit", 0)) * 1000000000  # in bytes
+                    if quota_limit != 0:
+                        # Check Quota script 
+                        check_script_name = f"check_quota_{target_ip}"                   
+                        check_script_cmd = f"""/system script add name={check_script_name} source=":local limit {quota_limit}; :local qname \\"{queue_name}\\"; :local usage [/queue simple get [find name=\\$qname] bytes]; :local tx [:pick \\$usage 0 [:find \\$usage \\"/\\"]]; :local rx [:pick \\$usage ([:find \\$usage \\"/\\"] + 1) [:len \\$usage]]; :local total (\\$tx + \\$rx); :log info (\\"Current usage for \\" . \\$qname . \\": TOTAL=\\" . \\$total . \\" bytes\\"); :if (\\$total > \\$limit) do={{ /queue simple set [find name=\\$qname] max-limit=64k/64k; :log warning (\\"Client quota exceeded for \\" . \\$qname . \\" - blocked\\") }}" """
+                        ssh_client.exec_command(check_script_cmd)
+                    
+                        # Reset script (daily reset at midnight)
+                        reset_script_name = f"reset_quota_{target_ip}"
+                        reset_script_cmd = f"""/system script add name={reset_script_name} source=":local qname \\"{queue_name}\\"; /queue simple reset-counters [find name=\\$qname]; /queue simple set [find name=\\$qname] max-limit={max_limit}; :log info (\\"Daily quota reset for \\" . \\$qname)" """
+                        ssh_client.exec_command(reset_script_cmd)
+
+                        # Scheduler for check every 5 min
+                        check_sched_name = f"check_sched_{target_ip}"
+                        check_sched_cmd = f"/system scheduler add name={check_sched_name} interval=5m on-event={check_script_name}"
+                        ssh_client.exec_command(check_sched_cmd)
+
+                        # Scheduler for reset at midnight
+                        reset_sched_name = f"reset_sched_{target_ip}"
+                        reset_sched_cmd = f"/system scheduler add name={reset_sched_name} start-time=00:00:00 interval=1d on-event={reset_script_name}"
+                        ssh_client.exec_command(reset_sched_cmd)
+
+                    response = [{"message": "Rate limit applied successfully"}]
+                else:
+                    response = [{"message": "Error: Target Address should be in LAN Network"}]
+                    break
+
+        except Exception as e:
+            print(e)
+            logger.error(
+                "Error while applying ratelimit",
+                extra={
+                    "device_type": "MikroTik",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]
+
+        ssh_client.close()
+
+    except Exception as e:
+        print(e)
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+            str(e),
+            extra={
+                "device_type": "MikroTik",
+                "device_ip": router_ip,
+                "be_api_endpoint": "add_ratelimit",
+                "exception": str(e)
+            }
+        )
+    return response
+
+def del_rate_limit(data):   
+   # Define the router details
+    router_ip = data["tunnel_ip"].split("/")[0]
+    username = data["router_username"]
+    password = data["router_password"]
+
+    # Create an SSH client instance
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        try:
+            # Connect to the router
+            ssh_client.connect(hostname=router_ip, username=username, password=password, look_for_keys=False, allow_agent=False)
+        except Exception as e:
+            logger.error(
+            f"SSH Connection error",
+            extra={
+                "device_type": "Microtek",
+                "device_ip": router_ip,
+                "be_api_endpoint": "del_ratelimit",
+                "exception": str(e)
+            }
+            )
+            return [{"message": "Error - SSH Connection error"}]
+        try:                       
+            ssh_client.exec_command(f'/queue simple remove {data["rule_no"]}')
+            target_addr = data['name'].split('_')[1]
+            script_name = f"check_quota_{target_addr}"
+            ssh_client.exec_command(f'/system script remove [find name="{script_name}"]')
+            reset_script_name = f"reset_quota_{target_addr}"
+            ssh_client.exec_command(f'/system script remove [find name="{reset_script_name}"]')
+            check_sched_name = f"check_sched_{target_addr}"
+            ssh_client.exec_command(f'/system scheduler remove [find name="{check_sched_name}"]')
+            reset_sched_name = f"reset_sched_{target_addr}"
+            ssh_client.exec_command(f'/system scheduler remove [find name="{reset_sched_name}"]')
+            response = [{"message": f"{data['name']} Deleted successfully"}]
+                
+        except Exception as e:
+            logger.error(
+                f"Error while applying ratelimit details",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "del_ratelimit",
+                    "exception": str(e)
+                }
+            )
+            response = [{"message": "Error - Internal Server Error"}]         
+        # Close the SSH connection
+        ssh_client.close()         
+    except Exception as e:
+        response = [{"message": "Error - Internal Server Error"}]
+        logger.error(
+                f"{str(e)}",
+                extra={
+                    "device_type": "Microtek",
+                    "device_ip": router_ip,
+                    "be_api_endpoint": "add_ratelimit",
+                    "exception": str(e)
+                }
+            )
+    return response           

@@ -1,0 +1,249 @@
+[
+    {
+        "organization_id": "ae2ecdf4d69b469db04dc438d9663e10",
+        "regusers": [
+            {
+                "username": "aabid@ld.sa",
+                "userid": "d875208142f643cfac1890f9934858ce",
+                "first_name": "Aabid",
+                "last_name": "Khan",
+                "user_role": "ADMIN"
+            },
+            {
+                "username": "testrlp1@example.com",
+                "userid": "4c6addef33d047f394be4bb5045c8060",
+                "first_name": "testrlp",
+                "last_name": "rl",
+                "user_role": "USER"
+            },
+            {
+                "username": "none"
+            }
+        ],
+        "subscription_from": {
+            "$date": "2025-09-04T12:32:11Z"
+        },
+        "subscription_to": {
+            "$date": "2026-09-04T12:32:11Z"
+        },
+        "total_users": 200,
+        "remaining_users": 164,
+        "registered_devices": [
+            {
+                "reachlink_hub_info": {
+                    "uuid": "reachlinkserver.net",
+                    "host_id": "10084",
+                    "itemid_received": "49381",
+                    "itemid_sent": "49389",
+                    "branch_location": "Reachlink_server",
+                    "hub_ip": "185.69.209.245"
+                },
+                "microtek_spokes_info": [],
+                "robustel_spokes_info": [],
+                "cisco_spokes_info": [
+                    {
+                        "uuid": "alinma_002_cisco_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "alinma_002_cisco",
+                        "spokedevice_name": "ciscoubuntuspoke1-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "ciscoubuntuspoke1-lastdimension",
+                        "router_password": "b1r6@sou",
+                        "dialerip": "10.17.17.90",
+                        "dialerpassword": "gt@oa4gx",
+                        "dialerusername": "ciscoubuntuspoke1-LastDimension",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.0.184",
+                        "router_wan_ip_netmask": "192.168.0.1",
+                        "router_wan_ip_gateway": "192.168.0.1",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10650",
+                        "itemid_received": "50503",
+                        "itemid_sent": "50530"
+                    },
+                    {
+                        "uuid": "brf_001_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "brf_001",
+                        "spokedevice_name": "ciscoubuntuspoke2-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "10.17.17.66",
+                        "public_ip": "None",
+                        "router_username": "tejashree",
+                        "router_password": "collector",
+                        "dialerip": "10.17.17.66",
+                        "dialerpassword": "etel234",
+                        "dialerusername": "etelbsr",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.1.2",
+                        "router_wan_ip_netmask": "192.168.1.1",
+                        "router_wan_ip_gateway": "192.168.1.1",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10653",
+                        "itemid_received": "54574",
+                        "itemid_sent": "54601"
+                    },
+                    {
+                        "uuid": "alinma_riyadh_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "alinma_riyadh",
+                        "spokedevice_name": "ciscoubuntuspoke3-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "10.17.17.67",
+                        "public_ip": "None",
+                        "router_username": "alinma001",
+                        "router_password": "rletel0108",
+                        "dialerip": "10.17.17.67",
+                        "dialerpassword": "gt@oa4gx",
+                        "dialerusername": "useralinma1",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.0.132",
+                        "router_wan_ip_netmask": "192.168.0.1",
+                        "router_wan_ip_gateway": "192.168.0.1",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10656",
+                        "itemid_received": "60895",
+                        "itemid_sent": "60922"
+                    },
+                    {
+                        "uuid": "voestalpine_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "voestalpine",
+                        "spokedevice_name": "ciscoubuntuspoke4-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "ciscoubuntuspoke4-lastdimension",
+                        "router_password": "r@48tyso",
+                        "dialerip": "10.17.17.55",
+                        "dialerpassword": "uqjk6hk@",
+                        "dialerusername": "ciscoubuntuspoke4-LastDimension",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.8.10",
+                        "router_wan_ip_netmask": "192.168.8.1",
+                        "router_wan_ip_gateway": "192.168.8.1",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10657"
+                    },
+                    {
+                        "uuid": "rtcc_wadi_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "rtcc_wadi",
+                        "spokedevice_name": "ciscoubuntuspoke5-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "ciscoubuntuspoke5-lastdimension",
+                        "router_password": "w8l@x608",
+                        "dialerip": "10.17.17.14",
+                        "dialerpassword": "9iym@z4g",
+                        "dialerusername": "ciscoubuntuspoke5-LastDimension",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.8.100",
+                        "router_wan_ip_netmask": "192.168.8.1",
+                        "router_wan_ip_gateway": "192.168.8.1",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10658",
+                        "itemid_received": "80632",
+                        "itemid_sent": "80656"
+                    },
+                    {
+                        "uuid": "rtcc-sonmez-airport_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "rtcc-sonmez-airport",
+                        "spokedevice_name": "ciscoubuntuspoke6-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "ciscoubuntuspoke6-lastdimension",
+                        "router_password": "s7h7hf7@",
+                        "dialerip": "10.17.17.209",
+                        "dialerpassword": "l9n1w@vc",
+                        "dialerusername": "ciscoubuntuspoke6-LastDimension",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.0.10",
+                        "router_wan_ip_netmask": "192.168.0.1",
+                        "router_wan_ip_gateway": "192.168.0.1",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10659",
+                        "itemid_received": "96835",
+                        "itemid_sent": "96862"
+                    },
+                    {
+                        "uuid": "rtcc-ryd-taifrd_LastDimension_cisco_ubuntu.net",
+                        "branch_location": "rtcc-ryd-taifrd",
+                        "spokedevice_name": "ciscoubuntuspoke7-LastDimension",
+                        "hub_ip": "185.69.209.245",
+                        "tunnel_ip": "None",
+                        "public_ip": "None",
+                        "router_username": "ciscoubuntuspoke7-lastdimension",
+                        "router_password": "rq0ihi4@",
+                        "dialerip": "10.17.17.74",
+                        "dialerpassword": "d3e627@5",
+                        "dialerusername": "ciscoubuntuspoke7-LastDimension",
+                        "dialer_hub_ip": "185.69.209.245",
+                        "router_wan_ip_only": "192.168.0.10",
+                        "router_wan_ip_netmask": "192.168.0.1/24",
+                        "router_wan_ip_gateway": "192.168.0.1/24",
+                        "hub_dialer_network": "10.17.17.0",
+                        "hub_dialer_netmask": "255.255.255.0",
+                        "hub_dialer_wildcardmask": "0.0.0.255",
+                        "host_id": "10660",
+                        "itemid_received": "97137",
+                        "itemid_sent": "97164"
+                    }
+                ],
+                "ubuntu_spokes_info": []
+            }
+        ],
+        "organization_name": "LastDimension"
+    },
+    {
+        "organization_id": "da1cc9b9afec4a7b83cb2dbcbaadfc7f",
+        "regusers": [
+            {
+                "username": "alinma@ld.sa",
+                "userid": "9c55a099c7174f44921a46ad20767932",
+                "first_name": "Maaz",
+                "last_name": "Siddique",
+                "user_role": "ADMIN"
+            },
+            {
+                "username": "none"
+            }
+        ],
+        "subscription_from": {
+            "$date": "2025-11-20T10:37:29Z"
+        },
+        "subscription_to": {
+            "$date": "2026-11-20T10:37:29Z"
+        },
+        "total_users": 200,
+        "remaining_users": 198,
+        "registered_devices": [
+            {
+                "reachlink_hub_info": {
+                    "uuid": "reachlinkserver.net",
+                    "host_id": "10084",
+                    "itemid_received": "49381",
+                    "itemid_sent": "49389",
+                    "branch_location": "Reachlink_server",
+                    "hub_ip": "185.69.209.245"
+                },
+                "microtek_spokes_info": [],
+                "robustel_spokes_info": [],
+                "cisco_spokes_info": [],
+                "ubuntu_spokes_info": []
+            }
+        ],
+        "organization_name": "LastDimensionAL-B"
+    }
+]
